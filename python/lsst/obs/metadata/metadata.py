@@ -71,8 +71,6 @@ class MetadataMeta(type):
         super().__init__(name, bases, dct)
 
         if hasattr(self, "name") and self.name is not None:
-            print(f"Assigning {self.name}")
-            print("translators:", MetadataTranslator.translators)
             MetadataTranslator.translators[self.name] = self
 
         for standardKey, fitsKey in self._unitMap.items():
@@ -160,7 +158,7 @@ class VisitInfo:
             try:
                 print(f"Assigning {property} via {method}")
                 setattr(self, property, getattr(translator, method)(header))
-            except AttributeError:
+            except (AttributeError, KeyError):
                 # For now assign None
                 setattr(self, property, None)
 

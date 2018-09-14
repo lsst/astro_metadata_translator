@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+from astropy.time import Time
 
 from lsst.obs.metadata import FitsTranslator, VisitInfo
 
@@ -46,6 +47,8 @@ class BasicTestCase(unittest.TestCase):
         self.header = {"TELESCOP": "JCMT",
                        "TELCODE": "LSST",
                        "INSTRUME": "SCUBA_test",
+                       "DATE-OBS": "2000-01-01T01:00:01.500",
+                       "DATE-END": "2000-01-01T02:00:01.500",
                        "BAZ": "bar"}
 
     def testBasicManualTranslation(self):
@@ -56,6 +59,8 @@ class BasicTestCase(unittest.TestCase):
         self.assertFalse(FitsTranslator.canTranslate(header))
         self.assertEqual(FitsTranslator.toTelescope(header), "JCMT")
         self.assertEqual(FitsTranslator.toInstrument(header), "SCUBA_test")
+        self.assertEqual(FitsTranslator.toDatetime_begin(header),
+                         Time(header["DATE-OBS"], format="isot"))
 
         # Use the special test translator instead
         self.assertTrue(TestTranslator.canTranslate(header))
@@ -76,6 +81,7 @@ class BasicTestCase(unittest.TestCase):
         v1 = VisitInfo(header)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
+        print(v1.__dict__)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Metadata translation code for standard FITS headers"""
+from astropy.time import Time
+
 from ..metadata import MetadataTranslator
 
 
@@ -61,3 +63,36 @@ class FitsTranslator(MetadataTranslator):
             return False
 
         return cls.toInstrument(header) == cls.supportedInstrument
+
+    @staticmethod
+    def _from_fits_date(header, dateKey):
+        """Calculate a date object from the named FITS header
+
+        Uses the TIMESYS header if present to determine the time scale.
+
+        Parameters
+        ----------
+        header : `dict`-like
+            A `dict` representing a FITS-like header.
+        dateKey : `str`
+            The key in the header representing a standard FITS
+            ISO-style date.
+
+        Returns
+        -------
+        date : `astropy.time.Time`
+            `~astropy.time.Time` representation of the date.
+        """
+        if "TIMESYS" in header:
+            scale = header["TIMESYS"]
+        else:
+            scale = "utc"
+        return Time(header[dateKey], format="isot", scale=scale)
+
+    @staticmethod
+    def toDatetime_begin(header):
+        return FitsTranslator._from_fits_date(header, "DATE-OBS")
+
+    @staticmethod
+    def toDatetime_end(header):
+        return FitsTranslator._from_fits_date(header, "DATE-END")
