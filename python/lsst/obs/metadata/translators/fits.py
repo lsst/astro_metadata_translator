@@ -62,7 +62,7 @@ class FitsTranslator(MetadataTranslator):
         if cls.supportedInstrument is None:
             return False
 
-        return cls.toInstrument(header) == cls.supportedInstrument
+        return cls.to_instrument(header) == cls.supportedInstrument
 
     @staticmethod
     def _from_fits_date(header, dateKey):
@@ -90,9 +90,9 @@ class FitsTranslator(MetadataTranslator):
         return Time(header[dateKey], format="isot", scale=scale)
 
     @staticmethod
-    def toDatetime_begin(header):
+    def to_datetime_begin(header):
         return FitsTranslator._from_fits_date(header, "DATE-OBS")
 
     @staticmethod
-    def toDatetime_end(header):
+    def to_datetime_end(header):
         return FitsTranslator._from_fits_date(header, "DATE-END")

@@ -75,11 +75,11 @@ class MetadataMeta(type):
 
         for standardKey, fitsKey in self._unitMap.items():
             translator = self._makeUnitMapping(standardKey, fitsKey)
-            setattr(self, f"to{standardKey.capitalize()}", staticmethod(translator))
+            setattr(self, f"to_{standardKey}", staticmethod(translator))
 
         for standardKey, constant in self._constMap.items():
             translator = self._makeConstMapping(standardKey, constant)
-            setattr(self, f"to{standardKey.capitalize()}", staticmethod(translator))
+            setattr(self, f"to_{standardKey}", staticmethod(translator))
 
 
 class MetadataTranslator(metaclass=MetadataMeta):
@@ -168,7 +168,7 @@ class VisitInfo:
         translations = ("telescope", "instrument", "datetime_begin", "datetime_end")
         for t in translations:
             # prototype code
-            method = f"to{t.capitalize()}"
+            method = f"to_{t}"
             property = f"_{t}"
 
             try:

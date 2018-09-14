@@ -57,17 +57,17 @@ class BasicTestCase(unittest.TestCase):
 
         # Treat the header as standard FITS
         self.assertFalse(FitsTranslator.canTranslate(header))
-        self.assertEqual(FitsTranslator.toTelescope(header), "JCMT")
-        self.assertEqual(FitsTranslator.toInstrument(header), "SCUBA_test")
-        self.assertEqual(FitsTranslator.toDatetime_begin(header),
+        self.assertEqual(FitsTranslator.to_telescope(header), "JCMT")
+        self.assertEqual(FitsTranslator.to_instrument(header), "SCUBA_test")
+        self.assertEqual(FitsTranslator.to_datetime_begin(header),
                          Time(header["DATE-OBS"], format="isot"))
 
         # Use the special test translator instead
         self.assertTrue(TestTranslator.canTranslate(header))
-        self.assertEqual(TestTranslator.toTelescope(header), "LSST")
-        self.assertEqual(TestTranslator.toInstrument(header), "SCUBA_test")
-        self.assertEqual(TestTranslator.toFormat(header), "HDF5")
-        self.assertEqual(TestTranslator.toFoobar(header), "bar")
+        self.assertEqual(TestTranslator.to_telescope(header), "LSST")
+        self.assertEqual(TestTranslator.to_instrument(header), "SCUBA_test")
+        self.assertEqual(TestTranslator.to_format(header), "HDF5")
+        self.assertEqual(TestTranslator.to_foobar(header), "bar")
 
     def testBasicTranslator(self):
         header = self.header
