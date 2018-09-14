@@ -117,6 +117,28 @@ class MetadataTranslator(metaclass=MetadataMeta):
         """
         raise NotImplementedError()
 
+    @classmethod
+    def determineTranslator(cls, header):
+        """Determine a translation class by examining the header
+
+        Parameters
+        ----------
+        header : `dict`-like
+            Representation of a FITS header.
+
+        Returns
+        -------
+        translator : `MetadataTranslator`
+            Translation class that knows how to extract metadata from
+            the supplied header.
+        """
+        for name, trans in cls.translators.items():
+            if trans.canTranslate(header):
+                log.debug(f"Using translation class {name}")
+                return trans
+        else:
+            raise ValueError("None of the registered translation classes understood this header")
+
 
 class VisitInfo:
     """Standardized representation of an instrument FITS header.
@@ -139,13 +161,7 @@ class VisitInfo:
 
     def __init__(self, header, translator=None):
         if translator is None:
-            for name, trans in MetadataTranslator.translators.items():
-                if trans.canTranslate(header):
-                    log.debug(f"Using translation class {name}")
-                    translator = trans
-                    break
-            else:
-                raise ValueError("None of the registered translation classes understood this header")
+            translator = MetadataTranslator.determineTranslator(header)
 
         # Loop over each translation (not final form -- this should be
         # defined in one place and consistent with translation classes)
