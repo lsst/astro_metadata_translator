@@ -22,7 +22,7 @@
 import unittest
 from astropy.time import Time
 
-from lsst.obs.metadata import FitsTranslator, VisitInfo
+from lsst.obs.metadata import FitsTranslator, ObservationInfo
 
 
 class TestTranslator(FitsTranslator):
@@ -73,12 +73,12 @@ class BasicTestCase(unittest.TestCase):
         header = self.header
 
         # Specify a translation class
-        v1 = VisitInfo(header, translator=TestTranslator)
+        v1 = ObservationInfo(header, translator=TestTranslator)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
 
         # Now automated class
-        v1 = VisitInfo(header)
+        v1 = ObservationInfo(header)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
         print(v1.__dict__)

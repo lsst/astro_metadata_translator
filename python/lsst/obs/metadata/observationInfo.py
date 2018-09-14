@@ -21,7 +21,7 @@
 
 """Extract standard metadata from instrument FITS headers"""
 
-__all__ = ("VisitInfo", )
+__all__ = ("ObservationInfo", )
 
 import logging
 
@@ -30,8 +30,9 @@ from .translator import MetadataTranslator
 log = logging.getLogger(__name__)
 
 
-class VisitInfo:
-    """Standardized representation of an instrument FITS header.
+class ObservationInfo:
+    """Standardized representation of an instrument FITS header for a single
+    exposure observation.
 
     Parameters
     ----------
@@ -55,7 +56,9 @@ class VisitInfo:
 
         # Loop over each translation (not final form -- this should be
         # defined in one place and consistent with translation classes)
-        translations = ("telescope", "instrument", "datetime_begin", "datetime_end")
+        translations = ("telescope", "instrument", "exposure", "visit", "physical_filter",
+                        "snap", "datetime_begin", "datetime_end", "exposure_time",
+                        "dark_time")
         for t in translations:
             # prototype code
             method = f"to_{t}"
