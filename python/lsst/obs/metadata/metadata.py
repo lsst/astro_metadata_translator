@@ -43,8 +43,8 @@ class MetadataMeta(type):
 
         Returns
         -------
-        translation : `str` or `numbers.Number`
-            Always returns {constant}.
+        translation : `{type(constant).__name__}`
+            Always returns {constant!r}.
         """
         return translator
 

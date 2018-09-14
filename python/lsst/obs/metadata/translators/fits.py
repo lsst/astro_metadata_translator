@@ -91,8 +91,36 @@ class FitsTranslator(MetadataTranslator):
 
     @staticmethod
     def to_datetime_begin(header):
+        """Calculate start time of observation.
+
+        Uses FITS standard ``DATE-OBS`` and ``TIMESYS`` headers.
+
+        Parameters
+        ----------
+        header : `dict`-like
+            Header values representing a FITS header.
+
+        Returns
+        -------
+        start_time : `astropy.time.Time`
+            Time corresponding to the start of the observation.
+        """
         return FitsTranslator._from_fits_date(header, "DATE-OBS")
 
     @staticmethod
     def to_datetime_end(header):
+        """Calculate end time of observation.
+
+        Uses FITS standard ``DATE-END`` and ``TIMESYS`` headers.
+
+        Parameters
+        ----------
+        header : `dict`-like
+            Header values representing a FITS header.
+
+        Returns
+        -------
+        start_time : `astropy.time.Time`
+            Time corresponding to the end of the observation.
+        """
         return FitsTranslator._from_fits_date(header, "DATE-END")
