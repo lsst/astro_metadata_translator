@@ -37,8 +37,8 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _unitMap = dict(instrument="INSTRUME",
-                    telescope="TELESCOP")
+    _trivialMap = dict(instrument="INSTRUME",
+                       telescope="TELESCOP")
 
     @classmethod
     def canTranslate(cls, header):

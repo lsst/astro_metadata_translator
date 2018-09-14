@@ -34,8 +34,8 @@ class TestTranslator(FitsTranslator):
     supportedInstrument = "SCUBA_test"
 
     # Some new mappings, including an override
-    _unitMap = {"foobar": "BAZ",
-                "telescope": "TELCODE"}
+    _trivialMap = {"foobar": "BAZ",
+                   "telescope": "TELCODE"}
 
     _constMap = {"format": "HDF5"}
 

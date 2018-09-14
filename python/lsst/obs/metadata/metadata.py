@@ -49,7 +49,7 @@ class MetadataMeta(type):
         return translator
 
     @staticmethod
-    def _makeUnitMapping(standardKey, fitsKey):
+    def _makeTrivialMapping(standardKey, fitsKey):
         def translator(header):
             return header[fitsKey]
         translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
@@ -73,8 +73,8 @@ class MetadataMeta(type):
         if hasattr(self, "name") and self.name is not None:
             MetadataTranslator.translators[self.name] = self
 
-        for standardKey, fitsKey in self._unitMap.items():
-            translator = self._makeUnitMapping(standardKey, fitsKey)
+        for standardKey, fitsKey in self._trivialMap.items():
+            translator = self._makeTrivialMapping(standardKey, fitsKey)
             setattr(self, f"to_{standardKey}", staticmethod(translator))
 
         for standardKey, constant in self._constMap.items():
@@ -85,7 +85,7 @@ class MetadataMeta(type):
 class MetadataTranslator(metaclass=MetadataMeta):
     """Per-instrument metadata translation support"""
 
-    _unitMap = {}
+    _trivialMap = {}
     """Dict of one-to-one mappings for header translation from standard
     property to corresponding FITS keyword."""
 
