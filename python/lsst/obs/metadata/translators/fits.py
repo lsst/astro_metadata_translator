@@ -22,7 +22,7 @@
 """Metadata translation code for standard FITS headers"""
 from astropy.time import Time
 
-from ..metadata import MetadataTranslator
+from ..translator import MetadataTranslator
 
 
 class FitsTranslator(MetadataTranslator):

@@ -21,6 +21,8 @@
 
 """Classes and support code for metadata translation"""
 
+__all__ = ("MetadataTranslator",)
+
 from abc import abstractmethod
 import logging
 
@@ -138,58 +140,3 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 return trans
         else:
             raise ValueError("None of the registered translation classes understood this header")
-
-
-class VisitInfo:
-    """Standardized representation of an instrument FITS header.
-
-    Parameters
-    ----------
-    header : `dict`-like
-        Representation of an instrument FITS header accessible as a `dict`.
-    translator : `MetadataTranslator`-class, `optional`
-        If not `None`, the class to use to translate the supplied headers
-        into standard form. Otherwise each registered translator class will
-        be asked in turn if it knows how to translate the supplied header.
-
-    Raises
-    ------
-    ValueError
-        The supplied header was not recognized by any of the registered
-        translators.
-    """
-
-    def __init__(self, header, translator=None):
-        if translator is None:
-            translator = MetadataTranslator.determineTranslator(header)
-
-        # Loop over each translation (not final form -- this should be
-        # defined in one place and consistent with translation classes)
-        translations = ("telescope", "instrument", "datetime_begin", "datetime_end")
-        for t in translations:
-            # prototype code
-            method = f"to_{t}"
-            property = f"_{t}"
-
-            try:
-                print(f"Assigning {property} via {method}")
-                setattr(self, property, getattr(translator, method)(header))
-            except (AttributeError, KeyError):
-                # For now assign None
-                setattr(self, property, None)
-
-    @property
-    def datetime_begin(self):
-        return self._datetime_begin
-
-    @property
-    def datetime_end(self):
-        return self._datetime_end
-
-    @property
-    def instrument(self):
-        return self._instrument
-
-    @property
-    def telescope(self):
-        return self._telescope
