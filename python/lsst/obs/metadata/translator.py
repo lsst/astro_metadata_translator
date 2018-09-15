@@ -34,7 +34,7 @@ class MetadataMeta(type):
 
     @staticmethod
     def _makeConstMapping(standardKey, constant):
-        def translator(header):
+        def translator(cls, header):
             return constant
         translator.__doc__ = f"""Returns constant value for '{standardKey}' property
 
@@ -52,7 +52,7 @@ class MetadataMeta(type):
 
     @staticmethod
     def _makeTrivialMapping(standardKey, fitsKey):
-        def translator(header):
+        def translator(cls, header):
             return header[fitsKey]
         translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
 
@@ -77,11 +77,11 @@ class MetadataMeta(type):
 
         for standardKey, fitsKey in self._trivialMap.items():
             translator = self._makeTrivialMapping(standardKey, fitsKey)
-            setattr(self, f"to_{standardKey}", staticmethod(translator))
+            setattr(self, f"to_{standardKey}", classmethod(translator))
 
         for standardKey, constant in self._constMap.items():
             translator = self._makeConstMapping(standardKey, constant)
-            setattr(self, f"to_{standardKey}", staticmethod(translator))
+            setattr(self, f"to_{standardKey}", classmethod(translator))
 
 
 class MetadataTranslator(metaclass=MetadataMeta):

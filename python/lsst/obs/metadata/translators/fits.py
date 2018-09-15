@@ -89,8 +89,8 @@ class FitsTranslator(MetadataTranslator):
             scale = "utc"
         return Time(header[dateKey], format="isot", scale=scale)
 
-    @staticmethod
-    def to_datetime_begin(header):
+    @classmethod
+    def to_datetime_begin(cls, header):
         """Calculate start time of observation.
 
         Uses FITS standard ``DATE-OBS`` and ``TIMESYS`` headers.
@@ -107,8 +107,8 @@ class FitsTranslator(MetadataTranslator):
         """
         return FitsTranslator._from_fits_date(header, "DATE-OBS")
 
-    @staticmethod
-    def to_datetime_end(header):
+    @classmethod
+    def to_datetime_end(cls, header):
         """Calculate end time of observation.
 
         Uses FITS standard ``DATE-END`` and ``TIMESYS`` headers.
