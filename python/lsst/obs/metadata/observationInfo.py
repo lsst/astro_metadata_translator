@@ -50,16 +50,35 @@ class ObservationInfo:
         translators.
     """
 
+    _PROPERTIES = {"telescope": ("Full name of the telescope", "str"),
+                   "instrument": ("The instrument used to observe the Exposure", "str"),
+                   "exposure": ("Unique (with instrument) integer identifier for this Exposure", "int"),
+                   "visit": ("""ID of the Visit this Exposure is associated with.
+
+    Science observations should essentially always be
+    associated with a visit, but calibration observations
+    may not be.""", "int"),
+                   "abstract_filter": ("Generic name of this filter", "str"),
+                   "physical_filter": ("The bandpass filter used for all exposures in this Visit.", "str"),
+                   "snap": ("If visit is not null, the index of this Exposure in the Visit,"
+                            "starting from zero.", "int"),
+                   "datetime_begin": ("Timestamp of the start of the Exposure.", "astropy.time.Time"),
+                   "datetime_end": ("Timestamp of the end of the Exposure.", "astropy.time.Time"),
+                   "exposure_time": ("Duration of the Exposure with shutter open (seconds).", "float"),
+                   "dark_time": ("Duration of the Exposure with shutter closed (seconds).", "float"),
+                   "obsid": ("Unique observation identifier", "str")}
+
+    """All the properties supported by this class with associated
+    documentation."""
+
     def __init__(self, header, translator=None):
         if translator is None:
             translator = MetadataTranslator.determineTranslator(header)
 
         # Loop over each translation (not final form -- this should be
         # defined in one place and consistent with translation classes)
-        translations = ("telescope", "instrument", "exposure", "visit", "physical_filter",
-                        "snap", "datetime_begin", "datetime_end", "exposure_time",
-                        "dark_time")
-        for t in translations:
+
+        for t in self._PROPERTIES:
             # prototype code
             method = f"to_{t}"
             property = f"_{t}"
@@ -71,18 +90,22 @@ class ObservationInfo:
                 # For now assign None
                 setattr(self, property, None)
 
-    @property
-    def datetime_begin(self):
-        return self._datetime_begin
 
-    @property
-    def datetime_end(self):
-        return self._datetime_end
+# Dynamically add the standard properties
+def _makeProperty(property, doc, return_type):
+    def getter(self):
+        return getattr(self, f"_{property}")
 
-    @property
-    def instrument(self):
-        return self._instrument
+    getter.__doc__ = f"""{doc}
 
-    @property
-    def telescope(self):
-        return self._telescope
+    Returns
+    -------
+    {property} : `{return_type}`
+        Access the property.
+    """
+    return getter
+
+
+for p, d in ObservationInfo._PROPERTIES.items():
+    setattr(ObservationInfo, f"_{p}", None)
+    setattr(ObservationInfo, p, property(_makeProperty(p, *d)))
