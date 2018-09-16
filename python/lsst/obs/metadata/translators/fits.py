@@ -64,11 +64,32 @@ class FitsTranslator(MetadataTranslator):
 
         return cls.to_instrument(header) == cls.supportedInstrument
 
-    @staticmethod
-    def _from_fits_date(header, dateKey):
+    @classmethod
+    def _from_fits_date_string(cls, dateStr, scale='utc'):
+        """Parse standard FITS ISO-style date string and return time object
+
+        Parameters
+        ----------
+        dateStr : `str`
+            FITS format date string to convert to standard form. Bypasses
+            lookup in the header.
+        scale : `str`, optional
+            Override the time scale from the TIMESYS header. Defaults to
+            UTC.
+
+        Returns
+        -------
+        date : `astropy.time.Time`
+            `~astropy.time.Time` representation of the date.
+        """
+        return Time(dateStr, format="isot", scale=scale)
+
+    @classmethod
+    def _from_fits_date(cls, header, dateKey):
         """Calculate a date object from the named FITS header
 
-        Uses the TIMESYS header if present to determine the time scale.
+        Uses the TIMESYS header if present to determine the time scale,
+        defaulting to UTC.
 
         Parameters
         ----------
@@ -87,7 +108,8 @@ class FitsTranslator(MetadataTranslator):
             scale = header["TIMESYS"].lower()
         else:
             scale = "utc"
-        return Time(header[dateKey], format="isot", scale=scale)
+        dateStr = header[dateKey]
+        return cls._from_fits_date_string(dateStr, scale=scale)
 
     @classmethod
     def to_datetime_begin(cls, header):
