@@ -62,7 +62,14 @@ class FitsTranslator(MetadataTranslator):
         if cls.supportedInstrument is None:
             return False
 
-        return cls.to_instrument(header) == cls.supportedInstrument
+        # Protect against being able to always find a standard
+        # header for instrument
+        try:
+            instrument = cls.to_instrument(header)
+        except KeyError:
+            return False
+
+        return instrument == cls.supportedInstrument
 
     @classmethod
     def _from_fits_date_string(cls, dateStr, scale='utc'):
