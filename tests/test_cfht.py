@@ -19,6 +19,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .fits import *
-from .decam import *
-from .megaprime import *
+import unittest
+
+from helper import readTestFile
+from lsst.obs.metadata import ObservationInfo
+
+
+class MegaPrimeTestCase(unittest.TestCase):
+
+    def testMegaPrimeTranslator(self):
+        header = readTestFile("fitsheader-megaprime.yaml")
+        v1 = ObservationInfo(header)
+        self.assertEqual(v1.instrument, "MegaPrime")
+        self.assertEqual(v1.telescope, "CFHT 3.6m")
+        self.assertEqual(v1.abstract_filter, "i")
+
+
+if __name__ == "__main__":
+    unittest.main()
