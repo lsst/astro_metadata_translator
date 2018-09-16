@@ -72,7 +72,7 @@ class FitsTranslator(MetadataTranslator):
         return instrument == cls.supportedInstrument
 
     @classmethod
-    def _from_fits_date_string(cls, dateStr, scale='utc'):
+    def _from_fits_date_string(cls, dateStr, scale='utc', timeStr=None):
         """Parse standard FITS ISO-style date string and return time object
 
         Parameters
@@ -83,12 +83,19 @@ class FitsTranslator(MetadataTranslator):
         scale : `str`, optional
             Override the time scale from the TIMESYS header. Defaults to
             UTC.
+        timeStr : `str`, optional
+            If provided, overrides any time component in the ``dateStr``,
+            retaining the YYYY-MM-DD component and appending this time
+            string, assumed to be of format HH:MM::SS.ss.
 
         Returns
         -------
         date : `astropy.time.Time`
             `~astropy.time.Time` representation of the date.
         """
+        if timeStr is not None:
+            dateStr = "{}T{}".format(dateStr[:10], timeStr)
+
         return Time(dateStr, format="isot", scale=scale)
 
     @classmethod

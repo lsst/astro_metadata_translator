@@ -62,14 +62,10 @@ class MegaPrimeTranslator(FitsTranslator):
 
     @classmethod
     def to_datetime_begin(cls, header):
-        # Form the FITS string and use the standard parser
-        fitsStr = header["DATE-OBS"] + "T" + header["UTC-OBS"]
         # We know it is UTC
-        return cls._from_fits_date_string(fitsStr, scale="utc")
+        return cls._from_fits_date_string(header["DATE-OBS"], timeStr=header["UTC-OBS"], scale="utc")
 
     @classmethod
     def to_datetime_end(cls, header):
-        # Form the FITS string and use the standard parser
-        fitsStr = header["DATE-OBS"] + "T" + header["UTCEND"]
         # We know it is UTC
-        return cls._from_fits_date_string(fitsStr, scale="utc")
+        return cls._from_fits_date_string(header["DATE-OBS"], timeStr=header["UTCEND"], scale="utc")
