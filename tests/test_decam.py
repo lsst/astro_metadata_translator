@@ -19,22 +19,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import unittest
-import yaml
 
-import helper  # noqa: F401 enable YAML
+from helper import readTestFile
 from lsst.obs.metadata import ObservationInfo
-
-TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class DecamTestCase(unittest.TestCase):
 
     def testDecamTranslator(self):
-        with open(os.path.join(TESTDIR, "data", "fitsheader-decam.yaml")) as fd:
-            header = yaml.load(fd)
-
+        header = readTestFile("fitsheader-decam.yaml")
         v1 = ObservationInfo(header)
         self.assertEqual(v1.instrument, "DECam")
         self.assertEqual(v1.telescope, "CTIO 4.0-m telescope")

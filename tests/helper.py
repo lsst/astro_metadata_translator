@@ -19,8 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import yaml
 from collections import OrderedDict
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def pl_constructor(loader, node):
@@ -40,3 +43,21 @@ def pl_constructor(loader, node):
 
 
 yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
+
+
+def readTestFile(filename):
+    """Read the named test file relative to the location of this helper
+
+    Parameters
+    ----------
+    filename : `str`
+        Name of file in the data directory.
+
+    Returns
+    -------
+    header : `dict`-like
+        Header read from file.
+    """
+    with open(os.path.join(TESTDIR, "data", filename)) as fd:
+        header = yaml.load(fd)
+    return header
