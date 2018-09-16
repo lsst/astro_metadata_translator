@@ -19,5 +19,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .fits import *
-from .decam import *
+import yaml
+from collections import OrderedDict
+
+
+def pl_constructor(loader, node):
+    """Construct an OrderedDict from a YAML file containing a PropertyList."""
+    pl = OrderedDict()
+    yield pl
+    state = loader.construct_sequence(node, deep=True)
+    for key, dtype, value, comment in state:
+        if dtype == "Double":
+            pl[key] = float(value)
+        elif dtype == "Int":
+            pl[key] = int(value)
+        elif dtype == "Bool":
+            pl[key] = True if value == "true" else False
+        else:
+            pl[key] = value
+
+
+yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)

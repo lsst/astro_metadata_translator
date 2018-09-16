@@ -84,7 +84,7 @@ class FitsTranslator(MetadataTranslator):
             `~astropy.time.Time` representation of the date.
         """
         if "TIMESYS" in header:
-            scale = header["TIMESYS"]
+            scale = header["TIMESYS"].lower()
         else:
             scale = "utc"
         return Time(header[dateKey], format="isot", scale=scale)
