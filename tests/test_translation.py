@@ -25,7 +25,7 @@ from astropy.time import Time
 from lsst.obs.metadata import FitsTranslator, ObservationInfo
 
 
-class TestTranslator(FitsTranslator):
+class InstrumentTestTranslator(FitsTranslator):
 
     # Needs a name to be registered
     name = "TestTranslator"
@@ -54,26 +54,28 @@ class BasicTestCase(unittest.TestCase):
     def testBasicManualTranslation(self):
 
         header = self.header
+        translator = FitsTranslator(header)
 
         # Treat the header as standard FITS
         self.assertFalse(FitsTranslator.canTranslate(header))
-        self.assertEqual(FitsTranslator.to_telescope(header), "JCMT")
-        self.assertEqual(FitsTranslator.to_instrument(header), "SCUBA_test")
-        self.assertEqual(FitsTranslator.to_datetime_begin(header),
+        self.assertEqual(translator.to_telescope(), "JCMT")
+        self.assertEqual(translator.to_instrument(), "SCUBA_test")
+        self.assertEqual(translator.to_datetime_begin(),
                          Time(header["DATE-OBS"], format="isot"))
 
         # Use the special test translator instead
-        self.assertTrue(TestTranslator.canTranslate(header))
-        self.assertEqual(TestTranslator.to_telescope(header), "LSST")
-        self.assertEqual(TestTranslator.to_instrument(header), "SCUBA_test")
-        self.assertEqual(TestTranslator.to_format(header), "HDF5")
-        self.assertEqual(TestTranslator.to_foobar(header), "bar")
+        translator = InstrumentTestTranslator(header)
+        self.assertTrue(InstrumentTestTranslator.canTranslate(header))
+        self.assertEqual(translator.to_telescope(), "LSST")
+        self.assertEqual(translator.to_instrument(), "SCUBA_test")
+        self.assertEqual(translator.to_format(), "HDF5")
+        self.assertEqual(translator.to_foobar(), "bar")
 
     def testBasicTranslator(self):
         header = self.header
 
         # Specify a translation class
-        v1 = ObservationInfo(header, translator=TestTranslator)
+        v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
 

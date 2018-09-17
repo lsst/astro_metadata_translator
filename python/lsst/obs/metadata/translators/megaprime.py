@@ -49,23 +49,21 @@ class MegaPrimeTranslator(FitsTranslator):
     supportedInstrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
 
-    @classmethod
-    def to_physical_filter(cls, header):
-        return header["FILTER"]
+    def to_physical_filter(self):
+        return self._header["FILTER"]
 
-    @classmethod
-    def to_abstract_filter(cls, header):
-        physical = cls.to_physical_filter(header)
+    def to_abstract_filter(self):
+        physical = self.to_physical_filter()
         if physical in filters:
             return filters[physical][0]
         return None
 
-    @classmethod
-    def to_datetime_begin(cls, header):
+    def to_datetime_begin(self):
         # We know it is UTC
-        return cls._from_fits_date_string(header["DATE-OBS"], timeStr=header["UTC-OBS"], scale="utc")
+        return self._from_fits_date_string(self._header["DATE-OBS"],
+                                           timeStr=self._header["UTC-OBS"], scale="utc")
 
-    @classmethod
-    def to_datetime_end(cls, header):
+    def to_datetime_end(self):
         # We know it is UTC
-        return cls._from_fits_date_string(header["DATE-OBS"], timeStr=header["UTCEND"], scale="utc")
+        return self._from_fits_date_string(self._header["DATE-OBS"],
+                                           timeStr=self._header["UTCEND"], scale="utc")

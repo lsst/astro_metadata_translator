@@ -38,7 +38,7 @@ class ObservationInfo:
     ----------
     header : `dict`-like
         Representation of an instrument FITS header accessible as a `dict`.
-    translator : `MetadataTranslator`-class, `optional`
+    translator_class : `MetadataTranslator`-class, `optional`
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
         be asked in turn if it knows how to translate the supplied header.
@@ -48,6 +48,8 @@ class ObservationInfo:
     ValueError
         The supplied header was not recognized by any of the registered
         translators.
+    TypeError
+        The supplied translator class was not a MetadataTranslator.
     """
 
     _PROPERTIES = {"telescope": ("Full name of the telescope", "str"),
@@ -71,9 +73,14 @@ class ObservationInfo:
     """All the properties supported by this class with associated
     documentation."""
 
-    def __init__(self, header, translator=None):
-        if translator is None:
-            translator = MetadataTranslator.determineTranslator(header)
+    def __init__(self, header, translator_class=None):
+        if translator_class is None:
+            translator_class = MetadataTranslator.determineTranslator(header)
+        elif not issubclass(translator_class, MetadataTranslator):
+            raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
+
+        # Create an instance for this header
+        translator = translator_class(header)
 
         # Loop over each translation (not final form -- this should be
         # defined in one place and consistent with translation classes)
@@ -85,7 +92,7 @@ class ObservationInfo:
 
             try:
                 print(f"Assigning {property} via {method}")
-                setattr(self, property, getattr(translator, method)(header))
+                setattr(self, property, getattr(translator, method)())
             except (AttributeError, KeyError):
                 # For now assign None
                 setattr(self, property, None)

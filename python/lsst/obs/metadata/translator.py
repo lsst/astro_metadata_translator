@@ -34,32 +34,22 @@ class MetadataMeta(type):
 
     @staticmethod
     def _makeConstMapping(standardKey, constant):
-        def translator(cls, header):
+        def constant_translator(self):
             return constant
-        translator.__doc__ = f"""Returns constant value for '{standardKey}' property
-
-        Parameters
-        ----------
-        header : `dict`-like
-            Header values representing a FITS header.
+        constant_translator.__doc__ = f"""Returns constant value for '{standardKey}' property
 
         Returns
         -------
         translation : `{type(constant).__name__}`
             Always returns {constant!r}.
         """
-        return translator
+        return constant_translator
 
     @staticmethod
     def _makeTrivialMapping(standardKey, fitsKey):
-        def translator(cls, header):
-            return header[fitsKey]
-        translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
-
-        Parameters
-        ----------
-        header : `dict`-like
-            Header values representing a FITS header.
+        def trivial_translator(self):
+            return self._header[fitsKey]
+        trivial_translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
 
         Returns
         -------
@@ -67,7 +57,7 @@ class MetadataMeta(type):
             Translated header value derived directly from the {fitsKey}
             header value.
         """
-        return translator
+        return trivial_translator
 
     def __init__(self, name, bases, dct):
         super().__init__(name, bases, dct)
@@ -77,15 +67,22 @@ class MetadataMeta(type):
 
         for standardKey, fitsKey in self._trivialMap.items():
             translator = self._makeTrivialMapping(standardKey, fitsKey)
-            setattr(self, f"to_{standardKey}", classmethod(translator))
+            setattr(self, f"to_{standardKey}", translator)
 
         for standardKey, constant in self._constMap.items():
             translator = self._makeConstMapping(standardKey, constant)
-            setattr(self, f"to_{standardKey}", classmethod(translator))
+            setattr(self, f"to_{standardKey}", translator)
 
 
 class MetadataTranslator(metaclass=MetadataMeta):
-    """Per-instrument metadata translation support"""
+    """Per-instrument metadata translation support
+
+    Parameters
+    ----------
+    header : `dict`-like
+        Representation of an instrument FITS header that can be manipulated
+        as if it was a `dict`.
+    """
 
     _trivialMap = {}
     """Dict of one-to-one mappings for header translation from standard
@@ -99,6 +96,9 @@ class MetadataTranslator(metaclass=MetadataMeta):
 
     supportedInstrument = None
     """Name of instrument understood by this translation class."""
+
+    def __init__(self, header):
+        self._header = header
 
     @classmethod
     @abstractmethod

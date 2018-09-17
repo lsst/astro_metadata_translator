@@ -43,29 +43,21 @@ class DecamTranslator(FitsTranslator):
                    "obsid": "OBSID",
                    "visit": "EXPNUM"}
 
-    @classmethod
-    def to_datetime_end(cls, header):
-        return FitsTranslator._from_fits_date(header, "DTUTC")
+    def to_datetime_end(self):
+        return self._from_fits_date("DTUTC")
 
-    @classmethod
-    def _translateFromCalibId(cls, field, header):
+    def _translateFromCalibId(self, field):
         """Fetch the ID from the CALIB_ID header.
 
         Calibration products made with constructCalibs have some metadata
         saved in its FITS header CALIB_ID.
         """
-        data = header["CALIB_ID"]
+        data = self._header["CALIB_ID"]
         match = re.search(".*%s=(\S+)" % field, data)
         return match.groups()[0]
 
-    @classmethod
-    def to_abstract_filter(cls, header):
+    def to_abstract_filter(self):
         """Calculate the abstract filter.
-
-        Parameters
-        ----------
-        header : `dict`-like
-            Representation of the FITS header.
 
         Returns
         -------
@@ -75,32 +67,26 @@ class DecamTranslator(FitsTranslator):
         """
         # The abstract filter can be derived from the first word in the
         # physical filter description
-        physical = cls.to_physical_filter(header)
+        physical = self.to_physical_filter()
         if physical:
             return physical.split()[0]
 
-    @classmethod
-    def to_physical_filter(cls, header):
+    def to_physical_filter(self):
         """Calculate physical filter.
 
         Return `None` if the keyword FILTER does not exist in the header,
         which can happen for some valid Community Pipeline products.
-
-        Parameters
-        ----------
-        header : `dict`-like
-            Representation of the FITS header.
 
         Returns
         -------
         filter : `str`
             The full filter name.
         """
-        if "FILTER" in header:
-            if "OBSTYPE" in header and "zero" in header["OBSTYPE"].strip().lower():
+        if "FILTER" in self._header:
+            if "OBSTYPE" in self._header and "zero" in self._header["OBSTYPE"].strip().lower():
                 return "NONE"
-            return header["FILTER"].strip()
-        elif "CALIB_ID" in header:
-            return cls._translateFromCalibId("filter", header)
+            return self._header["FILTER"].strip()
+        elif "CALIB_ID" in self._header:
+            return self._translateFromCalibId("filter")
         else:
             return None

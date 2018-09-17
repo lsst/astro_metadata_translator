@@ -65,7 +65,8 @@ class FitsTranslator(MetadataTranslator):
         # Protect against being able to always find a standard
         # header for instrument
         try:
-            instrument = cls.to_instrument(header)
+            translator = cls(header)
+            instrument = translator.to_instrument()
         except KeyError:
             return False
 
@@ -98,8 +99,7 @@ class FitsTranslator(MetadataTranslator):
 
         return Time(dateStr, format="isot", scale=scale)
 
-    @classmethod
-    def _from_fits_date(cls, header, dateKey):
+    def _from_fits_date(self, dateKey):
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
@@ -107,8 +107,6 @@ class FitsTranslator(MetadataTranslator):
 
         Parameters
         ----------
-        header : `dict`-like
-            A `dict` representing a FITS-like header.
         dateKey : `str`
             The key in the header representing a standard FITS
             ISO-style date.
@@ -118,45 +116,33 @@ class FitsTranslator(MetadataTranslator):
         date : `astropy.time.Time`
             `~astropy.time.Time` representation of the date.
         """
-        if "TIMESYS" in header:
-            scale = header["TIMESYS"].lower()
+        if "TIMESYS" in self._header:
+            scale = self._header["TIMESYS"].lower()
         else:
             scale = "utc"
-        dateStr = header[dateKey]
-        return cls._from_fits_date_string(dateStr, scale=scale)
+        dateStr = self._header[dateKey]
+        return self._from_fits_date_string(dateStr, scale=scale)
 
-    @classmethod
-    def to_datetime_begin(cls, header):
+    def to_datetime_begin(self):
         """Calculate start time of observation.
 
         Uses FITS standard ``DATE-OBS`` and ``TIMESYS`` headers.
-
-        Parameters
-        ----------
-        header : `dict`-like
-            Header values representing a FITS header.
 
         Returns
         -------
         start_time : `astropy.time.Time`
             Time corresponding to the start of the observation.
         """
-        return FitsTranslator._from_fits_date(header, "DATE-OBS")
+        return self._from_fits_date("DATE-OBS")
 
-    @classmethod
-    def to_datetime_end(cls, header):
+    def to_datetime_end(self):
         """Calculate end time of observation.
 
         Uses FITS standard ``DATE-END`` and ``TIMESYS`` headers.
-
-        Parameters
-        ----------
-        header : `dict`-like
-            Header values representing a FITS header.
 
         Returns
         -------
         start_time : `astropy.time.Time`
             Time corresponding to the end of the observation.
         """
-        return FitsTranslator._from_fits_date(header, "DATE-END")
+        return self._from_fits_date("DATE-END")

@@ -67,19 +67,18 @@ class HscTranslator(FitsTranslator):
                     return True
         return False
 
-    @classmethod
-    def to_datetime_begin(cls, header):
+    def to_datetime_begin(self):
         # We know it is UTC
-        return cls._from_fits_date_string(header["DATE-OBS"], timeStr=header["UT"], scale="utc")
+        return self._from_fits_date_string(self._header["DATE-OBS"],
+                                           timeStr=self._header["UT"], scale="utc")
 
-    @classmethod
-    def to_datetime_end(cls, header):
+    def to_datetime_end(self):
         # We know it is UTC
-        return cls._from_fits_date_string(header["DATE-OBS"], timeStr=header["UT-END"], scale="utc")
+        return self._from_fits_date_string(self._header["DATE-OBS"],
+                                           timeStr=self._header["UT-END"], scale="utc")
 
-    @classmethod
-    def to_abstract_filter(cls, header):
-        physical = cls.to_physical_filter(header)
+    def to_abstract_filter(self):
+        physical = self.to_physical_filter()
         if physical.startswith("HSC-"):
             return physical[4:]
         return None
