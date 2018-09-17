@@ -49,8 +49,7 @@ class MegaPrimeTranslator(FitsTranslator):
     supportedInstrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
 
-    def to_physical_filter(self):
-        return self._header["FILTER"]
+    _trivialMap = {"physical_filter": "FILTER"}
 
     def to_abstract_filter(self):
         physical = self.to_physical_filter()
@@ -60,10 +59,14 @@ class MegaPrimeTranslator(FitsTranslator):
 
     def to_datetime_begin(self):
         # We know it is UTC
-        return self._from_fits_date_string(self._header["DATE-OBS"],
-                                           timeStr=self._header["UTC-OBS"], scale="utc")
+        value = self._from_fits_date_string(self._header["DATE-OBS"],
+                                            timeStr=self._header["UTC-OBS"], scale="utc")
+        self._used_these_cards("DATE-OBS", "UTC-OBS")
+        return value
 
     def to_datetime_end(self):
         # We know it is UTC
-        return self._from_fits_date_string(self._header["DATE-OBS"],
-                                           timeStr=self._header["UTCEND"], scale="utc")
+        value = self._from_fits_date_string(self._header["DATE-OBS"],
+                                            timeStr=self._header["UTCEND"], scale="utc")
+        self._used_these_cards("DATE-OBS", "UTCEND")
+        return value

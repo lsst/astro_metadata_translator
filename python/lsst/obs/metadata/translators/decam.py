@@ -54,6 +54,7 @@ class DecamTranslator(FitsTranslator):
         """
         data = self._header["CALIB_ID"]
         match = re.search(".*%s=(\S+)" % field, data)
+        self._used_these_cards("CALIB_ID")
         return match.groups()[0]
 
     def to_abstract_filter(self):
@@ -85,7 +86,9 @@ class DecamTranslator(FitsTranslator):
         if "FILTER" in self._header:
             if "OBSTYPE" in self._header and "zero" in self._header["OBSTYPE"].strip().lower():
                 return "NONE"
-            return self._header["FILTER"].strip()
+            value = self._header["FILTER"].strip()
+            self._used_these_cards("FILTER")
+            return value
         elif "CALIB_ID" in self._header:
             return self._translateFromCalibId("filter")
         else:

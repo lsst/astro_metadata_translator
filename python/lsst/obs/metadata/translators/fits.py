@@ -116,12 +116,16 @@ class FitsTranslator(MetadataTranslator):
         date : `astropy.time.Time`
             `~astropy.time.Time` representation of the date.
         """
+        used = [dateKey, ]
         if "TIMESYS" in self._header:
             scale = self._header["TIMESYS"].lower()
+            used.append("TIMESYS")
         else:
             scale = "utc"
         dateStr = self._header[dateKey]
-        return self._from_fits_date_string(dateStr, scale=scale)
+        value = self._from_fits_date_string(dateStr, scale=scale)
+        self._used_these_cards(*used)
+        return value
 
     def to_datetime_begin(self):
         """Calculate start time of observation.

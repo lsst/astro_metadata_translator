@@ -48,7 +48,9 @@ class MetadataMeta(type):
     @staticmethod
     def _makeTrivialMapping(standardKey, fitsKey):
         def trivial_translator(self):
-            return self._header[fitsKey]
+            value = self._header[fitsKey]
+            self._used_these_cards(fitsKey)
+            return value
         trivial_translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
 
         Returns
@@ -99,6 +101,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
 
     def __init__(self, header):
         self._header = header
+        self._used_cards = set()
 
     @classmethod
     @abstractmethod
@@ -140,3 +143,13 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 return trans
         else:
             raise ValueError("None of the registered translation classes understood this header")
+
+    def _used_these_cards(self, *args):
+        """Indicate that the supplied cards have been used for translation.
+
+        Parameters
+        ----------
+        args : sequence of `str`
+            Keywords used to process a translation.
+        """
+        self._used_cards.update(set(args))

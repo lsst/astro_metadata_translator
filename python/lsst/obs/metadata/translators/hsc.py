@@ -69,13 +69,17 @@ class HscTranslator(FitsTranslator):
 
     def to_datetime_begin(self):
         # We know it is UTC
-        return self._from_fits_date_string(self._header["DATE-OBS"],
-                                           timeStr=self._header["UT"], scale="utc")
+        value = self._from_fits_date_string(self._header["DATE-OBS"],
+                                            timeStr=self._header["UT"], scale="utc")
+        self._used_these_cards("DATE-OBS", "UT")
+        return value
 
     def to_datetime_end(self):
         # We know it is UTC
-        return self._from_fits_date_string(self._header["DATE-OBS"],
-                                           timeStr=self._header["UT-END"], scale="utc")
+        value = self._from_fits_date_string(self._header["DATE-OBS"],
+                                            timeStr=self._header["UT-END"], scale="utc")
+        self._used_these_cards("DATE-OBS", "UT-END")
+        return value
 
     def to_abstract_filter(self):
         physical = self.to_physical_filter()
