@@ -1,6 +1,7 @@
 setupRequired(scons)
 setupRequired(sconsUtils)
-setupOptional(daf_base)
+setupRequired(pyyaml)
+setupRequired(astropy)
 
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
