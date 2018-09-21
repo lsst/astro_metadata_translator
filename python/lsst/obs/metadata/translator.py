@@ -61,19 +61,19 @@ class MetadataMeta(type):
         """
         return trivial_translator
 
-    def __init__(self, name, bases, dct):
+    def __init__(cls, name, bases, dct):
         super().__init__(name, bases, dct)
 
-        if hasattr(self, "name") and self.name is not None:
-            MetadataTranslator.translators[self.name] = self
+        if hasattr(cls, "name") and cls.name is not None:
+            MetadataTranslator.translators[cls.name] = cls
 
-        for standardKey, fitsKey in self._trivialMap.items():
-            translator = self._makeTrivialMapping(standardKey, fitsKey)
-            setattr(self, f"to_{standardKey}", translator)
+        for standardKey, fitsKey in cls._trivialMap.items():
+            translator = cls._makeTrivialMapping(standardKey, fitsKey)
+            setattr(cls, f"to_{standardKey}", translator)
 
-        for standardKey, constant in self._constMap.items():
-            translator = self._makeConstMapping(standardKey, constant)
-            setattr(self, f"to_{standardKey}", translator)
+        for standardKey, constant in cls._constMap.items():
+            translator = cls._makeConstMapping(standardKey, constant)
+            setattr(cls, f"to_{standardKey}", translator)
 
 
 class MetadataTranslator(metaclass=MetadataMeta):
