@@ -23,3 +23,4 @@ from .fits import *
 from .decam import *
 from .hsc import *
 from .megaprime import *
+from .hsc import *
