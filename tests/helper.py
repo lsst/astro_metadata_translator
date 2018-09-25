@@ -23,6 +23,13 @@ import os
 import yaml
 from collections import OrderedDict
 
+# PropertyList is optional
+try:
+    import lsst.daf.base as dafBase
+except ImportError:
+    dafBase = None
+
+
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -42,7 +49,8 @@ def pl_constructor(loader, node):
             pl[key] = value
 
 
-yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
+if dafBase is None:
+    yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
 
 
 def readTestFile(filename):
