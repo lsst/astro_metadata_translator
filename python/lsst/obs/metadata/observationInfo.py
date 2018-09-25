@@ -74,6 +74,10 @@ class ObservationInfo:
     documentation."""
 
     def __init__(self, header, translator_class=None):
+        # for now PropertyList is not dict-like so workaround this
+        if hasattr(header, "toOrderedDict"):
+            header = header.toOrderedDict()
+
         if translator_class is None:
             translator_class = MetadataTranslator.determineTranslator(header)
         elif not issubclass(translator_class, MetadataTranslator):
