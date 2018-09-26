@@ -105,9 +105,12 @@ class ObservationInfo:
             try:
                 print(f"Assigning {property} via {method}")
                 setattr(self, property, getattr(translator, method)())
-            except (AttributeError, KeyError):
-                # For now assign None
-                setattr(self, property, None)
+            except AttributeError:
+                log.warning("No translation exists for property %s using translator %s",
+                            t, translator.__class__)
+            except KeyError:
+                log.warning("Error calculating property %s using translator %s",
+                            t, translator.__class__, exc_info=1)
 
     def strippedHeader(self):
         """Return a copy of the supplied header with used keywords removed.
