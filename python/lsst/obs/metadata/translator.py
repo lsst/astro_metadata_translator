@@ -153,3 +153,13 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Keywords used to process a translation.
         """
         self._used_cards.update(set(args))
+
+    def cards_used(self):
+        """Cards used during metadata extraction.
+
+        Returns
+        -------
+        used : `frozenset`
+            Cards used when extracting metadata.
+        """
+        return frozenset(self._used_cards)

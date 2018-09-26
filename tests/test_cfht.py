@@ -34,6 +34,12 @@ class MegaPrimeTestCase(unittest.TestCase):
         self.assertEqual(v1.telescope, "CFHT 3.6m")
         self.assertEqual(v1.abstract_filter, "i")
 
+        # Check that headers have been removed
+        newHdr = v1.strippedHeader()
+        self.assertNotIn("INSTRUME", newHdr)
+        self.assertNotIn("TELESCOP", newHdr)
+        self.assertIn("CCD", newHdr)
+
 
 if __name__ == "__main__":
     unittest.main()

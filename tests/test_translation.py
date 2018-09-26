@@ -85,6 +85,11 @@ class BasicTestCase(unittest.TestCase):
         self.assertEqual(v1.telescope, "LSST")
         print(v1.__dict__)
 
+        # Check that headers have been removed
+        newHdr = v1.strippedHeader()
+        self.assertNotIn("INSTRUME", newHdr)
+        self.assertIn("TELESCOP", newHdr)
+
 
 if __name__ == "__main__":
     unittest.main()

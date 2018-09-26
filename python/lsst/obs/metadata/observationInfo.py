@@ -24,6 +24,7 @@
 __all__ = ("ObservationInfo", )
 
 import logging
+import copy
 
 from .translator import MetadataTranslator
 
@@ -74,6 +75,10 @@ class ObservationInfo:
     documentation."""
 
     def __init__(self, header, translator_class=None):
+
+        # Store the supplied header for later stripping
+        self._header = header
+
         # for now PropertyList is not dict-like so workaround this
         if hasattr(header, "toOrderedDict"):
             header = header.toOrderedDict()
@@ -85,6 +90,9 @@ class ObservationInfo:
 
         # Create an instance for this header
         translator = translator_class(header)
+
+        # Store the translator
+        self._translator = translator
 
         # Loop over each translation (not final form -- this should be
         # defined in one place and consistent with translation classes)
@@ -100,6 +108,21 @@ class ObservationInfo:
             except (AttributeError, KeyError):
                 # For now assign None
                 setattr(self, property, None)
+
+    def strippedHeader(self):
+        """Return a copy of the supplied header with used keywords removed.
+
+        Returns
+        -------
+        stripped : `dict`-like
+            Same class as header supplied to constructor, but with the
+            headers used to calculate the generic information removed.
+        """
+        hdr = copy.copy(self._header)
+        used = self._translator.cards_used()
+        for c in used:
+            del hdr[c]
+        return hdr
 
 
 # Dynamically add the standard properties
