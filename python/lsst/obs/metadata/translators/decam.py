@@ -44,6 +44,7 @@ class DecamTranslator(FitsTranslator):
                    "dark_time": "DARKTIME",
                    "boresight_airmass": "AIRMASS",
                    "obsid": "OBSID",
+                   "exposure": "EXPNUM",
                    "visit": "EXPNUM"}
 
     def to_datetime_end(self):

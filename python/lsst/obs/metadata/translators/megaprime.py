@@ -55,6 +55,8 @@ class MegaPrimeTranslator(FitsTranslator):
                    "dark_time": "DARKTIME",
                    "exposure_time": "EXPTIME",
                    "obsid": "OBSID",
+                   "exposure": "EXPNUM",
+                   "visit": "EXPNUM",
                    "boresight_airmass": "AIRMASS"}
 
     def to_abstract_filter(self):

@@ -23,6 +23,8 @@
 
 __all__ = ("HscTranslator", )
 
+import re
+
 from .subaru import SubaruTranslator
 
 
@@ -91,3 +93,48 @@ class HscTranslator(SubaruTranslator):
         if physical.startswith("HSC-"):
             return physical[4:]
         return None
+
+    def to_visit(self):
+        """Calculate unique visit integer for this observation
+
+        Returns
+        -------
+        visit : `int`
+            Integer uniquely identifying this visit.
+        """
+        expId = self._header["EXP-ID"].strip()
+        m = re.search("^HSCE(\d{8})$", expId)  # 2016-06-14 and new scheme
+        if m:
+            self._used_these_cards("EXP-ID")
+            return int(m.group(1))
+
+        # Fallback to old scheme
+        m = re.search("^HSC([A-Z])(\d{6})00$", expId)
+        if not m:
+            raise RuntimeError(f"Unable to interpret EXP-ID: {expId}")
+        letter, visit = m.groups()
+        visit = int(visit)
+        if visit == 0:
+            # Don't believe it
+            frameId = self._header["FRAMEID"].strip()
+            m = re.search("^HSC([A-Z])(\d{6})\d{2}$", frameId)
+            if not m:
+                raise RuntimeError(f"Unable to interpret FRAMEID: {frameId}")
+            letter, visit = m.groups()
+            visit = int(visit)
+            if visit % 2:  # Odd?
+                visit -= 1
+        self._used_these_cards("EXP-ID", "FRAMEID")
+        return visit + 1000000*(ord(letter) - ord("A"))
+
+    def to_exposure(self):
+        """Calculate the unique integer ID for this exposure.
+
+        Assumed to be identical to the visit ID in this implementation.
+
+        Returns
+        -------
+        exp : `int`
+            Unique exposure identifier.
+        """
+        return self.to_visit()
