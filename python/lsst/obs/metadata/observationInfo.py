@@ -72,6 +72,7 @@ class ObservationInfo:
                    "detector_num": ("Unique (for instrument) integer identifier for the sensor", "int"),
                    "detector_name": ("Name of the detector within the instrument (might not be unique)",
                                      "str"),
+                   "object": ("Object of interest or field name", "str"),
                    "obsid": ("Unique observation identifier", "str")}
 
     """All the properties supported by this class with associated

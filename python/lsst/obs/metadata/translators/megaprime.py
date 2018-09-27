@@ -55,6 +55,7 @@ class MegaPrimeTranslator(FitsTranslator):
                    "dark_time": "DARKTIME",
                    "exposure_time": "EXPTIME",
                    "obsid": "OBSID",
+                   "object": "OBJECT",
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM",
                    "detector_name": "CCDNAME",
