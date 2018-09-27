@@ -23,10 +23,10 @@
 
 __all__ = ("HscTranslator", )
 
-from .fits import FitsTranslator
+from .subaru import SubaruTranslator
 
 
-class HscTranslator(FitsTranslator):
+class HscTranslator(SubaruTranslator):
     """Metadata translator for HSC standard headers.
     """
 

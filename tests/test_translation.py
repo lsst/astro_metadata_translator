@@ -49,6 +49,9 @@ class BasicTestCase(unittest.TestCase):
                        "INSTRUME": "SCUBA_test",
                        "DATE-OBS": "2000-01-01T01:00:01.500",
                        "DATE-END": "2000-01-01T02:00:01.500",
+                       "OBSGEO-X": "-5464588.84421314",
+                       "OBSGEO-Y": "-2493000.19137644",
+                       "OBSGEO-Z": "2150653.35350771",
                        "BAZ": "bar"}
 
     def testBasicManualTranslation(self):
@@ -85,9 +88,13 @@ class BasicTestCase(unittest.TestCase):
         self.assertEqual(v1.telescope, "LSST")
         print(v1.__dict__)
 
+        location = v1.location.to_geodetic()
+        self.assertAlmostEqual(location.height.to("m").to_value(), 4123.0, places=1)
+
         # Check that headers have been removed
         newHdr = v1.strippedHeader()
         self.assertNotIn("INSTRUME", newHdr)
+        self.assertNotIn("OBSGEO-X", newHdr)
         self.assertIn("TELESCOP", newHdr)
 
 

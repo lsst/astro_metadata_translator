@@ -21,6 +21,8 @@
 
 """Metadata translation code for standard FITS headers"""
 from astropy.time import Time
+from astropy.coordinates import EarthLocation
+import astropy.units as u
 
 from ..translator import MetadataTranslator
 
@@ -33,6 +35,7 @@ class FitsTranslator(MetadataTranslator):
     - DATE-OBS
     - INSTRUME
     - TELESCOP
+    - OBSGEO-[X,Y,Z]
 
     """
 
@@ -150,3 +153,19 @@ class FitsTranslator(MetadataTranslator):
             Time corresponding to the end of the observation.
         """
         return self._from_fits_date("DATE-END")
+
+    def to_location(self):
+        """Calculate the observatory location.
+
+        Uses FITS standard ``OBSGEO-`` headers.
+
+        Returns
+        -------
+        location : `astropy.coordinates.EarthLocation`
+            An object representing the location of the telescope.
+        """
+        cards = [f"OBSGEO-{c}" for c in ("X", "Y", "Z")]
+        coords = [self._header[c] for c in cards]
+        value = EarthLocation.from_geocentric(*coords, unit=u.m)
+        self._used_these_cards(*cards)
+        return value

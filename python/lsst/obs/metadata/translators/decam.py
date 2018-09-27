@@ -25,6 +25,8 @@ __all__ = ("DecamTranslator", )
 
 import re
 
+from astropy.coordinates import EarthLocation
+
 from .fits import FitsTranslator
 
 
@@ -93,3 +95,17 @@ class DecamTranslator(FitsTranslator):
             return self._translateFromCalibId("filter")
         else:
             return None
+
+    def to_location(self):
+        """Calculate the observatory location.
+
+        Returns
+        -------
+        location : `astropy.coordinates.EarthLocation`
+            An object representing the location of the telescope.
+        """
+        # OBS-LONG has west-positive sign so must be flipped
+        lon = self._header["OBS-LONG"] * -1.0
+        value = EarthLocation.from_geodetic(lon, self._header["OBS-LAT"], self._header["OBS-ELEV"])
+        self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
+        return value

@@ -23,6 +23,8 @@
 
 __all__ = ("MegaPrimeTranslator", )
 
+from astropy.coordinates import EarthLocation
+
 from .fits import FitsTranslator
 
 filters = {'u.MP9301': 'u',
@@ -69,4 +71,17 @@ class MegaPrimeTranslator(FitsTranslator):
         value = self._from_fits_date_string(self._header["DATE-OBS"],
                                             timeStr=self._header["UTCEND"], scale="utc")
         self._used_these_cards("DATE-OBS", "UTCEND")
+        return value
+
+    def to_location(self):
+        """Calculate the observatory location.
+
+        Returns
+        -------
+        location : `astropy.coordinates.EarthLocation`
+            An object representing the location of the telescope.
+        """
+        # Height is not in MegaPrime files. Use the value from EarthLocation.of_site("CFHT")
+        value = EarthLocation.from_geodetic(self._header["LONGITUD"], self._header["LATITUDE"], 4215.0)
+        self._used_these_cards("LONGITUD", "LATITUDE")
         return value
