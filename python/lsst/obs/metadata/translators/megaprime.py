@@ -51,7 +51,11 @@ class MegaPrimeTranslator(FitsTranslator):
     supportedInstrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
 
-    _trivialMap = {"physical_filter": "FILTER"}
+    _trivialMap = {"physical_filter": "FILTER",
+                   "dark_time": "DARKTIME",
+                   "exposure_time": "EXPTIME",
+                   "obsid": "OBSID",
+                   "boresight_airmass": "AIRMASS"}
 
     def to_abstract_filter(self):
         physical = self.to_physical_filter()

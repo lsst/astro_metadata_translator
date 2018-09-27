@@ -42,6 +42,7 @@ class DecamTranslator(FitsTranslator):
 
     _trivialMap = {"exposure_time": "EXPTIME",
                    "dark_time": "DARKTIME",
+                   "boresight_airmass": "AIRMASS",
                    "obsid": "OBSID",
                    "visit": "EXPNUM"}
 

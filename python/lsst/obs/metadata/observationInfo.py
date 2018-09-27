@@ -70,6 +70,7 @@ class ObservationInfo:
                    "datetime_end": ("Timestamp of the end of the Exposure.", "astropy.time.Time"),
                    "exposure_time": ("Duration of the Exposure with shutter open (seconds).", "float"),
                    "dark_time": ("Duration of the Exposure with shutter closed (seconds).", "float"),
+                   "boresight_airmass": ("Airmass of the boresight of the telescope", "float"),
                    "obsid": ("Unique observation identifier", "str")}
 
     """All the properties supported by this class with associated

@@ -39,7 +39,12 @@ class HscTranslator(SubaruTranslator):
     _constMap = {"instrument": "HSC"}
     """This translator only works for HSC."""
 
-    _trivialMap = {"physical_filter": "FILTER01"}
+    _trivialMap = {"physical_filter": "FILTER01",
+                   "obsid": "EXP-ID",
+                   "boresight_airmass": "AIRMASS",
+                   "exposure_time": "EXPTIME",
+                   "dark_time": "EXPTIME",  # Assume same as exposure time
+                   }
     """One-to-one mappings"""
 
     @classmethod
