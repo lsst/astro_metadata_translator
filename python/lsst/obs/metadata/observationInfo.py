@@ -64,8 +64,6 @@ class ObservationInfo:
     may not be.""", "int"),
                    "abstract_filter": ("Generic name of this filter", "str"),
                    "physical_filter": ("The bandpass filter used for all exposures in this Visit.", "str"),
-                   "snap": ("If visit is not null, the index of this Exposure in the Visit,"
-                            "starting from zero.", "int"),
                    "datetime_begin": ("Timestamp of the start of the Exposure.", "astropy.time.Time"),
                    "datetime_end": ("Timestamp of the end of the Exposure.", "astropy.time.Time"),
                    "exposure_time": ("Duration of the Exposure with shutter open (seconds).", "float"),
