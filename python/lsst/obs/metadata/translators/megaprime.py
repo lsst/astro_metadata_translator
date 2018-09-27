@@ -57,6 +57,7 @@ class MegaPrimeTranslator(FitsTranslator):
                    "obsid": "OBSID",
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM",
+                   "detector_name": "CCDNAME",
                    "boresight_airmass": "AIRMASS"}
 
     def to_abstract_filter(self):
@@ -91,3 +92,13 @@ class MegaPrimeTranslator(FitsTranslator):
         value = EarthLocation.from_geodetic(self._header["LONGITUD"], self._header["LATITUDE"], 4215.0)
         self._used_these_cards("LONGITUD", "LATITUDE")
         return value
+
+    def to_detector_num(self):
+        try:
+            extname = self._header["EXTNAME"]
+            num = int(extname[3:])  # chop off "ccd"
+            self._used_these_cards("EXTNAME")
+            return num
+        except KeyError:
+            # Dummy value, intended for PHU (need something to get filename)
+            return 99

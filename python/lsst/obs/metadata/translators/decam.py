@@ -44,6 +44,8 @@ class DecamTranslator(FitsTranslator):
                    "dark_time": "DARKTIME",
                    "boresight_airmass": "AIRMASS",
                    "obsid": "OBSID",
+                   "detector_num": "CCDNUM",
+                   "detector_name": "DETPOS",
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM"}
 

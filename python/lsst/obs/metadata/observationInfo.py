@@ -69,6 +69,9 @@ class ObservationInfo:
                    "exposure_time": ("Duration of the Exposure with shutter open (seconds).", "float"),
                    "dark_time": ("Duration of the Exposure with shutter closed (seconds).", "float"),
                    "boresight_airmass": ("Airmass of the boresight of the telescope", "float"),
+                   "detector_num": ("Unique (for instrument) integer identifier for the sensor", "int"),
+                   "detector_name": ("Name of the detector within the instrument (might not be unique)",
+                                     "str"),
                    "obsid": ("Unique observation identifier", "str")}
 
     """All the properties supported by this class with associated

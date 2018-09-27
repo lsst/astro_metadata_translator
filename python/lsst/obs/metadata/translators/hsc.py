@@ -43,6 +43,8 @@ class HscTranslator(SubaruTranslator):
 
     _trivialMap = {"physical_filter": "FILTER01",
                    "obsid": "EXP-ID",
+                   "detector_num": "DET-ID",
+                   "detector_name": "T_CCDSN",
                    "boresight_airmass": "AIRMASS",
                    "exposure_time": "EXPTIME",
                    "dark_time": "EXPTIME",  # Assume same as exposure time
