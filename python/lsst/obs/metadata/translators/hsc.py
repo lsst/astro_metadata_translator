@@ -25,6 +25,9 @@ __all__ = ("HscTranslator", )
 
 import re
 
+import astropy.units as u
+import astropy.units.cds as cds
+
 from .subaru import SubaruTranslator
 
 
@@ -48,6 +51,7 @@ class HscTranslator(SubaruTranslator):
                    "detector_num": "DET-ID",
                    "detector_name": "T_CCDSN",
                    "boresight_airmass": "AIRMASS",
+                   "relative_humidity": "OUT-HUM",
                    "exposure_time": "EXPTIME",
                    "dark_time": "EXPTIME",  # Assume same as exposure time
                    }
@@ -156,3 +160,9 @@ class HscTranslator(SubaruTranslator):
         if obstype == "object":
             return "science"
         return obstype
+
+    def to_temperature(self):
+        return self.quantity_from_card("OUT-TMP", u.K)
+
+    def to_pressure(self):
+        return self.quantity_from_card("OUT-PRS", cds.mmHg)

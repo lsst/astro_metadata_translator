@@ -24,6 +24,8 @@
 __all__ = ("MegaPrimeTranslator", )
 
 from astropy.coordinates import EarthLocation
+import astropy.units as u
+import astropy.units.cds as cds
 
 from .fits import FitsTranslator
 
@@ -60,6 +62,7 @@ class MegaPrimeTranslator(FitsTranslator):
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM",
                    "detector_name": "CCDNAME",
+                   "relative_humidity": "RELHUMID",
                    "boresight_airmass": "AIRMASS"}
 
     def to_abstract_filter(self):
@@ -118,3 +121,10 @@ class MegaPrimeTranslator(FitsTranslator):
         if obstype == "object":
             return "science"
         return obstype
+
+    def to_temperature(self):
+        return self.quantity_from_card("TEMPERAT", u.deg_C)
+
+    def to_pressure(self):
+        # Megaprime PRESSURE header says units are mb but is mmHg
+        return self.quantity_from_card("PRESSURE", cds.mmHg)

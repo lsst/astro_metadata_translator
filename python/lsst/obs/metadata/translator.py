@@ -26,6 +26,8 @@ __all__ = ("MetadataTranslator",)
 from abc import abstractmethod
 import logging
 
+import astropy.units as u
+
 log = logging.getLogger(__name__)
 
 
@@ -163,3 +165,22 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Cards used when extracting metadata.
         """
         return frozenset(self._used_cards)
+
+    def quantity_from_card(self, keyword, unit):
+        """Calculate a Astropy Quantity from a header card and a unit.
+
+        Parameters
+        ----------
+        keyword : `str`
+            Keyword to use from header.
+        unit : `astropy.units.UnitBase`
+            Unit of the item in the header.
+
+        Returns
+        -------
+        q : `astropy.units.Quantity`
+            Quantity representing the header value.
+        """
+        value = self._header[keyword]
+        self._used_these_cards(keyword)
+        return u.Quantity(value, unit=unit)

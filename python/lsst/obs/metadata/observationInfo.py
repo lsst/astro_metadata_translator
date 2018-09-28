@@ -73,6 +73,9 @@ class ObservationInfo:
                    "detector_name": ("Name of the detector within the instrument (might not be unique)",
                                      "str"),
                    "object": ("Object of interest or field name", "str"),
+                   "temperature": ("Temperature outside the dome", "astropy.units.Quantity"),
+                   "pressure": ("Atmospheric pressure outside the dome", "astropy.units.Quantity"),
+                   "relative_humidity": ("Relative humidity outside the dome", "float"),
                    "science_program": ("Observing program (survey or proposal) identifier", "str"),
                    "obstype": ("Type of observation (science, dark, flat, bias, focus etc)", "str"),
                    "obsid": ("Unique observation identifier", "str")}

@@ -26,6 +26,8 @@ __all__ = ("DecamTranslator", )
 import re
 
 from astropy.coordinates import EarthLocation
+import astropy.units as u
+import astropy.units.cds as cds
 
 from .fits import FitsTranslator
 
@@ -48,6 +50,7 @@ class DecamTranslator(FitsTranslator):
                    "science_program": "PROPID",
                    "detector_num": "CCDNUM",
                    "detector_name": "DETPOS",
+                   "relative_humidity": "HUMIDITY",
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM"}
 
@@ -129,3 +132,9 @@ class DecamTranslator(FitsTranslator):
         if obstype == "object":
             return "science"
         return obstype
+
+    def to_temperature(self):
+        return self.quantity_from_card("OUTTEMP", u.deg_C)
+
+    def to_pressure(self):
+        return self.quantity_from_card("PRESSURE", cds.mmHg)
