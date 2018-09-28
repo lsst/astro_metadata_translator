@@ -104,3 +104,17 @@ class MegaPrimeTranslator(FitsTranslator):
         except KeyError:
             # Dummy value, intended for PHU (need something to get filename)
             return 99
+
+    def to_obstype(self):
+        """Calculate the observation type.
+
+        Returns
+        -------
+        typ : `str`
+            Observation type. Normalized to standard set.
+        """
+        obstype = self._header["OBSTYPE"].strip().lower()
+        self._used_these_cards("OBSTYPE")
+        if obstype == "object":
+            return "science"
+        return obstype

@@ -92,7 +92,7 @@ class DecamTranslator(FitsTranslator):
             The full filter name.
         """
         if "FILTER" in self._header:
-            if "OBSTYPE" in self._header and "zero" in self._header["OBSTYPE"].strip().lower():
+            if self.to_obstype() == "zero":
                 return "NONE"
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
@@ -115,3 +115,17 @@ class DecamTranslator(FitsTranslator):
         value = EarthLocation.from_geodetic(lon, self._header["OBS-LAT"], self._header["OBS-ELEV"])
         self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
         return value
+
+    def to_obstype(self):
+        """Calculate the observation type.
+
+        Returns
+        -------
+        typ : `str`
+            Observation type. Normalized to standard set.
+        """
+        obstype = self._header["OBSTYPE"].strip().lower()
+        self._used_these_cards("OBSTYPE")
+        if obstype == "object":
+            return "science"
+        return obstype

@@ -74,6 +74,7 @@ class ObservationInfo:
                                      "str"),
                    "object": ("Object of interest or field name", "str"),
                    "science_program": ("Observing program (survey or proposal) identifier", "str"),
+                   "obstype": ("Type of observation (science, dark, flat, bias, focus etc)", "str"),
                    "obsid": ("Unique observation identifier", "str")}
 
     """All the properties supported by this class with associated

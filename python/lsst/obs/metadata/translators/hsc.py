@@ -142,3 +142,17 @@ class HscTranslator(SubaruTranslator):
             Unique exposure identifier.
         """
         return self.to_visit()
+
+    def to_obstype(self):
+        """Calculate the observation type.
+
+        Returns
+        -------
+        typ : `str`
+            Observation type. Normalized to standard set.
+        """
+        obstype = self._header["DATA-TYP"].strip().lower()
+        self._used_these_cards("DATA-TYP")
+        if obstype == "object":
+            return "science"
+        return obstype
