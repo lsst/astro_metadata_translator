@@ -45,6 +45,7 @@ class DecamTranslator(FitsTranslator):
                    "boresight_airmass": "AIRMASS",
                    "obsid": "OBSID",
                    "object": "OBJECT",
+                   "science_program": "PROPID",
                    "detector_num": "CCDNUM",
                    "detector_name": "DETPOS",
                    "exposure": "EXPNUM",

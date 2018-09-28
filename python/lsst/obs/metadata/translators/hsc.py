@@ -44,6 +44,7 @@ class HscTranslator(SubaruTranslator):
     _trivialMap = {"physical_filter": "FILTER01",
                    "obsid": "EXP-ID",
                    "object": "OBJECT",
+                   "science_program": "PROP-ID",
                    "detector_num": "DET-ID",
                    "detector_name": "T_CCDSN",
                    "boresight_airmass": "AIRMASS",
