@@ -31,6 +31,7 @@ to classes dynamically. They are assumed to be called from
 __all__ = ("to_location_via_telescope_name", )
 
 from astropy.coordinates import EarthLocation
+import astropy.units as u
 
 
 def to_location_via_telescope_name(self):
@@ -42,3 +43,19 @@ def to_location_via_telescope_name(self):
         Location of the observatory.
     """
     return EarthLocation.of_site(self.to_telescope())
+
+
+def altitudeFromZenithDistance(zd):
+    """Convert zenith distance to altitude
+
+    Parameters
+    ----------
+    zd : `astropy.units.Quantity`
+        Zenith distance.
+
+    Returns
+    -------
+    alt : `astropy.units.Quantity`
+        Altitude.
+    """
+    return 90.*u.deg - zd

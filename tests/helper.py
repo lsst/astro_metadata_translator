@@ -69,3 +69,33 @@ def readTestFile(filename):
     with open(os.path.join(TESTDIR, "data", filename)) as fd:
         header = yaml.load(fd)
     return header
+
+
+class UsefulAsserts:
+    """Class with helpful asserts"""
+
+    def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0):
+        """Check that SkyCoord, AltAz, and airmass are self consistent.
+
+        Parameters
+        ----------
+        obsinfo : `ObservationInfo`
+            Object to check.
+        max_sep : `float`, optional
+            Maximum separation between AltAz derived from RA/Dec headers
+            and that found in the AltAz headers.
+
+        Raises
+        ------
+        AssertionError
+            Inconsistencies found.
+        """
+        self.assertIsNotNone(obsinfo.tracking_radec)
+        self.assertIsNotNone(obsinfo.altaz_begin)
+
+        # Is airmass from header close to airmass from AltAz headers?
+        self.assertAlmostEqual(obsinfo.altaz_begin.secz.to_value(), obsinfo.boresight_airmass, places=2)
+
+        # Is AltAz from headers close to AltAz from RA/Dec headers?
+        sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
+        self.assertLess(sep.to_value(unit="arcmin"), max_sep)

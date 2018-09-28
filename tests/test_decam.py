@@ -21,11 +21,11 @@
 
 import unittest
 
-from helper import readTestFile
+from helper import readTestFile, UsefulAsserts
 from lsst.obs.metadata import ObservationInfo
 
 
-class DecamTestCase(unittest.TestCase):
+class DecamTestCase(unittest.TestCase, UsefulAsserts):
 
     def testDecamTranslator(self):
         header = readTestFile("fitsheader-decam.yaml")
@@ -33,6 +33,9 @@ class DecamTestCase(unittest.TestCase):
         self.assertEqual(v1.instrument, "DECam")
         self.assertEqual(v1.telescope, "CTIO 4.0-m telescope")
         self.assertEqual(v1.abstract_filter, "z")
+
+        # Sanity check WCS
+        self.assertCoordinatesConsistent(v1, max_sep=1.5)
 
 
 if __name__ == "__main__":

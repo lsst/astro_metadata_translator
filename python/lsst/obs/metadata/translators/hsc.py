@@ -24,11 +24,15 @@
 __all__ = ("HscTranslator", )
 
 import re
+import logging
 
 import astropy.units as u
 import astropy.units.cds as cds
+from astropy.coordinates import SkyCoord, AltAz
 
 from .subaru import SubaruTranslator
+
+log = logging.getLogger(__name__)
 
 
 class HscTranslator(SubaruTranslator):
@@ -166,3 +170,21 @@ class HscTranslator(SubaruTranslator):
 
     def to_pressure(self):
         return self.quantity_from_card("OUT-PRS", cds.mmHg)
+
+    def to_tracking_radec(self):
+        radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
+                         frame="icrs", unit=(u.hourangle, u.deg),
+                         obstime=self.to_datetime_begin(), location=self.to_location())
+        self._used_these_cards("RA2000", "DEC2000")
+        return radec
+
+    def to_altaz_begin(self):
+        altitude = self._header["ALTITUDE"]
+        if altitude > 90.0:
+            log.warning("Clipping altitude (%f) at 90 degrees", altitude)
+            altitude = 90.0
+
+        altaz = AltAz(self._header["AZIMUTH"] * u.deg, altitude * u.deg,
+                      obstime=self.to_datetime_begin(), location=self.to_location())
+        self._used_these_cards("AZIMUTH", "ALTITUDE")
+        return altaz

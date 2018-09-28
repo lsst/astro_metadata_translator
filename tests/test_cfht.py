@@ -21,11 +21,11 @@
 
 import unittest
 
-from helper import readTestFile
+from helper import readTestFile, UsefulAsserts
 from lsst.obs.metadata import ObservationInfo
 
 
-class MegaPrimeTestCase(unittest.TestCase):
+class MegaPrimeTestCase(unittest.TestCase, UsefulAsserts):
 
     def testMegaPrimeTranslator(self):
         header = readTestFile("fitsheader-megaprime.yaml")
@@ -33,6 +33,9 @@ class MegaPrimeTestCase(unittest.TestCase):
         self.assertEqual(v1.instrument, "MegaPrime")
         self.assertEqual(v1.telescope, "CFHT 3.6m")
         self.assertEqual(v1.abstract_filter, "i")
+
+        # Sanity check WCS
+        self.assertCoordinatesConsistent(v1)
 
         # Check that headers have been removed
         newHdr = v1.strippedHeader()

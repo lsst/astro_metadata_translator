@@ -76,6 +76,9 @@ class ObservationInfo:
                    "temperature": ("Temperature outside the dome", "astropy.units.Quantity"),
                    "pressure": ("Atmospheric pressure outside the dome", "astropy.units.Quantity"),
                    "relative_humidity": ("Relative humidity outside the dome", "float"),
+                   "tracking_radec": ("Requested RA/Dec to track", "astropy.coordinates.SkyCoord"),
+                   "altaz_begin": ("Telescope boresight azimuth and elevation at start of observation",
+                                   "astropy.coordinates.AltAz"),
                    "science_program": ("Observing program (survey or proposal) identifier", "str"),
                    "obstype": ("Type of observation (science, dark, flat, bias, focus etc)", "str"),
                    "obsid": ("Unique observation identifier", "str")}

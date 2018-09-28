@@ -23,7 +23,7 @@
 
 __all__ = ("MegaPrimeTranslator", )
 
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz
 import astropy.units as u
 import astropy.units.cds as cds
 
@@ -128,3 +128,21 @@ class MegaPrimeTranslator(FitsTranslator):
     def to_pressure(self):
         # Megaprime PRESSURE header says units are mb but is mmHg
         return self.quantity_from_card("PRESSURE", cds.mmHg)
+
+    def to_tracking_radec(self):
+        frame = self._header["OBJRADEC"].strip().lower()
+        if frame == "gappt":
+            self._used_cards("OBJRADEC")
+            # Moving target
+            return None
+        radec = SkyCoord(self._header["RA_DEG"], self._header["DEC_DEG"],
+                         frame=frame, unit=u.deg, obstime=self.to_datetime_begin(),
+                         location=self.to_location())
+        self._used_these_cards("OBJRADEC", "RA_DEG", "DEC_DEG")
+        return radec
+
+    def to_altaz_begin(self):
+        altaz = AltAz(self._header["TELAZ"] * u.deg, self._header["TELALT"] * u.deg,
+                      obstime=self.to_datetime_begin(), location=self.to_location())
+        self._used_these_cards("TELALT", "TELAZ")
+        return altaz

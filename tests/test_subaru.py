@@ -21,11 +21,11 @@
 
 import unittest
 
-from helper import readTestFile
+from helper import readTestFile, UsefulAsserts
 from lsst.obs.metadata import ObservationInfo
 
 
-class HscTestCase(unittest.TestCase):
+class HscTestCase(unittest.TestCase, UsefulAsserts):
 
     def testHscTranslator(self):
         header = readTestFile("fitsheader-hsc.yaml")
@@ -33,6 +33,9 @@ class HscTestCase(unittest.TestCase):
         self.assertEqual(v1.instrument, "HSC")
         self.assertEqual(v1.telescope, "Subaru")
         self.assertEqual(v1.abstract_filter, "i")
+
+        # Sanity check WCS
+        self.assertCoordinatesConsistent(v1)
 
 
 if __name__ == "__main__":

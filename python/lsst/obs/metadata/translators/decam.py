@@ -25,11 +25,12 @@ __all__ = ("DecamTranslator", )
 
 import re
 
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz
 import astropy.units as u
 import astropy.units.cds as cds
 
 from .fits import FitsTranslator
+from .helpers import altitudeFromZenithDistance
 
 
 class DecamTranslator(FitsTranslator):
@@ -138,3 +139,25 @@ class DecamTranslator(FitsTranslator):
 
     def to_pressure(self):
         return self.quantity_from_card("PRESSURE", cds.mmHg)
+
+    def to_tracking_radec(self):
+        if "RADESYS" in self._header:
+            frame = self._header["RADESYS"].strip().lower()
+            if frame == "gappt":
+                self._used_these_cards("RADESYS")
+                # Moving target
+                return None
+        else:
+            frame = "icrs"
+        radec = SkyCoord(self._header["TELRA"], self._header["TELDEC"],
+                         frame=frame, unit=(u.hourangle, u.deg),
+                         obstime=self.to_datetime_begin(), location=self.to_location())
+        self._used_these_cards("RADESYS", "TELRA", "TELDEC")
+        return radec
+
+    def to_altaz_begin(self):
+        altaz = AltAz(self._header["AZ"] * u.deg,
+                      altitudeFromZenithDistance(self._header["ZD"] * u.deg),
+                      obstime=self.to_datetime_begin(), location=self.to_location())
+        self._used_these_cards("AZ", "ZD")
+        return altaz
