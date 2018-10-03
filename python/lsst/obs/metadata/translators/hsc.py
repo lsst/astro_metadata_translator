@@ -107,16 +107,16 @@ class HscTranslator(SubaruTranslator):
     def to_abstract_filter(self):
         physical = self.to_physical_filter()
         if physical.startswith("HSC-"):
-            return physical[4:]
+            return physical[4].lower()
         return None
 
-    def to_visit(self):
-        """Calculate unique visit integer for this observation
+    def to_exposure(self):
+        """Calculate unique exposure integer for this observation
 
         Returns
         -------
         visit : `int`
-            Integer uniquely identifying this visit.
+            Integer uniquely identifying this exposure.
         """
         expId = self._header["EXP-ID"].strip()
         m = re.search("^HSCE(\d{8})$", expId)  # 2016-06-14 and new scheme
@@ -143,17 +143,19 @@ class HscTranslator(SubaruTranslator):
         self._used_these_cards("EXP-ID", "FRAMEID")
         return visit + 1000000*(ord(letter) - ord("A"))
 
-    def to_exposure(self):
-        """Calculate the unique integer ID for this exposure.
+    def to_visit(self):
+        """Calculate the unique integer ID for this visit.
 
-        Assumed to be identical to the visit ID in this implementation.
+        Assumed to be identical to the exposure ID in this implementation.
 
         Returns
         -------
         exp : `int`
-            Unique exposure identifier.
+            Unique visit identifier.
         """
-        return self.to_visit()
+        if self.to_obstype() == "science":
+            return self.to_exposure()
+        return None
 
     def to_obstype(self):
         """Calculate the observation type.
