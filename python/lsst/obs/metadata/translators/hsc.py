@@ -28,7 +28,7 @@ import logging
 
 import astropy.units as u
 import astropy.units.cds as cds
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import SkyCoord, AltAz, Angle
 
 from .subaru import SubaruTranslator
 
@@ -45,7 +45,8 @@ class HscTranslator(SubaruTranslator):
     supportedInstrument = "HSC"
     """Supports the HSC instrument."""
 
-    _constMap = {"instrument": "HSC"}
+    _constMap = {"instrument": "HSC",
+                 "boresight_rotation_coord": "sky"}
     """This translator only works for HSC."""
 
     _trivialMap = {"obsid": "EXP-ID",
@@ -194,3 +195,10 @@ class HscTranslator(SubaruTranslator):
                       obstime=self.to_datetime_begin(), location=self.to_location())
         self._used_these_cards("AZIMUTH", "ALTITUDE")
         return altaz
+
+    def to_boresight_rotation_angle(self):
+        # Rotation angle formula determined empirically from visual inspection
+        # of HSC images.  See DM-9111.
+        angle = Angle(270.*u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
+        angle = angle.wrap_at("360d")
+        return angle

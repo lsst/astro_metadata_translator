@@ -25,7 +25,7 @@ __all__ = ("DecamTranslator", )
 
 import re
 
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
 
 from .fits import FitsTranslator
@@ -41,6 +41,9 @@ class DecamTranslator(FitsTranslator):
 
     supportedInstrument = "DECam"
     """Supports the DECam instrument."""
+
+    _constMap = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
+                 "boresight_rotation_coord": "unknown"}
 
     _trivialMap = {"exposure_time": "EXPTIME",
                    "dark_time": "DARKTIME",

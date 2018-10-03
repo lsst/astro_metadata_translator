@@ -69,6 +69,10 @@ class ObservationInfo:
                    "exposure_time": ("Duration of the Exposure with shutter open (seconds).", "float"),
                    "dark_time": ("Duration of the Exposure with shutter closed (seconds).", "float"),
                    "boresight_airmass": ("Airmass of the boresight of the telescope", "float"),
+                   "boresight_rotation_angle": ("Angle of the instrument in boresight_rotation_coord frame",
+                                                "astropy.coordinates.Angle"),
+                   "boresight_rotation_coord": ("Coordinate frame of the instrument rotation angle"
+                                                " (sky, unknown)", "str"),
                    "detector_num": ("Unique (for instrument) integer identifier for the sensor", "int"),
                    "detector_name": ("Name of the detector within the instrument (might not be unique)",
                                      "str"),

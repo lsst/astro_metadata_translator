@@ -23,7 +23,7 @@
 
 __all__ = ("MegaPrimeTranslator", )
 
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
 import astropy.units.cds as cds
 
@@ -52,6 +52,9 @@ class MegaPrimeTranslator(FitsTranslator):
 
     supportedInstrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
+
+    _constMap = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
+                 "boresight_rotation_coord": "unknown"}
 
     _trivialMap = {"physical_filter": "FILTER",
                    "dark_time": "DARKTIME",
