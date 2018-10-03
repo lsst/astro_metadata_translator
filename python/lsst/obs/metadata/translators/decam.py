@@ -27,7 +27,6 @@ import re
 
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz
 import astropy.units as u
-import astropy.units.cds as cds
 
 from .fits import FitsTranslator
 from .helpers import altitudeFromZenithDistance
@@ -51,7 +50,7 @@ class DecamTranslator(FitsTranslator):
                    "science_program": "PROPID",
                    "detector_num": "CCDNUM",
                    "detector_name": "DETPOS",
-                   "relative_humidity": "HUMIDITY",
+                   "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM"}
 
@@ -135,10 +134,13 @@ class DecamTranslator(FitsTranslator):
         return obstype
 
     def to_temperature(self):
-        return self.quantity_from_card("OUTTEMP", u.deg_C)
+        return self.quantity_from_card("OUTTEMP", u.deg_C, default=10., minimum=-10., maximum=40.)
 
     def to_pressure(self):
-        return self.quantity_from_card("PRESSURE", cds.mmHg)
+        # Header says torr but seems to be mbar. Astropy does not understand
+        # mbar so scale to bar.
+        return self.quantity_from_card("PRESSURE", u.bar, scaling=1e-3,
+                                       default=0.771611, minimum=0.7, maximum=0.85)
 
     def to_tracking_radec(self):
         if "RADESYS" in self._header:
