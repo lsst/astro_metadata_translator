@@ -124,6 +124,10 @@ class ObservationInfo:
                 log.warning("Error calculating property %s using translator %s",
                             t, translator.__class__, exc_info=1)
 
+    @property
+    def cards_used(self):
+        return self._translator.cards_used()
+
     def strippedHeader(self):
         """Return a copy of the supplied header with used keywords removed.
 
