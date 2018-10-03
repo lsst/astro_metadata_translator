@@ -25,6 +25,7 @@ __all__ = ("MetadataTranslator",)
 
 from abc import abstractmethod
 import logging
+import math
 
 import astropy.units as u
 
@@ -48,9 +49,11 @@ class MetadataMeta(type):
         return constant_translator
 
     @staticmethod
-    def _makeTrivialMapping(standardKey, fitsKey):
+    def _makeTrivialMapping(standardKey, fitsKey, default=None, minimum=None, maximum=None):
         def trivial_translator(self):
             value = self._header[fitsKey]
+            if default is not None:
+                value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
             self._used_these_cards(fitsKey)
             return value
         trivial_translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
@@ -70,7 +73,11 @@ class MetadataMeta(type):
             MetadataTranslator.translators[cls.name] = cls
 
         for standardKey, fitsKey in cls._trivialMap.items():
-            translator = cls._makeTrivialMapping(standardKey, fitsKey)
+            kwargs = {}
+            if type(fitsKey) == tuple:
+                kwargs = fitsKey[1]
+                fitsKey = fitsKey[0]
+            translator = cls._makeTrivialMapping(standardKey, fitsKey, **kwargs)
             setattr(cls, f"to_{standardKey}", translator)
 
         for standardKey, constant in cls._constMap.items():
@@ -166,7 +173,41 @@ class MetadataTranslator(metaclass=MetadataMeta):
         """
         return frozenset(self._used_cards)
 
-    def quantity_from_card(self, keyword, unit):
+    @staticmethod
+    def validate_value(value, default, minimum=None, maximum=None):
+        """Validate the supplied value, returning a new value if out of range
+
+        Parameters
+        ----------
+        value : `float`
+            Value to be validated.
+        default : `float`
+            Default value to use if supplied value is invalid or out of range.
+            Assumed to be in the same units as the value expected in the
+            header.
+        minimum : `float`
+            Minimum possible valid value, optional.  If the calculated value
+            is below this value, the default value will be used.
+        maximum : `float`
+            Maximum possible valid value, optional.  If the calculated value
+            is above this value, the default value will be used.
+
+        Returns
+        -------
+        value : `float`
+            Either the supplied value, or a default value.
+        """
+        print(f"Validating {value} {default}")
+        if math.isnan(value):
+            value = default
+        else:
+            if minimum is not None and value < minimum:
+                value = default
+            elif maximum is not None and value > maximum:
+                value = default
+        return value
+
+    def quantity_from_card(self, keyword, unit, scaling=1., default=None, minimum=None, maximum=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
@@ -175,6 +216,21 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Keyword to use from header.
         unit : `astropy.units.UnitBase`
             Unit of the item in the header.
+        scaling : `float`
+            Amount to scale the value from the header before assigning the
+            units.  This is necessary if Astropy does not support the unit
+            directly (such as for mbar pressure units). The scaling is applied
+            before applying the validation.
+        default : `float`, optional
+            Default value to use if the header value is invalid.  Assumed
+            to be in the same units as the value expected in the header.  If
+            None, no default value is used.
+        minimum : `float`
+            Minimum possible valid value, optional.  If the calculated value
+            is below this value, the default value will be used.
+        maximum : `float`
+            Maximum possible valid value, optional.  If the calculated value
+            is above this value, the default value will be used.
 
         Returns
         -------
@@ -182,5 +238,8 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Quantity representing the header value.
         """
         value = self._header[keyword]
+        value *= scaling
         self._used_these_cards(keyword)
+        if default is not None:
+            value = self.validate_value(value, default, maximum=maximum, minimum=minimum)
         return u.Quantity(value, unit=unit)
