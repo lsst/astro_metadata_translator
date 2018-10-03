@@ -238,6 +238,10 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Quantity representing the header value.
         """
         value = self._header[keyword]
+        if isinstance(value, str):
+            # Sometimes the FITS header has the wrong type in it but this must
+            # be a number if we are creating a quantity.
+            value = float(value)
         value *= scaling
         self._used_these_cards(keyword)
         if default is not None:
