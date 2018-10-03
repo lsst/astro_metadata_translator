@@ -48,8 +48,7 @@ class HscTranslator(SubaruTranslator):
     _constMap = {"instrument": "HSC"}
     """This translator only works for HSC."""
 
-    _trivialMap = {"physical_filter": "FILTER01",
-                   "obsid": "EXP-ID",
+    _trivialMap = {"obsid": "EXP-ID",
                    "object": "OBJECT",
                    "science_program": "PROP-ID",
                    "detector_num": "DET-ID",
@@ -85,6 +84,11 @@ class HscTranslator(SubaruTranslator):
                 if header[k].startswith("HSC"):
                     return True
         return False
+
+    def to_physical_filter(self):
+        value = self._header["FILTER01"].strip().upper()
+        self._used_these_cards("FILTER01")
+        return value
 
     def to_datetime_begin(self):
         # We know it is UTC
