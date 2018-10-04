@@ -27,15 +27,14 @@ import re
 import logging
 
 import astropy.units as u
-import astropy.units.cds as cds
-from astropy.coordinates import SkyCoord, AltAz, Angle
+from astropy.coordinates import Angle
 
-from .subaru import SubaruTranslator
+from .suprimecam import SuprimeCamTranslator
 
 log = logging.getLogger(__name__)
 
 
-class HscTranslator(SubaruTranslator):
+class HscTranslator(SuprimeCamTranslator):
     """Metadata translator for HSC standard headers.
     """
 
@@ -47,17 +46,9 @@ class HscTranslator(SubaruTranslator):
 
     _constMap = {"instrument": "HSC",
                  "boresight_rotation_coord": "sky"}
-    """This translator only works for HSC."""
+    """Hard wire HSC even though modern headers call it Hyper Suprime-Cam"""
 
-    _trivialMap = {"obsid": "EXP-ID",
-                   "object": "OBJECT",
-                   "science_program": "PROP-ID",
-                   "detector_num": "DET-ID",
-                   "detector_name": "T_CCDSN",
-                   "boresight_airmass": "AIRMASS",
-                   "relative_humidity": "OUT-HUM",
-                   "exposure_time": "EXPTIME",
-                   "dark_time": "EXPTIME",  # Assume same as exposure time
+    _trivialMap = {"detector_name": "T_CCDSN",
                    }
     """One-to-one mappings"""
 
@@ -89,25 +80,6 @@ class HscTranslator(SubaruTranslator):
                 if header[k].startswith("HSC"):
                     return True
         return False
-
-    def to_physical_filter(self):
-        value = self._header["FILTER01"].strip().upper()
-        self._used_these_cards("FILTER01")
-        return value
-
-    def to_datetime_begin(self):
-        # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UT"], scale="utc")
-        self._used_these_cards("DATE-OBS", "UT")
-        return value
-
-    def to_datetime_end(self):
-        # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UT-END"], scale="utc")
-        self._used_these_cards("DATE-OBS", "UT-END")
-        return value
 
     def to_abstract_filter(self):
         physical = self.to_physical_filter()
@@ -147,58 +119,6 @@ class HscTranslator(SubaruTranslator):
                 visit -= 1
         self._used_these_cards("EXP-ID", "FRAMEID")
         return visit + 1000000*(ord(letter) - ord("A"))
-
-    def to_visit(self):
-        """Calculate the unique integer ID for this visit.
-
-        Assumed to be identical to the exposure ID in this implementation.
-
-        Returns
-        -------
-        exp : `int`
-            Unique visit identifier.
-        """
-        if self.to_obstype() == "science":
-            return self.to_exposure()
-        return None
-
-    def to_obstype(self):
-        """Calculate the observation type.
-
-        Returns
-        -------
-        typ : `str`
-            Observation type. Normalized to standard set.
-        """
-        obstype = self._header["DATA-TYP"].strip().lower()
-        self._used_these_cards("DATA-TYP")
-        if obstype == "object":
-            return "science"
-        return obstype
-
-    def to_temperature(self):
-        return self.quantity_from_card("OUT-TMP", u.K)
-
-    def to_pressure(self):
-        return self.quantity_from_card("OUT-PRS", cds.mmHg)
-
-    def to_tracking_radec(self):
-        radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
-                         frame="icrs", unit=(u.hourangle, u.deg),
-                         obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("RA2000", "DEC2000")
-        return radec
-
-    def to_altaz_begin(self):
-        altitude = self._header["ALTITUDE"]
-        if altitude > 90.0:
-            log.warning("Clipping altitude (%f) at 90 degrees", altitude)
-            altitude = 90.0
-
-        altaz = AltAz(self._header["AZIMUTH"] * u.deg, altitude * u.deg,
-                      obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("AZIMUTH", "ALTITUDE")
-        return altaz
 
     def to_boresight_rotation_angle(self):
         # Rotation angle formula determined empirically from visual inspection

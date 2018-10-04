@@ -25,3 +25,4 @@ from .hsc import *
 from .megaprime import *
 from .subaru import *
 from .hsc import *
+from .suprimecam import *

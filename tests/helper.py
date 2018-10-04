@@ -74,7 +74,7 @@ def readTestFile(filename):
 class UsefulAsserts:
     """Class with helpful asserts"""
 
-    def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0):
+    def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0, amdelta=0.01):
         """Check that SkyCoord, AltAz, and airmass are self consistent.
 
         Parameters
@@ -84,6 +84,8 @@ class UsefulAsserts:
         max_sep : `float`, optional
             Maximum separation between AltAz derived from RA/Dec headers
             and that found in the AltAz headers.
+        amdelta : `float`, optional
+            Max difference between header airmass and derived airmass.
 
         Raises
         ------
@@ -94,7 +96,11 @@ class UsefulAsserts:
         self.assertIsNotNone(obsinfo.altaz_begin)
 
         # Is airmass from header close to airmass from AltAz headers?
-        self.assertAlmostEqual(obsinfo.altaz_begin.secz.to_value(), obsinfo.boresight_airmass, places=2)
+        # In most cases there is uncertainty over whether the elevation
+        # and airmass in the header are for the start, end, or middle
+        # of the observation.  Sometimes the AltAz is from the start
+        # but the airmass is from the middle so accuracy is not certain.
+        self.assertAlmostEqual(obsinfo.altaz_begin.secz.to_value(), obsinfo.boresight_airmass, delta=amdelta)
 
         # Is AltAz from headers close to AltAz from RA/Dec headers?
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)

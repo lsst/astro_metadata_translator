@@ -39,6 +39,20 @@ class HscTestCase(unittest.TestCase, UsefulAsserts):
             # Sanity check WCS
             self.assertCoordinatesConsistent(v1)
 
+    def testSuprimeCamTranslator(self):
+        for file, filter in (("fitsheader-suprimecam-CORR40535770.yaml", "r"),):
+            header = readTestFile(file)
+            v1 = ObservationInfo(header)
+            print(v1.__dict__)
+            self.assertEqual(v1.instrument, "SuprimeCam")
+            self.assertEqual(v1.telescope, "Subaru")
+            self.assertEqual(v1.abstract_filter, filter)
+
+            # Sanity check WCS
+            # In this case the airmass is average during observation
+            # but it looks like ALTITUDE is from a different time.
+            self.assertCoordinatesConsistent(v1, amdelta=0.015)
+
 
 if __name__ == "__main__":
     unittest.main()
