@@ -140,10 +140,10 @@ class DecamTranslator(FitsTranslator):
         return self.quantity_from_card("OUTTEMP", u.deg_C, default=10., minimum=-10., maximum=40.)
 
     def to_pressure(self):
-        # Header says torr but seems to be mbar. Astropy does not understand
-        # mbar so scale to bar.
-        return self.quantity_from_card("PRESSURE", u.bar, scaling=1e-3,
-                                       default=0.771611, minimum=0.7, maximum=0.85)
+        # Header says torr but seems to be mbar. Use hPa unit which is the SI
+        # equivalent of mbar.
+        return self.quantity_from_card("PRESSURE", u.hPa,
+                                       default=771.611, minimum=700., maximum=850.)
 
     def to_tracking_radec(self):
         if "RADESYS" in self._header:
