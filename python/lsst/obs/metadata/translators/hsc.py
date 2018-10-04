@@ -66,8 +66,9 @@ class HscTranslator(SubaruTranslator):
         """Indicate whether this translation class can translate the
         supplied header.
 
-        There is no ``INSTRUME`` header in an HSC file, so this method
-        looks for HSC mentions in other headers.
+        There is no ``INSTRUME`` header in early HSC files, so this method
+        looks for HSC mentions in other headers.  In more recent files the
+        instrument is called "Hyper Suprime-Cam".
 
         Parameters
         ----------
@@ -80,6 +81,9 @@ class HscTranslator(SubaruTranslator):
             `True` if the header is recognized by this class. `False`
             otherwise.
         """
+        if "INSTRUME" in header:
+            return header["INSTRUME"] == "Hyper Suprime-Cam"
+
         for k in ("EXP-ID", "FRAMEID"):
             if k in header:
                 if header[k].startswith("HSC"):

@@ -28,14 +28,16 @@ from lsst.obs.metadata import ObservationInfo
 class HscTestCase(unittest.TestCase, UsefulAsserts):
 
     def testHscTranslator(self):
-        header = readTestFile("fitsheader-hsc.yaml")
-        v1 = ObservationInfo(header)
-        self.assertEqual(v1.instrument, "HSC")
-        self.assertEqual(v1.telescope, "Subaru")
-        self.assertEqual(v1.abstract_filter, "i")
+        for file, filter in (("fitsheader-hsc.yaml", "i"),
+                             ("fitsheader-hsc-HSCA04090107.yaml", "r")):
+            header = readTestFile(file)
+            v1 = ObservationInfo(header)
+            self.assertEqual(v1.instrument, "HSC")
+            self.assertEqual(v1.telescope, "Subaru")
+            self.assertEqual(v1.abstract_filter, filter)
 
-        # Sanity check WCS
-        self.assertCoordinatesConsistent(v1)
+            # Sanity check WCS
+            self.assertCoordinatesConsistent(v1)
 
 
 if __name__ == "__main__":
