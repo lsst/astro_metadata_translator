@@ -52,6 +52,17 @@ class HscTranslator(SuprimeCamTranslator):
                    }
     """One-to-one mappings"""
 
+    DAY0 = 55927  # Zero point for  2012-01-01  51544 -> 2000-01-01
+
+    # CCD index mapping for commissioning run 2
+    CCD_MAP_COMMISSIONING_2 = {112: 106,
+                               107: 105,
+                               113: 107,
+                               115: 109,
+                               108: 110,
+                               114: 108,
+                               }
+
     @classmethod
     def canTranslate(cls, header):
         """Indicate whether this translation class can translate the
@@ -126,3 +137,26 @@ class HscTranslator(SuprimeCamTranslator):
         angle = Angle(270.*u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
         angle = angle.wrap_at("360d")
         return angle
+
+    def to_detector_num(self):
+        """Calculate the detector number.
+
+        Focus CCDs were numbered incorrectly in the readout software during
+        commissioning run 2.  This method maps to the correct ones.
+
+        Returns
+        -------
+        num : `int`
+            Detector number.
+        """
+
+        ccd = super().to_detector_num()
+        try:
+            tjd = self._get_adjusted_mjd()
+        except Exception:
+            return ccd
+
+        if tjd > 390 and tjd < 405:
+            ccd = self.CCD_MAP_COMMISSIONING_2.get(ccd, ccd)
+
+        return ccd

@@ -61,6 +61,8 @@ class SuprimeCamTranslator(SubaruTranslator):
                    }
     """One-to-one mappings"""
 
+    DAY0 = 53005  # 2004-01-01
+
     @classmethod
     def canTranslate(cls, header):
         """Indicate whether this translation class can translate the
@@ -85,6 +87,18 @@ class SuprimeCamTranslator(SubaruTranslator):
                 if header[k].startswith("SUP"):
                     return True
         return False
+
+    def _get_adjusted_mjd(self):
+        """Calculate the modified julian date offset from reference day
+
+        Returns
+        -------
+        offset : `int`
+            Offset day count from reference day.
+        """
+        mjd = self._header["MJD"]
+        self._used_these_cards("MJD")
+        return int(mjd) - self.DAY0
 
     def to_physical_filter(self):
         value = self._header["FILTER01"].strip().upper()
