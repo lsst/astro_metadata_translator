@@ -23,6 +23,8 @@ import os
 import yaml
 from collections import OrderedDict
 
+from lsst.obs.metadata import ObservationInfo
+
 # PropertyList is optional
 try:
     import lsst.daf.base as dafBase
@@ -105,3 +107,39 @@ class UsefulAsserts:
         # Is AltAz from headers close to AltAz from RA/Dec headers?
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep)
+
+    def assertObservationInfo(self, file, checkWcs=True, wcsParams=None, **kwargs):
+        """Check contents of an ObservationInfo.
+
+        Parameters
+        ----------
+        file : `str`
+            Path to YAML file representing the header.
+        checkWcs : `bool`, optional
+            Check the consistency of the RA/Dec and AltAz values.
+        wcsParams : `dict`, optional
+            Parameters to pass to `assertCoordinatesConsistent`.
+        kwargs : `dict`
+            Keys matching `ObservationInfo` properties with values
+            to be tested.
+
+        Raises
+        ------
+        AssertionError
+            A value in the ObservationInfo derived from the file is
+            inconsistent.
+        """
+        header = readTestFile(file)
+        obsInfo = ObservationInfo(header)
+        print(obsInfo.__dict__)
+
+        # Check the properties
+        for property, expected in kwargs.items():
+            calculated = getattr(obsInfo, property)
+            self.assertEqual(calculated, expected, f"Comparing property {property}")
+
+        # Check the WCS consistency
+        if checkWcs:
+            if wcsParams is None:
+                wcsParams = {}
+            self.assertCoordinatesConsistent(obsInfo, **wcsParams)

@@ -21,37 +21,29 @@
 
 import unittest
 
-from helper import readTestFile, UsefulAsserts
-from lsst.obs.metadata import ObservationInfo
+from helper import UsefulAsserts
 
 
 class HscTestCase(unittest.TestCase, UsefulAsserts):
 
     def testHscTranslator(self):
-        for file, filter in (("fitsheader-hsc.yaml", "i"),
-                             ("fitsheader-hsc-HSCA04090107.yaml", "r")):
-            header = readTestFile(file)
-            v1 = ObservationInfo(header)
-            self.assertEqual(v1.instrument, "HSC")
-            self.assertEqual(v1.telescope, "Subaru")
-            self.assertEqual(v1.abstract_filter, filter)
-
-            # Sanity check WCS
-            self.assertCoordinatesConsistent(v1)
+        test_data = (("fitsheader-hsc.yaml", dict(telescope="Subaru", instrument="HSC",
+                                                  abstract_filter="i")),
+                     ("fitsheader-hsc-HSCA04090107.yaml", dict(telescope="Subaru", instrument="HSC",
+                                                               abstract_filter="r")),
+                     )
+        for file, expected in test_data:
+            self.assertObservationInfo(file, **expected)
 
     def testSuprimeCamTranslator(self):
-        for file, filter in (("fitsheader-suprimecam-CORR40535770.yaml", "r"),):
-            header = readTestFile(file)
-            v1 = ObservationInfo(header)
-            print(v1.__dict__)
-            self.assertEqual(v1.instrument, "SuprimeCam")
-            self.assertEqual(v1.telescope, "Subaru")
-            self.assertEqual(v1.abstract_filter, filter)
-
-            # Sanity check WCS
-            # In this case the airmass is average during observation
-            # but it looks like ALTITUDE is from a different time.
-            self.assertCoordinatesConsistent(v1, amdelta=0.015)
+        # In this case the airmass is average during observation
+        # but it looks like ALTITUDE is from a different time so loosen amdelta
+        test_data = (("fitsheader-suprimecam-CORR40535770.yaml",
+                      dict(telescope="Subaru", instrument="SuprimeCam",
+                           abstract_filter="r", wcsParams=dict(amdelta=0.015))),
+                     )
+        for file, expected in test_data:
+            self.assertObservationInfo(file, **expected)
 
 
 if __name__ == "__main__":
