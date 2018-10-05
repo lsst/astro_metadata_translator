@@ -97,6 +97,12 @@ class BasicTestCase(unittest.TestCase):
         self.assertNotIn("OBSGEO-X", newHdr)
         self.assertIn("TELESCOP", newHdr)
 
+        # Check the list of cards that were used
+        used = v1.cards_used
+        self.assertIn("INSTRUME", used)
+        self.assertIn("OBSGEO-Y", used)
+        self.assertNotIn("TELESCOP", used)
+
 
 if __name__ == "__main__":
     unittest.main()
