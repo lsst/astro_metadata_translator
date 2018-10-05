@@ -192,3 +192,6 @@ class SuprimeCamTranslator(SubaruTranslator):
         angle = Angle(self.quantity_from_card("INR-STR", u.deg))
         angle = angle.wrap_at("360d")
         return angle
+
+    def to_detector_exposure_id(self):
+        return self.to_exposure() * 10 + self.to_detector_num()

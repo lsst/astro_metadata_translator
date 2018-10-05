@@ -162,3 +162,6 @@ class DecamTranslator(FitsTranslator):
                       obstime=self.to_datetime_begin(), location=self.to_location())
         self._used_these_cards("AZ", "ZD")
         return altaz
+
+    def to_detector_exposure_id(self):
+        return int("{:07d}{:02d}".format(self.to_exposure(), self.to_detector_num()))

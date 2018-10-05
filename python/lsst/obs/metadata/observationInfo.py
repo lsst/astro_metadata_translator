@@ -76,6 +76,8 @@ class ObservationInfo:
                    "detector_num": ("Unique (for instrument) integer identifier for the sensor", "int"),
                    "detector_name": ("Name of the detector within the instrument (might not be unique)",
                                      "str"),
+                   "detector_exposure_id": ("Integer identifier for this detector in this exposure",
+                                            "int"),
                    "object": ("Object of interest or field name", "str"),
                    "temperature": ("Temperature outside the dome", "astropy.units.Quantity"),
                    "pressure": ("Atmospheric pressure outside the dome", "astropy.units.Quantity"),

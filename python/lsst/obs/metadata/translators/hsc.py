@@ -160,3 +160,6 @@ class HscTranslator(SuprimeCamTranslator):
             ccd = self.CCD_MAP_COMMISSIONING_2.get(ccd, ccd)
 
         return ccd
+
+    def to_detector_exposure_id(self):
+        return self.to_exposure() * 200 + self.to_detector_num()

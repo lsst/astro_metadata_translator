@@ -144,3 +144,6 @@ class MegaPrimeTranslator(FitsTranslator):
                       obstime=self.to_datetime_begin(), location=self.to_location())
         self._used_these_cards("TELALT", "TELAZ")
         return altaz
+
+    def to_detector_exposure_id(self):
+        return self.to_exposure() * 36 + self.to_detector_num()
