@@ -49,8 +49,11 @@ class MetadataMeta(type):
         return constant_translator
 
     @staticmethod
-    def _makeTrivialMapping(standardKey, fitsKey, default=None, minimum=None, maximum=None):
+    def _makeTrivialMapping(standardKey, fitsKey, default=None, minimum=None, maximum=None, unit=None):
         def trivial_translator(self):
+            if unit is not None:
+                return self.quantity_from_card(fitsKey, unit,
+                                               default=default, minimum=minimum, maximum=maximum)
             value = self._header[fitsKey]
             if default is not None:
                 value = self.validate_value(value, default, minimum=minimum, maximum=maximum)

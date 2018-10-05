@@ -54,6 +54,11 @@ class DecamTranslator(FitsTranslator):
                    "detector_num": "CCDNUM",
                    "detector_name": "DETPOS",
                    "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
+                   "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10., minimum=-10., maximum=40.)),
+                   # Header says torr but seems to be mbar. Use hPa unit
+                   # which is the SI equivalent of mbar.
+                   "pressure": ("PRESSURE", dict(unit=u.hPa,
+                                default=771.611, minimum=700., maximum=850.)),
                    "exposure": "EXPNUM",
                    "visit": "EXPNUM"}
 
@@ -135,15 +140,6 @@ class DecamTranslator(FitsTranslator):
         if obstype == "object":
             return "science"
         return obstype
-
-    def to_temperature(self):
-        return self.quantity_from_card("OUTTEMP", u.deg_C, default=10., minimum=-10., maximum=40.)
-
-    def to_pressure(self):
-        # Header says torr but seems to be mbar. Use hPa unit which is the SI
-        # equivalent of mbar.
-        return self.quantity_from_card("PRESSURE", u.hPa,
-                                       default=771.611, minimum=700., maximum=850.)
 
     def to_tracking_radec(self):
         if "RADESYS" in self._header:

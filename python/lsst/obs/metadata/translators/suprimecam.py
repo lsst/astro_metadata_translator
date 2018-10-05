@@ -54,6 +54,8 @@ class SuprimeCamTranslator(SubaruTranslator):
                    "detector_num": "DET-ID",
                    "boresight_airmass": "AIRMASS",
                    "relative_humidity": "OUT-HUM",
+                   "temperature": ("OUT-TMP", dict(unit=u.K)),
+                   "pressure": ("OUT-PRS", dict(unit=u.hPa)),
                    "exposure_time": "EXPTIME",
                    "dark_time": "EXPTIME",  # Assume same as exposure time
                    }
@@ -153,12 +155,6 @@ class SuprimeCamTranslator(SubaruTranslator):
         if obstype == "object":
             return "science"
         return obstype
-
-    def to_temperature(self):
-        return self.quantity_from_card("OUT-TMP", u.K)
-
-    def to_pressure(self):
-        return self.quantity_from_card("OUT-PRS", u.hPa)
 
     def to_tracking_radec(self):
         radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
