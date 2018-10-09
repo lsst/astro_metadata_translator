@@ -61,7 +61,8 @@ class SuprimeCamTranslator(SubaruTranslator):
                    }
     """One-to-one mappings"""
 
-    DAY0 = 53005  # 2004-01-01
+    # Zero point for SuprimeCam dates: 2004-01-01
+    DAY0 = 53005
 
     @classmethod
     def canTranslate(cls, header):

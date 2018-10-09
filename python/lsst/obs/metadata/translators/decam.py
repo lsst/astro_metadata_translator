@@ -53,6 +53,7 @@ class DecamTranslator(FitsTranslator):
                    "science_program": "PROPID",
                    "detector_num": "CCDNUM",
                    "detector_name": "DETPOS",
+                   # Ensure that reasonable values are always available
                    "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
                    "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10., minimum=-10., maximum=40.)),
                    # Header says torr but seems to be mbar. Use hPa unit

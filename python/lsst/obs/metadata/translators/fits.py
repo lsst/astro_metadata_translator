@@ -20,6 +20,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Metadata translation code for standard FITS headers"""
+
+__all__ = ("FitsTranslator", )
+
 from astropy.time import Time
 from astropy.coordinates import EarthLocation
 import astropy.units as u

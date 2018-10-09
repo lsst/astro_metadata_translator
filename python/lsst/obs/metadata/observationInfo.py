@@ -56,7 +56,7 @@ class ObservationInfo:
     _PROPERTIES = {"telescope": ("Full name of the telescope", "str"),
                    "instrument": ("The instrument used to observe the Exposure", "str"),
                    "location": ("Location of the observatory", "astropy.coordinates.EarthLocation"),
-                   "exposure": ("Unique (with instrument) integer identifier for this Exposure", "int"),
+                   "exposure": ("Unique (with instrument) integer identifier for this observation", "int"),
                    "visit": ("""ID of the Visit this Exposure is associated with.
 
     Science observations should essentially always be

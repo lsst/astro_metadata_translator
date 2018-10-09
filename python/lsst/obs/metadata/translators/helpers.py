@@ -32,7 +32,8 @@ translation classes without using `MetadataTranslator` properties.
 
 """
 
-__all__ = ("to_location_via_telescope_name", )
+__all__ = ("to_location_via_telescope_name",
+           "altitudeFromZenithDistance")
 
 from astropy.coordinates import EarthLocation
 import astropy.units as u
