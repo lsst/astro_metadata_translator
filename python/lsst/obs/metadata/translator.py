@@ -277,7 +277,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 value = default
         return value
 
-    def quantity_from_card(self, keyword, unit, scaling=1., default=None, minimum=None, maximum=None):
+    def quantity_from_card(self, keyword, unit, default=None, minimum=None, maximum=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
@@ -286,11 +286,6 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Keyword to use from header.
         unit : `astropy.units.UnitBase`
             Unit of the item in the header.
-        scaling : `float`
-            Amount to scale the value from the header before assigning the
-            units.  This is necessary if Astropy does not support the unit
-            directly (such as for mbar pressure units). The scaling is applied
-            before applying the validation.
         default : `float`, optional
             Default value to use if the header value is invalid.  Assumed
             to be in the same units as the value expected in the header.  If
@@ -312,7 +307,6 @@ class MetadataTranslator(metaclass=MetadataMeta):
             # Sometimes the header has the wrong type in it but this must
             # be a number if we are creating a quantity.
             value = float(value)
-        value *= scaling
         self._used_these_cards(keyword)
         if default is not None:
             value = self.validate_value(value, default, maximum=maximum, minimum=minimum)
