@@ -33,10 +33,45 @@ log = logging.getLogger(__name__)
 
 
 class MetadataMeta(type):
-    """Register all subclasses with the base class"""
+    """Register all subclasses with the base class and create dynamic
+    translator methods.
+
+    The metaclass provides two facilities.  Firstly, every subclass
+    of `MetadataTranslator` that includes a ``name`` class property is
+    registered as a translator class that could be selected when automatic
+    header translation is attempted.  Only name translator subclasses that
+    correspond to a complete instrument.  Translation classes providing
+    generic translation support for multiple instrument translators should
+    not be named.
+
+    The second feature of this metaclass is to convert simple translations
+    to full translator methods.  Sometimes a translation is fixed (for
+    example a specific instrument name should be used) and rather than provide
+    a full ``to_property()`` translation method the mapping can be defined
+    in a class variable named ``_constMap``.  Similarly, for one-to-one
+    trivial mappings from a header to a property, ``_trivialMap`` can be
+    defined.  Trivial mappings are a dict mapping a generic property
+    to either a header keyword, or a tuple consisting of the header keyword
+    and a dict containing key value pairs suitable for the
+    `MetadataTranslator.quantity_from_card()` method.
+    """
 
     @staticmethod
     def _makeConstMapping(standardKey, constant):
+        """Make a translator method that returns a constant value.
+
+        Parameters
+        ----------
+        standardKey : `str`
+            Name of the property to be calculated (for the docstring).
+        constant : `str` or `numbers.Number`
+            Value to return for this translator.
+
+        Returns
+        -------
+        f : `function`
+            Function returning the constant.
+        """
         def constant_translator(self):
             return constant
         constant_translator.__doc__ = f"""Returns constant value for '{standardKey}' property
@@ -49,22 +84,55 @@ class MetadataMeta(type):
         return constant_translator
 
     @staticmethod
-    def _makeTrivialMapping(standardKey, fitsKey, default=None, minimum=None, maximum=None, unit=None):
+    def _makeTrivialMapping(standardKey, headerKey, default=None, minimum=None, maximum=None, unit=None):
+        """Make a translator method returning a header value.
+
+        The header value can be converted to a `~astropy.units.Quantity`
+        if desired, and can also have its value validated.
+
+        See `MetadataTranslator.validate_value()` for details on the use
+        of default parameters.
+
+        Parameters
+        ----------
+        standardKey : `str`
+            Name of the translator to be constructed (for the docstring).
+        headerKey : `str`
+            Name of the key to look up in the header.
+        default : `numbers.Number` or `astropy.units.Quantity`, optional
+            If not `None`, default value to be used if the parameter read from
+            the header is not defined.
+        minimum : `numbers.Number` or `astropy.units.Quantity`, optional
+            If not `None`, and if ``default`` is not `None`, minimum value
+            acceptable for this parameter.
+        maximum : `numbers.Number` or `astropy.units.Quantity`, optional
+            If not `None`, and if ``default`` is not `None`, maximum value
+            acceptable for this parameter.
+        unit : `astropy.units.Unit`, optional
+            If not `None`, the value read from the header will be converted
+            to a `~astropy.units.Quantity`.  Only supported for numeric values.
+
+        Returns
+        -------
+        t : `function`
+            Function implementing a translator with the specified
+            parameters.
+        """
         def trivial_translator(self):
             if unit is not None:
-                return self.quantity_from_card(fitsKey, unit,
+                return self.quantity_from_card(headerKey, unit,
                                                default=default, minimum=minimum, maximum=maximum)
-            value = self._header[fitsKey]
+            value = self._header[headerKey]
             if default is not None:
                 value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
-            self._used_these_cards(fitsKey)
+            self._used_these_cards(headerKey)
             return value
-        trivial_translator.__doc__ = f"""Map '{fitsKey}' FITS keyword to '{standardKey}' property
+        trivial_translator.__doc__ = f"""Map '{headerKey}' header keyword to '{standardKey}' property
 
         Returns
         -------
         translation : `str` or `numbers.Number`
-            Translated header value derived directly from the {fitsKey}
+            Translated header value derived directly from the {headerKey}
             header value.
         """
         return trivial_translator
@@ -75,12 +143,12 @@ class MetadataMeta(type):
         if hasattr(cls, "name") and cls.name is not None:
             MetadataTranslator.translators[cls.name] = cls
 
-        for standardKey, fitsKey in cls._trivialMap.items():
+        for standardKey, headerKey in cls._trivialMap.items():
             kwargs = {}
-            if type(fitsKey) == tuple:
-                kwargs = fitsKey[1]
-                fitsKey = fitsKey[0]
-            translator = cls._makeTrivialMapping(standardKey, fitsKey, **kwargs)
+            if type(headerKey) == tuple:
+                kwargs = headerKey[1]
+                headerKey = headerKey[0]
+            translator = cls._makeTrivialMapping(standardKey, headerKey, **kwargs)
             setattr(cls, f"to_{standardKey}", translator)
 
         for standardKey, constant in cls._constMap.items():
@@ -94,13 +162,13 @@ class MetadataTranslator(metaclass=MetadataMeta):
     Parameters
     ----------
     header : `dict`-like
-        Representation of an instrument FITS header that can be manipulated
+        Representation of an instrument header that can be manipulated
         as if it was a `dict`.
     """
 
     _trivialMap = {}
     """Dict of one-to-one mappings for header translation from standard
-    property to corresponding FITS keyword."""
+    property to corresponding keyword."""
 
     _constMap = {}
     """Dict defining a constant for specified standard properties."""
@@ -141,7 +209,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
         Parameters
         ----------
         header : `dict`-like
-            Representation of a FITS header.
+            Representation of a header.
 
         Returns
         -------
@@ -200,8 +268,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
         value : `float`
             Either the supplied value, or a default value.
         """
-        print(f"Validating {value} {default}")
-        if math.isnan(value):
+        if value is None or math.isnan(value):
             value = default
         else:
             if minimum is not None and value < minimum:
@@ -242,7 +309,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
         """
         value = self._header[keyword]
         if isinstance(value, str):
-            # Sometimes the FITS header has the wrong type in it but this must
+            # Sometimes the header has the wrong type in it but this must
             # be a number if we are creating a quantity.
             value = float(value)
         value *= scaling

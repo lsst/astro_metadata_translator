@@ -22,9 +22,13 @@
 """Generically useful translation helpers which translation classes
 can use.
 
-They are written as free functions as methods that will be attached
-to classes dynamically. They are assumed to be called from
-`MetadataTranslator` classes and have access to the standard properties.
+They are written as free functions.  Some of them are written
+as if they are methods of `MetadataTranslator`, allowing them to be attached
+to translator classes that need them.  These methods have full access to
+the translator methods.
+
+Other functions are pure helpers that can be imported and used to help
+translation classes without using `MetadataTranslator` properties.
 
 """
 
@@ -51,7 +55,7 @@ def altitudeFromZenithDistance(zd):
     Parameters
     ----------
     zd : `astropy.units.Quantity`
-        Zenith distance.
+        Zenith distance as an angle.
 
     Returns
     -------

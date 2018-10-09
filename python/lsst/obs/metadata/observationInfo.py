@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Extract standard metadata from instrument FITS headers"""
+"""Represent standard metadata from instrument headers"""
 
 __all__ = ("ObservationInfo", )
 
@@ -32,13 +32,13 @@ log = logging.getLogger(__name__)
 
 
 class ObservationInfo:
-    """Standardized representation of an instrument FITS header for a single
+    """Standardized representation of an instrument header for a single
     exposure observation.
 
     Parameters
     ----------
     header : `dict`-like
-        Representation of an instrument FITS header accessible as a `dict`.
+        Representation of an instrument header accessible as a `dict`.
     translator_class : `MetadataTranslator`-class, `optional`
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
@@ -72,11 +72,11 @@ class ObservationInfo:
                    "boresight_rotation_angle": ("Angle of the instrument in boresight_rotation_coord frame",
                                                 "astropy.coordinates.Angle"),
                    "boresight_rotation_coord": ("Coordinate frame of the instrument rotation angle"
-                                                " (sky, unknown)", "str"),
+                                                " (options: sky, unknown)", "str"),
                    "detector_num": ("Unique (for instrument) integer identifier for the sensor", "int"),
                    "detector_name": ("Name of the detector within the instrument (might not be unique)",
                                      "str"),
-                   "detector_exposure_id": ("Integer identifier for this detector in this exposure",
+                   "detector_exposure_id": ("Unique integer identifier for this detector in this exposure",
                                             "int"),
                    "object": ("Object of interest or field name", "str"),
                    "temperature": ("Temperature outside the dome", "astropy.units.Quantity"),
@@ -86,8 +86,10 @@ class ObservationInfo:
                    "altaz_begin": ("Telescope boresight azimuth and elevation at start of observation",
                                    "astropy.coordinates.AltAz"),
                    "science_program": ("Observing program (survey or proposal) identifier", "str"),
-                   "obstype": ("Type of observation (science, dark, flat, bias, focus etc)", "str"),
-                   "obsid": ("Unique observation identifier", "str")}
+                   "obstype": ("Type of observation (currently: science, dark, flat, bias, focus)",
+                               "str"),
+                   "obsid": ("Label uniquely identifying this observation (can be related to 'exposure')",
+                             "str")}
 
     """All the properties supported by this class with associated
     documentation."""
@@ -97,7 +99,8 @@ class ObservationInfo:
         # Store the supplied header for later stripping
         self._header = header
 
-        # for now PropertyList is not dict-like so workaround this
+        # PropertyList is not dict-like so force to a dict here to simplify
+        # the translation code.
         if hasattr(header, "toOrderedDict"):
             header = header.toOrderedDict()
 
@@ -121,7 +124,6 @@ class ObservationInfo:
             property = f"_{t}"
 
             try:
-                print(f"Assigning {property} via {method}")
                 setattr(self, property, getattr(translator, method)())
             except AttributeError:
                 log.warning("No translation exists for property %s using translator %s",
@@ -150,8 +152,24 @@ class ObservationInfo:
         return hdr
 
 
-# Dynamically add the standard properties
+# Method to add the standard properties
 def _makeProperty(property, doc, return_type):
+    """Create a getter method with associated docstring
+
+    Parameters
+    ----------
+    property : `str`
+        Name of the property getter to be created.
+    doc : `str`
+        Description of this property.
+    return_type : `str`
+        Type of this property (used in the doc string).
+
+    Returns
+    -------
+    p : `function`
+        Getter method for this property.
+    """
     def getter(self):
         return getattr(self, f"_{property}")
 
@@ -165,6 +183,8 @@ def _makeProperty(property, doc, return_type):
     return getter
 
 
-for p, d in ObservationInfo._PROPERTIES.items():
-    setattr(ObservationInfo, f"_{p}", None)
-    setattr(ObservationInfo, p, property(_makeProperty(p, *d)))
+# Initialize the internal properties (underscored) and add the associated
+# getter methods.
+for name, description in ObservationInfo._PROPERTIES.items():
+    setattr(ObservationInfo, f"_{name}", None)
+    setattr(ObservationInfo, name, property(_makeProperty(name, *description)))
