@@ -21,10 +21,10 @@
 
 import unittest
 
-from helper import UsefulAsserts
+from helper import MetadataAssertHelper
 
 
-class DecamTestCase(unittest.TestCase, UsefulAsserts):
+class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
 
     def testDecamTranslator(self):
         test_data = (("fitsheader-decam.yaml",
@@ -32,7 +32,7 @@ class DecamTestCase(unittest.TestCase, UsefulAsserts):
                            abstract_filter="z", wcsParams=dict(max_sep=1.5))),
                      )
         for file, expected in test_data:
-            self.assertObservationInfo(file, **expected)
+            self.assertObservationInfoFromYaml(file, **expected)
 
 
 if __name__ == "__main__":

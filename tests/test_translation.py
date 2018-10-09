@@ -26,6 +26,7 @@ from lsst.obs.metadata import FitsTranslator, ObservationInfo
 
 
 class InstrumentTestTranslator(FitsTranslator):
+    """Simple FITS-like translator to test the infrastructure"""
 
     # Needs a name to be registered
     name = "TestTranslator"
@@ -40,7 +41,7 @@ class InstrumentTestTranslator(FitsTranslator):
     _constMap = {"format": "HDF5"}
 
 
-class BasicTestCase(unittest.TestCase):
+class TranslatorTestCase(unittest.TestCase):
 
     def setUp(self):
         # Known simple header
@@ -54,7 +55,7 @@ class BasicTestCase(unittest.TestCase):
                        "OBSGEO-Z": "2150653.35350771",
                        "BAZ": "bar"}
 
-    def testBasicManualTranslation(self):
+    def testManualTranslation(self):
 
         header = self.header
         translator = FitsTranslator(header)
@@ -74,7 +75,7 @@ class BasicTestCase(unittest.TestCase):
         self.assertEqual(translator.to_format(), "HDF5")
         self.assertEqual(translator.to_foobar(), "bar")
 
-    def testBasicTranslator(self):
+    def testTranslator(self):
         header = self.header
 
         # Specify a translation class
@@ -86,7 +87,6 @@ class BasicTestCase(unittest.TestCase):
         v1 = ObservationInfo(header)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
-        print(v1.__dict__)
 
         location = v1.location.to_geodetic()
         self.assertAlmostEqual(location.height.to("m").to_value(), 4123.0, places=1)

@@ -21,10 +21,10 @@
 
 import unittest
 
-from helper import UsefulAsserts
+from helper import MetadataAssertHelper
 
 
-class HscTestCase(unittest.TestCase, UsefulAsserts):
+class HscTestCase(unittest.TestCase, MetadataAssertHelper):
 
     def testHscTranslator(self):
         test_data = (("fitsheader-hsc.yaml", dict(telescope="Subaru", instrument="HSC",
@@ -33,7 +33,7 @@ class HscTestCase(unittest.TestCase, UsefulAsserts):
                                                                abstract_filter="r")),
                      )
         for file, expected in test_data:
-            self.assertObservationInfo(file, **expected)
+            self.assertObservationInfoFromYaml(file, **expected)
 
     def testSuprimeCamTranslator(self):
         # In this case the airmass is average during observation
@@ -43,7 +43,7 @@ class HscTestCase(unittest.TestCase, UsefulAsserts):
                            abstract_filter="r", wcsParams=dict(amdelta=0.015))),
                      )
         for file, expected in test_data:
-            self.assertObservationInfo(file, **expected)
+            self.assertObservationInfoFromYaml(file, **expected)
 
 
 if __name__ == "__main__":

@@ -21,11 +21,11 @@
 
 import unittest
 
-from helper import readTestFile, UsefulAsserts
+from helper import readTestFile, MetadataAssertHelper
 from lsst.obs.metadata import ObservationInfo
 
 
-class MegaPrimeTestCase(unittest.TestCase, UsefulAsserts):
+class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
 
     def testMegaPrimeTranslator(self):
         test_data = (("fitsheader-megaprime.yaml",
@@ -33,7 +33,7 @@ class MegaPrimeTestCase(unittest.TestCase, UsefulAsserts):
                            abstract_filter="i")),
                      )
         for file, expected in test_data:
-            self.assertObservationInfo(file, **expected)
+            self.assertObservationInfoFromYaml(file, **expected)
 
     def testMegaPrimeStripping(self):
         header = readTestFile("fitsheader-megaprime.yaml")

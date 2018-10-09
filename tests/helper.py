@@ -35,6 +35,8 @@ except ImportError:
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
+# Define a YAML loader for lsst.daf.base.PropertySet serializations that
+# we can use if daf_base is not available.
 def pl_constructor(loader, node):
     """Construct an OrderedDict from a YAML file containing a PropertyList."""
     pl = OrderedDict()
@@ -73,8 +75,10 @@ def readTestFile(filename):
     return header
 
 
-class UsefulAsserts:
-    """Class with helpful asserts"""
+class MetadataAssertHelper:
+    """Class with helpful asserts that can be used for testing metadata
+    translations.
+    """
 
     def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0, amdelta=0.01):
         """Check that SkyCoord, AltAz, and airmass are self consistent.
@@ -108,7 +112,7 @@ class UsefulAsserts:
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep)
 
-    def assertObservationInfo(self, file, checkWcs=True, wcsParams=None, **kwargs):
+    def assertObservationInfoFromYaml(self, file, checkWcs=True, wcsParams=None, **kwargs):
         """Check contents of an ObservationInfo.
 
         Parameters
@@ -130,8 +134,30 @@ class UsefulAsserts:
             inconsistent.
         """
         header = readTestFile(file)
+        self.assertObservationInfo(header, checkWcs=checkWcs, wcsParams=wcsParams, **kwargs)
+
+    def assertObservationInfo(self, header, checkWcs=True, wcsParams=None, **kwargs):
+        """Check contents of an ObservationInfo.
+
+        Parameters
+        ----------
+        header : `dict`-like
+            Header to be checked.
+        checkWcs : `bool`, optional
+            Check the consistency of the RA/Dec and AltAz values.
+        wcsParams : `dict`, optional
+            Parameters to pass to `assertCoordinatesConsistent`.
+        kwargs : `dict`
+            Keys matching `ObservationInfo` properties with values
+            to be tested.
+
+        Raises
+        ------
+        AssertionError
+            A value in the ObservationInfo derived from the file is
+            inconsistent.
+        """
         obsInfo = ObservationInfo(header)
-        print(obsInfo.__dict__)
 
         # Check the properties
         for property, expected in kwargs.items():
