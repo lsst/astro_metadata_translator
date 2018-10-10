@@ -21,18 +21,22 @@
 
 """Classes and support code for metadata translation"""
 
-__all__ = ("MetadataTranslator",)
+__all__ = ("MetadataTranslator", "StubTranslator")
 
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 import logging
+import warnings
 import math
 
 import astropy.units as u
 
+from .properties import PROPERTIES
+
+
 log = logging.getLogger(__name__)
 
 
-class MetadataMeta(type):
+class MetadataMeta(ABCMeta):
     """Register all subclasses with the base class and create dynamic
     translator methods.
 
@@ -137,12 +141,15 @@ class MetadataMeta(type):
         """
         return trivial_translator
 
-    def __init__(cls, name, bases, dct):
+    def __init__(cls, name, bases, dct):  # noqa: N805  pep8-naming can not tell ABCMeta is type
         super().__init__(name, bases, dct)
 
+        # Only register classes with declared names
         if hasattr(cls, "name") and cls.name is not None:
             MetadataTranslator.translators[cls.name] = cls
 
+        # Go through the trival mappings for this class and create
+        # corresponding translator methods
         for standardKey, headerKey in cls._trivialMap.items():
             kwargs = {}
             if type(headerKey) == tuple:
@@ -151,6 +158,8 @@ class MetadataMeta(type):
             translator = cls._makeTrivialMapping(standardKey, headerKey, **kwargs)
             setattr(cls, f"to_{standardKey}", translator)
 
+        # Go through the constant mappings for this class and create
+        # corresponding translator methods
         for standardKey, constant in cls._constMap.items():
             translator = cls._makeConstMapping(standardKey, constant)
             setattr(cls, f"to_{standardKey}", translator)
@@ -311,3 +320,101 @@ class MetadataTranslator(metaclass=MetadataMeta):
         if default is not None:
             value = self.validate_value(value, default, maximum=maximum, minimum=minimum)
         return u.Quantity(value, unit=unit)
+
+
+def _makeAbstractTranslatorMethod(property, doc, return_type):
+    """Create a an abstract translation method for this property.
+
+    Parameters
+    ----------
+    property : `str`
+        Name of the translator for property to be created.
+    doc : `str`
+        Description of the property.
+    return_type : `str`
+        Type of this property (used in the doc string).
+
+    Returns
+    -------
+    m : `function`
+        Translator method for this property.
+    """
+    def to_property(self):
+        raise NotImplementedError(f"Translator for '{property}' undefined.")
+
+    to_property.__doc__ = f"""Return value of {property} from headers.
+
+    {doc}
+
+    Returns
+    -------
+    {property} : `{return_type}`
+        The translated property.
+    """
+    return to_property
+
+
+# Make abstract methods for all the translators methods.
+# Unfortunately registering them as abstractmethods does not work
+# as these assignments come after the class has been created.
+# Assigning to __abstractmethods__ directly does work but interacts
+# poorly with the metaclass automatically generating methods from
+# _trivialMap and _constMap.
+
+for name, description in PROPERTIES.items():
+    setattr(MetadataTranslator, f"to_{name}",
+            abstractmethod(_makeAbstractTranslatorMethod(name, *description)))
+
+
+class StubTranslator(MetadataTranslator):
+    """Translator where all the translations are stubbed out and issue
+    warnings.
+
+    This translator can be used as a base class whilst developing a new
+    translator.  It allows testing to proceed without being required to fully
+    define all translation methods.  Once complete the class should be
+    removed from the inheritance tree.
+
+    """
+    pass
+
+
+def _makeStubTranslatorMethod(property, doc, return_type):
+    """Create a an stub translation method for this property.
+
+    Parameters
+    ----------
+    property : `str`
+        Name of the translator for property to be created.
+    doc : `str`
+        Description of the property.
+    return_type : `str`
+        Type of this property (used in the doc string).
+
+    Returns
+    -------
+    m : `function`
+        Stub translator method for this property.
+    """
+    def to_stub(self):
+        warnings.warn(f"Please implement translator for property '{property}' for translator {self}",
+                      stacklevel=3)
+        return None
+
+    to_stub.__doc__ = f"""Unimplemented translator for {property}.
+
+    {doc}
+
+    Issues a warning reminding the implementer to override this method.
+
+    Returns
+    -------
+    {property} : `None`
+        Always returns `None`.
+    """
+    return to_stub
+
+
+# Create stub translation methods
+for name, description in PROPERTIES.items():
+    setattr(StubTranslator, f"to_{name}", _makeStubTranslatorMethod(name, *description))

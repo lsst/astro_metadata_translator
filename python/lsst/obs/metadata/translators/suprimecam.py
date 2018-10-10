@@ -52,6 +52,7 @@ class SuprimeCamTranslator(SubaruTranslator):
                    "science_program": "PROP-ID",
                    "abstract_filter": "FILTER",
                    "detector_num": "DET-ID",
+                   "detector_name": "DETECTOR",
                    "boresight_airmass": "AIRMASS",
                    "relative_humidity": "OUT-HUM",
                    "temperature": ("OUT-TMP", dict(unit=u.K)),

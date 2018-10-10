@@ -22,10 +22,10 @@
 import unittest
 from astropy.time import Time
 
-from lsst.obs.metadata import FitsTranslator, ObservationInfo
+from lsst.obs.metadata import FitsTranslator, StubTranslator, ObservationInfo
 
 
-class InstrumentTestTranslator(FitsTranslator):
+class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     """Simple FITS-like translator to test the infrastructure"""
 
     # Needs a name to be registered
@@ -36,7 +36,8 @@ class InstrumentTestTranslator(FitsTranslator):
 
     # Some new mappings, including an override
     _trivialMap = {"foobar": "BAZ",
-                   "telescope": "TELCODE"}
+                   "telescope": "TELCODE",
+                   "obsid": "OBSID"}
 
     _constMap = {"format": "HDF5"}
 
@@ -53,6 +54,7 @@ class TranslatorTestCase(unittest.TestCase):
                        "OBSGEO-X": "-5464588.84421314",
                        "OBSGEO-Y": "-2493000.19137644",
                        "OBSGEO-Z": "2150653.35350771",
+                       "OBSID": "20000101_00002",
                        "BAZ": "bar"}
 
     def testManualTranslation(self):
@@ -79,12 +81,16 @@ class TranslatorTestCase(unittest.TestCase):
         header = self.header
 
         # Specify a translation class
-        v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator)
+        with self.assertWarns(UserWarning):
+            # Since the translator is incomplete it should issue warnings
+            v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
 
         # Now automated class
-        v1 = ObservationInfo(header)
+        with self.assertWarns(UserWarning):
+            # Since the translator is incomplete it should issue warnings
+            v1 = ObservationInfo(header)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
 
