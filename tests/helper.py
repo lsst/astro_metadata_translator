@@ -21,6 +21,7 @@
 
 import os
 import yaml
+import pickle
 from collections import OrderedDict
 
 from lsst.obs.metadata import ObservationInfo
@@ -158,6 +159,10 @@ class MetadataAssertHelper:
             inconsistent.
         """
         obsInfo = ObservationInfo(header)
+
+        # Check that we can pickle and get back the same properties
+        newInfo = pickle.loads(pickle.dumps(obsInfo))
+        self.assertEqual(obsInfo, newInfo)
 
         # Check the properties
         for property, expected in kwargs.items():

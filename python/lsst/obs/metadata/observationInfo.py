@@ -115,6 +115,45 @@ class ObservationInfo:
             del hdr[c]
         return hdr
 
+    def __eq__(self, other):
+        """Compares equal if standard properties are equal
+        """
+        if type(self) != type(other):
+            return False
+
+        for p in self._PROPERTIES:
+            # Use string comparison since SkyCoord.__eq__ seems unreliable
+            # otherwise.
+            v1 = f"{getattr(self, p)}"
+            v2 = f"{getattr(other, p)}"
+            if v1 != v2:
+                return False
+
+        return True
+
+    def __getstate__(self):
+        """Get pickleable state
+
+        Returns the properties, the name of the translator, and the
+        cards that were used.  Does not return the full header.
+
+        Returns
+        -------
+        state : `dict`
+            Dict containing items that can be persisted.
+        """
+        state = dict()
+        for p in self._PROPERTIES:
+            property = f"_{p}"
+            state[p] = getattr(self, property)
+
+        return state
+
+    def __setstate__(self, state):
+        for p in self._PROPERTIES:
+            property = f"_{p}"
+            setattr(self, property, state[p])
+
 
 # Method to add the standard properties
 def _makeProperty(property, doc, return_type):
