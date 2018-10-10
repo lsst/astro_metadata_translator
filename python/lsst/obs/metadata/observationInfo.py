@@ -92,9 +92,9 @@ class ObservationInfo:
             except NotImplementedError as e:
                 raise NotImplementedError(f"No translation exists for property '{t}'"
                                           f" using translator {translator.__class__}") from e
-            except KeyError:
-                log.warning("Error calculating property %s using translator %s",
-                            t, translator.__class__, exc_info=1)
+            except KeyError as e:
+                raise KeyError(f"Error calculating property '{t}'"
+                               " using translator {translator.__class__}") from e
 
     @property
     def cards_used(self):
