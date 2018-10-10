@@ -2,6 +2,8 @@ pytest_session.txt
 .sconsign.dblite
 version.py
 tests/.tests
+doc/_build
+doc/py-api
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
