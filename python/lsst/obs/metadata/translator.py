@@ -129,6 +129,12 @@ class MetadataMeta(ABCMeta):
             Function implementing a translator with the specified
             parameters.
         """
+        if standardKey in PROPERTIES:
+            property_doc, return_type = PROPERTIES[standardKey]
+        else:
+            return_type = "str` or `numbers.Number"
+            property_doc = f"Map '{headerKey}' header keyword to '{standardKey}' property"
+
         def trivial_translator(self):
             if unit is not None:
                 return self.quantity_from_card(headerKey, unit,
@@ -137,13 +143,14 @@ class MetadataMeta(ABCMeta):
             if default is not None:
                 value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
             self._used_these_cards(headerKey)
-            return value
 
-        if standardKey in PROPERTIES:
-            property_doc, return_type = PROPERTIES[standardKey]
-        else:
-            return_type = "str` or `numbers.Number"
-            property_doc = f"Map '{headerKey}' header keyword to '{standardKey}' property"
+            # If we know this is meant to be a string, force to a string.
+            # Sometimes headers represent items as integers which generically
+            # we want as strings (eg OBSID)
+            if return_type == "str":
+                value = str(value)
+
+            return value
 
         # Docstring inheritance means it is confusing to specify here
         # exactly which header value is being used.
