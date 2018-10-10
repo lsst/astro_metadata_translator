@@ -24,6 +24,8 @@ import yaml
 import pickle
 from collections import OrderedDict
 
+import astropy.units as u
+
 from lsst.obs.metadata import ObservationInfo
 
 # PropertyList is optional
@@ -167,7 +169,15 @@ class MetadataAssertHelper:
         # Check the properties
         for property, expected in kwargs.items():
             calculated = getattr(obsInfo, property)
-            self.assertEqual(calculated, expected, f"Comparing property {property}")
+            msg = f"Comparing property {property}"
+            if isinstance(expected, u.Quantity):
+                calculated = calculated.to_value(unit=expected.unit)
+                expected = expected.to_value()
+                self.assertAlmostEqual(calculated, expected, msg=msg)
+            elif isinstance(expected, float):
+                self.assertAlmostEqual(calculated, expected, msg=msg)
+            else:
+                self.assertEqual(calculated, expected, msg=msg)
 
         # Check the WCS consistency
         if checkWcs:

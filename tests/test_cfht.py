@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+import astropy.units as u
+import astropy.units.cds as cds
 
 from helper import readTestFile, MetadataAssertHelper
 from lsst.obs.metadata import ObservationInfo
@@ -29,8 +31,26 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
 
     def testMegaPrimeTranslator(self):
         test_data = (("fitsheader-megaprime.yaml",
-                      dict(telescope="CFHT 3.6m", instrument="MegaPrime",
-                           abstract_filter="i")),
+                      dict(telescope="CFHT 3.6m",
+                           instrument="MegaPrime",
+                           abstract_filter="i",
+                           boresight_rotation_coord="unknown",
+                           dark_time=615.0,
+                           detector_exposure_id=37398350,
+                           detector_name="8352-15-3",
+                           detector_num=2,
+                           exposure=1038843,
+                           exposure_time=615.037,
+                           object="w2.+2+2",
+                           obsid="1038843",
+                           obstype="science",
+                           physical_filter="i.MP9702",
+                           pressure=617.65*cds.mmHg,
+                           relative_humidity=39.77,
+                           science_program="08BL05",
+                           temperature=0.9*u.deg_C,
+                           visit=1038843,
+                           )),
                      )
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)

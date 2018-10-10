@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+import astropy.units as u
 
 from helper import MetadataAssertHelper
 
@@ -28,8 +29,26 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
 
     def testDecamTranslator(self):
         test_data = (("fitsheader-decam.yaml",
-                      dict(telescope="CTIO 4.0-m telescope", instrument="DECam",
-                           abstract_filter="z", wcsParams=dict(max_sep=1.5))),
+                      dict(telescope="CTIO 4.0-m telescope",
+                           instrument="DECam",
+                           abstract_filter="z",
+                           boresight_rotation_coord="unknown",
+                           dark_time=201.15662,
+                           detector_exposure_id=22938825,
+                           detector_name="S1",
+                           detector_num=25,
+                           exposure=229388,
+                           exposure_time=200.0,
+                           object="DES supernova hex SN-S1 tiling 22",
+                           obsid="ct4m20130901t060255",
+                           obstype="science",
+                           physical_filter="z DECam SDSS c0004 9260.0 1520.0",
+                           pressure=779.0*u.hPa,
+                           relative_humidity=23.0,
+                           science_program="2012B-0001",
+                           temperature=11.9*u.deg_C,
+                           visit=229388,
+                           wcsParams=dict(max_sep=1.5))),
                      )
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)
