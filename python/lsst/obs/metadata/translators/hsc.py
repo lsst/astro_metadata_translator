@@ -53,7 +53,7 @@ class HscTranslator(SuprimeCamTranslator):
     """One-to-one mappings"""
 
     # Zero point for HSC dates: 2012-01-01  51544 -> 2000-01-01
-    DAY0 = 55927
+    _DAY0 = 55927
 
     # CCD index mapping for commissioning run 2
     CCD_MAP_COMMISSIONING_2 = {112: 106,

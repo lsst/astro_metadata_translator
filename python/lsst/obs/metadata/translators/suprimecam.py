@@ -63,7 +63,7 @@ class SuprimeCamTranslator(SubaruTranslator):
     """One-to-one mappings"""
 
     # Zero point for SuprimeCam dates: 2004-01-01
-    DAY0 = 53005
+    _DAY0 = 53005
 
     @classmethod
     def canTranslate(cls, header):
@@ -100,7 +100,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         """
         mjd = self._header["MJD"]
         self._used_these_cards("MJD")
-        return int(mjd) - self.DAY0
+        return int(mjd) - self._DAY0
 
     def to_physical_filter(self):
         value = self._header["FILTER01"].strip().upper()
