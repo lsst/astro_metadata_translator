@@ -78,12 +78,19 @@ class MetadataMeta(ABCMeta):
         """
         def constant_translator(self):
             return constant
-        constant_translator.__doc__ = f"""Returns constant value for '{standardKey}' property
+
+        if standardKey in PROPERTIES:
+            property_doc, return_type = PROPERTIES[standardKey]
+        else:
+            return_type = type(constant).__name__
+            property_doc = f"Returns constant value for '{standardKey}' property"
+
+        constant_translator.__doc__ = f"""{property_doc}
 
         Returns
         -------
-        translation : `{type(constant).__name__}`
-            Always returns {constant!r}.
+        translation : `{return_type}`
+            Translated property.
         """
         return constant_translator
 
@@ -131,13 +138,21 @@ class MetadataMeta(ABCMeta):
                 value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
             self._used_these_cards(headerKey)
             return value
-        trivial_translator.__doc__ = f"""Map '{headerKey}' header keyword to '{standardKey}' property
+
+        if standardKey in PROPERTIES:
+            property_doc, return_type = PROPERTIES[standardKey]
+        else:
+            return_type = "str` or `numbers.Number"
+            property_doc = f"Map '{headerKey}' header keyword to '{standardKey}' property"
+
+        # Docstring inheritance means it is confusing to specify here
+        # exactly which header value is being used.
+        trivial_translator.__doc__ = f"""{property_doc}
 
         Returns
         -------
-        translation : `str` or `numbers.Number`
-            Translated header value derived directly from the {headerKey}
-            header value.
+        translation : `{return_type}`
+            Translated value derived from the header.
         """
         return trivial_translator
 
@@ -157,12 +172,16 @@ class MetadataMeta(ABCMeta):
                 headerKey = headerKey[0]
             translator = cls._makeTrivialMapping(standardKey, headerKey, **kwargs)
             setattr(cls, f"to_{standardKey}", translator)
+            if standardKey not in PROPERTIES:
+                log.warning(f"Unexpected trivial translator for '{standardKey}' defined in {cls}")
 
         # Go through the constant mappings for this class and create
         # corresponding translator methods
         for standardKey, constant in cls._constMap.items():
             translator = cls._makeConstMapping(standardKey, constant)
             setattr(cls, f"to_{standardKey}", translator)
+            if standardKey not in PROPERTIES:
+                log.warning(f"Unexpected constant translator for '{standardKey}' defined in {cls}")
 
 
 class MetadataTranslator(metaclass=MetadataMeta):
