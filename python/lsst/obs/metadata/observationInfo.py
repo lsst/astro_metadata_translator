@@ -123,7 +123,8 @@ class ObservationInfo:
 
         for p in self._PROPERTIES:
             # Use string comparison since SkyCoord.__eq__ seems unreliable
-            # otherwise.
+            # otherwise.  Should have per-type code so that floats and
+            # quantities can be compared properly.
             v1 = f"{getattr(self, p)}"
             v2 = f"{getattr(other, p)}"
             if v1 != v2:
