@@ -20,3 +20,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .fits import *
+from .decam import *
+from .hsc import *
+from .megaprime import *
+from .subaru import *
+from .hsc import *
+from .suprimecam import *

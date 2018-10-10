@@ -22,10 +22,11 @@
 import unittest
 from astropy.time import Time
 
-from lsst.obs.metadata import FitsTranslator, VisitInfo
+from lsst.obs.metadata import FitsTranslator, StubTranslator, ObservationInfo
 
 
-class TestTranslator(FitsTranslator):
+class InstrumentTestTranslator(FitsTranslator, StubTranslator):
+    """Simple FITS-like translator to test the infrastructure"""
 
     # Needs a name to be registered
     name = "TestTranslator"
@@ -35,12 +36,13 @@ class TestTranslator(FitsTranslator):
 
     # Some new mappings, including an override
     _trivialMap = {"foobar": "BAZ",
-                   "telescope": "TELCODE"}
+                   "telescope": "TELCODE",
+                   "obsid": "OBSID"}
 
     _constMap = {"format": "HDF5"}
 
 
-class BasicTestCase(unittest.TestCase):
+class TranslatorTestCase(unittest.TestCase):
 
     def setUp(self):
         # Known simple header
@@ -49,39 +51,63 @@ class BasicTestCase(unittest.TestCase):
                        "INSTRUME": "SCUBA_test",
                        "DATE-OBS": "2000-01-01T01:00:01.500",
                        "DATE-END": "2000-01-01T02:00:01.500",
+                       "OBSGEO-X": "-5464588.84421314",
+                       "OBSGEO-Y": "-2493000.19137644",
+                       "OBSGEO-Z": "2150653.35350771",
+                       "OBSID": "20000101_00002",
                        "BAZ": "bar"}
 
-    def testBasicManualTranslation(self):
+    def testManualTranslation(self):
 
         header = self.header
+        translator = FitsTranslator(header)
 
         # Treat the header as standard FITS
         self.assertFalse(FitsTranslator.canTranslate(header))
-        self.assertEqual(FitsTranslator.to_telescope(header), "JCMT")
-        self.assertEqual(FitsTranslator.to_instrument(header), "SCUBA_test")
-        self.assertEqual(FitsTranslator.to_datetime_begin(header),
+        self.assertEqual(translator.to_telescope(), "JCMT")
+        self.assertEqual(translator.to_instrument(), "SCUBA_test")
+        self.assertEqual(translator.to_datetime_begin(),
                          Time(header["DATE-OBS"], format="isot"))
 
         # Use the special test translator instead
-        self.assertTrue(TestTranslator.canTranslate(header))
-        self.assertEqual(TestTranslator.to_telescope(header), "LSST")
-        self.assertEqual(TestTranslator.to_instrument(header), "SCUBA_test")
-        self.assertEqual(TestTranslator.to_format(header), "HDF5")
-        self.assertEqual(TestTranslator.to_foobar(header), "bar")
+        translator = InstrumentTestTranslator(header)
+        self.assertTrue(InstrumentTestTranslator.canTranslate(header))
+        self.assertEqual(translator.to_telescope(), "LSST")
+        self.assertEqual(translator.to_instrument(), "SCUBA_test")
+        self.assertEqual(translator.to_format(), "HDF5")
+        self.assertEqual(translator.to_foobar(), "bar")
 
-    def testBasicTranslator(self):
+    def testTranslator(self):
         header = self.header
 
         # Specify a translation class
-        v1 = VisitInfo(header, translator=TestTranslator)
+        with self.assertWarns(UserWarning):
+            # Since the translator is incomplete it should issue warnings
+            v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
 
         # Now automated class
-        v1 = VisitInfo(header)
+        with self.assertWarns(UserWarning):
+            # Since the translator is incomplete it should issue warnings
+            v1 = ObservationInfo(header)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
-        print(v1.__dict__)
+
+        location = v1.location.to_geodetic()
+        self.assertAlmostEqual(location.height.to("m").to_value(), 4123.0, places=1)
+
+        # Check that headers have been removed
+        newHdr = v1.strippedHeader()
+        self.assertNotIn("INSTRUME", newHdr)
+        self.assertNotIn("OBSGEO-X", newHdr)
+        self.assertIn("TELESCOP", newHdr)
+
+        # Check the list of cards that were used
+        used = v1.cards_used
+        self.assertIn("INSTRUME", used)
+        self.assertIn("OBSGEO-Y", used)
+        self.assertNotIn("TELESCOP", used)
 
 
 if __name__ == "__main__":

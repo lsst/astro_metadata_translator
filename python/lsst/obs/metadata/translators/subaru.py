@@ -19,7 +19,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .observationInfo import *
-from .translator import *
-from .translators import *
-from .version import *
+"""Metadata translation code for Subaru telescope"""
+
+__all__ = ("SubaruTranslator", )
+
+from astropy.coordinates import EarthLocation
+
+from .fits import FitsTranslator
+
+
+class SubaruTranslator(FitsTranslator):
+    """Metadata translator for Subaru telescope headers.
+    """
+
+    def to_location(self):
+        """Returns the location of the Subaru telescope on Mauna Kea.
+
+        Hardcodes the location and does not look at any headers.
+
+        Returns
+        -------
+        location : `astropy.coordinates.EarthLocation`
+            An object representing the location of the telescope.
+        """
+        return EarthLocation.from_geodetic(-155.476667, 19.825556, 4139.0)

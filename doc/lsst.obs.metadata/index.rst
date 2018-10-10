@@ -4,7 +4,8 @@
 lsst.obs.metadata
 #################
 
-This module provides an abstracted data access interface.
+The purpose of this module is to translate header information from
+astronomical instrumentation into a standard form.
 
 .. Add subsections with toctree to individual topic pages.
 
