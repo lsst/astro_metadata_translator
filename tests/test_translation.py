@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -22,7 +22,7 @@
 import unittest
 from astropy.time import Time
 
-from lsst.obs.metadata import FitsTranslator, StubTranslator, ObservationInfo
+from astro_metadata_translator import FitsTranslator, StubTranslator, ObservationInfo
 
 
 class InstrumentTestTranslator(FitsTranslator, StubTranslator):

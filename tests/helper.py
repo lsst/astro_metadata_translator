@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -28,7 +28,7 @@ from collections import OrderedDict
 
 import astropy.units as u
 
-from lsst.obs.metadata import ObservationInfo
+from astro_metadata_translator import ObservationInfo
 
 # PropertyList is optional
 try:

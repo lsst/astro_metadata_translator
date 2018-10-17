@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -24,7 +24,7 @@ import astropy.units as u
 import astropy.units.cds as cds
 
 from helper import read_test_file, MetadataAssertHelper
-from lsst.obs.metadata import ObservationInfo
+from astro_metadata_translator import ObservationInfo
 
 
 class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):

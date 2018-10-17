@@ -1,6 +1,6 @@
-##################################
-obs_metadata documentation preview
-##################################
+###############################################
+astro_metadata_translator documentation preview
+###############################################
 
 .. This page is for local development only. It isn't published to pipelines.lsst.io.
 
@@ -9,5 +9,4 @@ obs_metadata documentation preview
 .. toctree::
    :maxdepth: 1
 
-   obs_metadata/index
-   lsst.obs.metadata/index
+   astro_metadata_translator/index
