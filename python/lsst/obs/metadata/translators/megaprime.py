@@ -70,12 +70,6 @@ class MegaPrimeTranslator(FitsTranslator):
                    "pressure": ("PRESSURE", dict(unit=cds.mmHg)),
                    "boresight_airmass": "AIRMASS"}
 
-    def to_abstract_filter(self):
-        physical = self.to_physical_filter()
-        if physical in filters:
-            return filters[physical][0]
-        return None
-
     def to_datetime_begin(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],

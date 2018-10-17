@@ -93,12 +93,6 @@ class HscTranslator(SuprimeCamTranslator):
                     return True
         return False
 
-    def to_abstract_filter(self):
-        physical = self.to_physical_filter()
-        if physical.startswith("HSC-"):
-            return physical[4].lower()
-        return None
-
     def to_exposure(self):
         """Calculate unique exposure integer for this observation
 

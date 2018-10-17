@@ -33,7 +33,6 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
         test_data = (("fitsheader-megaprime.yaml",
                       dict(telescope="CFHT 3.6m",
                            instrument="MegaPrime",
-                           abstract_filter="i",
                            boresight_rotation_coord="unknown",
                            dark_time=615.0,
                            detector_exposure_id=37398350,

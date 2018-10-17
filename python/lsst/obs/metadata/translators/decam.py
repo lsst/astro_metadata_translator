@@ -77,21 +77,6 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("CALIB_ID")
         return match.groups()[0]
 
-    def to_abstract_filter(self):
-        """Calculate the abstract filter.
-
-        Returns
-        -------
-        filter : `str`
-            The abstract filter name.
-
-        """
-        # The abstract filter can be derived from the first word in the
-        # physical filter description
-        physical = self.to_physical_filter()
-        if physical:
-            return physical.split()[0]
-
     def to_physical_filter(self):
         """Calculate physical filter.
 

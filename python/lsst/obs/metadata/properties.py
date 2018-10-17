@@ -41,7 +41,6 @@ PROPERTIES = {"telescope": ("Full name of the telescope.", "str"),
 Science observations should essentially always be
 associated with a visit, but calibration observations
 may not be.""", "int"),
-              "abstract_filter": ("Generic name of this filter.", "str"),
               "physical_filter": ("The bandpass filter used for all exposures in this Visit.", "str"),
               "datetime_begin": ("Timestamp of the start of the Exposure.", "astropy.time.Time"),
               "datetime_end": ("Timestamp of the end of the Exposure.", "astropy.time.Time"),

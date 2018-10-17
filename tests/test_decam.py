@@ -31,7 +31,6 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
         test_data = (("fitsheader-decam.yaml",
                       dict(telescope="CTIO 4.0-m telescope",
                            instrument="DECam",
-                           abstract_filter="z",
                            boresight_rotation_coord="unknown",
                            dark_time=201.15662,
                            detector_exposure_id=22938825,

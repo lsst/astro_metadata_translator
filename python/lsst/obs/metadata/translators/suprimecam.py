@@ -50,7 +50,6 @@ class SuprimeCamTranslator(SubaruTranslator):
     _trivialMap = {"obsid": "EXP-ID",
                    "object": "OBJECT",
                    "science_program": "PROP-ID",
-                   "abstract_filter": "FILTER",
                    "detector_num": "DET-ID",
                    "detector_name": "DETECTOR",
                    "boresight_airmass": "AIRMASS",
