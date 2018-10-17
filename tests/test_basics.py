@@ -26,7 +26,7 @@ import lsst.obs.metadata
 
 class BasicTestCase(unittest.TestCase):
 
-    def testBasic(self):
+    def test_basic(self):
         version = lsst.obs.metadata.__version__
         self.assertIsNotNone(version)
 

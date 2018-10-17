@@ -41,31 +41,31 @@ class HscTranslator(SuprimeCamTranslator):
     name = "HSC"
     """Name of this translation class"""
 
-    supportedInstrument = "HSC"
+    supported_instrument = "HSC"
     """Supports the HSC instrument."""
 
-    _constMap = {"instrument": "HSC",
-                 "boresight_rotation_coord": "sky"}
+    _const_map = {"instrument": "HSC",
+                  "boresight_rotation_coord": "sky"}
     """Hard wire HSC even though modern headers call it Hyper Suprime-Cam"""
 
-    _trivialMap = {"detector_name": "T_CCDSN",
-                   }
+    _trivial_map = {"detector_name": "T_CCDSN",
+                    }
     """One-to-one mappings"""
 
     # Zero point for HSC dates: 2012-01-01  51544 -> 2000-01-01
     _DAY0 = 55927
 
     # CCD index mapping for commissioning run 2
-    CCD_MAP_COMMISSIONING_2 = {112: 106,
-                               107: 105,
-                               113: 107,
-                               115: 109,
-                               108: 110,
-                               114: 108,
-                               }
+    _CCD_MAP_COMMISSIONING_2 = {112: 106,
+                                107: 105,
+                                113: 107,
+                                115: 109,
+                                108: 110,
+                                114: 108,
+                                }
 
     @classmethod
-    def canTranslate(cls, header):
+    def can_translate(cls, header):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -101,24 +101,24 @@ class HscTranslator(SuprimeCamTranslator):
         visit : `int`
             Integer uniquely identifying this exposure.
         """
-        expId = self._header["EXP-ID"].strip()
-        m = re.search("^HSCE(\d{8})$", expId)  # 2016-06-14 and new scheme
+        exp_id = self._header["EXP-ID"].strip()
+        m = re.search("^HSCE(\d{8})$", exp_id)  # 2016-06-14 and new scheme
         if m:
             self._used_these_cards("EXP-ID")
             return int(m.group(1))
 
         # Fallback to old scheme
-        m = re.search("^HSC([A-Z])(\d{6})00$", expId)
+        m = re.search("^HSC([A-Z])(\d{6})00$", exp_id)
         if not m:
-            raise RuntimeError(f"Unable to interpret EXP-ID: {expId}")
+            raise RuntimeError(f"Unable to interpret EXP-ID: {exp_id}")
         letter, visit = m.groups()
         visit = int(visit)
         if visit == 0:
             # Don't believe it
-            frameId = self._header["FRAMEID"].strip()
-            m = re.search("^HSC([A-Z])(\d{6})\d{2}$", frameId)
+            frame_id = self._header["FRAMEID"].strip()
+            m = re.search("^HSC([A-Z])(\d{6})\d{2}$", frame_id)
             if not m:
-                raise RuntimeError(f"Unable to interpret FRAMEID: {frameId}")
+                raise RuntimeError(f"Unable to interpret FRAMEID: {frame_id}")
             letter, visit = m.groups()
             visit = int(visit)
             if visit % 2:  # Odd?
@@ -152,7 +152,7 @@ class HscTranslator(SuprimeCamTranslator):
             return ccd
 
         if tjd > 390 and tjd < 405:
-            ccd = self.CCD_MAP_COMMISSIONING_2.get(ccd, ccd)
+            ccd = self._CCD_MAP_COMMISSIONING_2.get(ccd, ccd)
 
         return ccd
 

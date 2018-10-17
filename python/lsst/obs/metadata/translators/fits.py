@@ -43,11 +43,11 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _trivialMap = dict(instrument="INSTRUME",
-                       telescope="TELESCOP")
+    _trivial_map = dict(instrument="INSTRUME",
+                        telescope="TELESCOP")
 
     @classmethod
-    def canTranslate(cls, header):
+    def can_translate(cls, header):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -65,7 +65,7 @@ class FitsTranslator(MetadataTranslator):
             `True` if the header is recognized by this class. `False`
             otherwise.
         """
-        if cls.supportedInstrument is None:
+        if cls.supported_instrument is None:
             return False
 
         # Protect against being able to always find a standard
@@ -76,21 +76,21 @@ class FitsTranslator(MetadataTranslator):
         except KeyError:
             return False
 
-        return instrument == cls.supportedInstrument
+        return instrument == cls.supported_instrument
 
     @classmethod
-    def _from_fits_date_string(cls, dateStr, scale='utc', timeStr=None):
+    def _from_fits_date_string(cls, date_str, scale='utc', time_str=None):
         """Parse standard FITS ISO-style date string and return time object
 
         Parameters
         ----------
-        dateStr : `str`
+        date_str : `str`
             FITS format date string to convert to standard form. Bypasses
             lookup in the header.
         scale : `str`, optional
             Override the time scale from the TIMESYS header. Defaults to
             UTC.
-        timeStr : `str`, optional
+        time_str : `str`, optional
             If provided, overrides any time component in the ``dateStr``,
             retaining the YYYY-MM-DD component and appending this time
             string, assumed to be of format HH:MM::SS.ss.
@@ -100,12 +100,12 @@ class FitsTranslator(MetadataTranslator):
         date : `astropy.time.Time`
             `~astropy.time.Time` representation of the date.
         """
-        if timeStr is not None:
-            dateStr = "{}T{}".format(dateStr[:10], timeStr)
+        if time_str is not None:
+            date_str = "{}T{}".format(date_str[:10], time_str)
 
-        return Time(dateStr, format="isot", scale=scale)
+        return Time(date_str, format="isot", scale=scale)
 
-    def _from_fits_date(self, dateKey):
+    def _from_fits_date(self, date_key):
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
@@ -122,14 +122,14 @@ class FitsTranslator(MetadataTranslator):
         date : `astropy.time.Time`
             `~astropy.time.Time` representation of the date.
         """
-        used = [dateKey, ]
+        used = [date_key, ]
         if "TIMESYS" in self._header:
             scale = self._header["TIMESYS"].lower()
             used.append("TIMESYS")
         else:
             scale = "utc"
-        dateStr = self._header[dateKey]
-        value = self._from_fits_date_string(dateStr, scale=scale)
+        date_str = self._header[date_key]
+        value = self._from_fits_date_string(date_str, scale=scale)
         self._used_these_cards(*used)
         return value
 

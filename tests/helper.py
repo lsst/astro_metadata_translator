@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+__all__ = ("read_test_file", "MetadataAssertHelper")
+
 import os
 import yaml
 import pickle
@@ -60,7 +62,7 @@ if dafBase is None:
     yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
 
 
-def readTestFile(filename):
+def read_test_file(filename):
     """Read the named test file relative to the location of this helper
 
     Parameters
@@ -83,7 +85,7 @@ class MetadataAssertHelper:
     translations.
     """
 
-    def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0, amdelta=0.01):
+    def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0, amdelta=0.01):  # noqa: N802
         """Check that SkyCoord, AltAz, and airmass are self consistent.
 
         Parameters
@@ -115,16 +117,16 @@ class MetadataAssertHelper:
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep)
 
-    def assertObservationInfoFromYaml(self, file, checkWcs=True, wcsParams=None, **kwargs):
+    def assertObservationInfoFromYaml(self, file, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
         """Check contents of an ObservationInfo.
 
         Parameters
         ----------
         file : `str`
             Path to YAML file representing the header.
-        checkWcs : `bool`, optional
+        check_wcs : `bool`, optional
             Check the consistency of the RA/Dec and AltAz values.
-        wcsParams : `dict`, optional
+        wcs_params : `dict`, optional
             Parameters to pass to `assertCoordinatesConsistent`.
         kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
@@ -136,19 +138,19 @@ class MetadataAssertHelper:
             A value in the ObservationInfo derived from the file is
             inconsistent.
         """
-        header = readTestFile(file)
-        self.assertObservationInfo(header, checkWcs=checkWcs, wcsParams=wcsParams, **kwargs)
+        header = read_test_file(file)
+        self.assertObservationInfo(header, check_wcs=check_wcs, wcs_params=wcs_params, **kwargs)
 
-    def assertObservationInfo(self, header, checkWcs=True, wcsParams=None, **kwargs):
+    def assertObservationInfo(self, header, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
         """Check contents of an ObservationInfo.
 
         Parameters
         ----------
         header : `dict`-like
             Header to be checked.
-        checkWcs : `bool`, optional
+        check_wcs : `bool`, optional
             Check the consistency of the RA/Dec and AltAz values.
-        wcsParams : `dict`, optional
+        wcs_params : `dict`, optional
             Parameters to pass to `assertCoordinatesConsistent`.
         kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
@@ -160,15 +162,15 @@ class MetadataAssertHelper:
             A value in the ObservationInfo derived from the file is
             inconsistent.
         """
-        obsInfo = ObservationInfo(header)
+        obsinfo = ObservationInfo(header)
 
         # Check that we can pickle and get back the same properties
-        newInfo = pickle.loads(pickle.dumps(obsInfo))
-        self.assertEqual(obsInfo, newInfo)
+        newinfo = pickle.loads(pickle.dumps(obsinfo))
+        self.assertEqual(obsinfo, newinfo)
 
         # Check the properties
         for property, expected in kwargs.items():
-            calculated = getattr(obsInfo, property)
+            calculated = getattr(obsinfo, property)
             msg = f"Comparing property {property}"
             if isinstance(expected, u.Quantity):
                 calculated = calculated.to_value(unit=expected.unit)
@@ -180,7 +182,7 @@ class MetadataAssertHelper:
                 self.assertEqual(calculated, expected, msg=msg)
 
         # Check the WCS consistency
-        if checkWcs:
-            if wcsParams is None:
-                wcsParams = {}
-            self.assertCoordinatesConsistent(obsInfo, **wcsParams)
+        if check_wcs:
+            if wcs_params is None:
+                wcs_params = {}
+            self.assertCoordinatesConsistent(obsinfo, **wcs_params)

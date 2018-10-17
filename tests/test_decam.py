@@ -27,7 +27,7 @@ from helper import MetadataAssertHelper
 
 class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
 
-    def testDecamTranslator(self):
+    def test_decam_translator(self):
         test_data = (("fitsheader-decam.yaml",
                       dict(telescope="CTIO 4.0-m telescope",
                            instrument="DECam",
@@ -47,7 +47,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                            science_program="2012B-0001",
                            temperature=11.9*u.deg_C,
                            visit=229388,
-                           wcsParams=dict(max_sep=1.5))),
+                           wcs_params=dict(max_sep=1.5))),
                      )
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)

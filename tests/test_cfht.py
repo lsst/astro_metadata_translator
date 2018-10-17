@@ -23,13 +23,13 @@ import unittest
 import astropy.units as u
 import astropy.units.cds as cds
 
-from helper import readTestFile, MetadataAssertHelper
+from helper import read_test_file, MetadataAssertHelper
 from lsst.obs.metadata import ObservationInfo
 
 
 class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
 
-    def testMegaPrimeTranslator(self):
+    def test_megaprime_translator(self):
         test_data = (("fitsheader-megaprime.yaml",
                       dict(telescope="CFHT 3.6m",
                            instrument="MegaPrime",
@@ -54,15 +54,15 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)
 
-    def testMegaPrimeStripping(self):
-        header = readTestFile("fitsheader-megaprime.yaml")
+    def test_megaprime_stripping(self):
+        header = read_test_file("fitsheader-megaprime.yaml")
         v1 = ObservationInfo(header)
 
         # Check that headers have been removed
-        newHdr = v1.strippedHeader()
-        self.assertNotIn("INSTRUME", newHdr)
-        self.assertNotIn("TELESCOP", newHdr)
-        self.assertIn("CCD", newHdr)
+        new_hdr = v1.stripped_header()
+        self.assertNotIn("INSTRUME", new_hdr)
+        self.assertNotIn("TELESCOP", new_hdr)
+        self.assertIn("CCD", new_hdr)
 
 
 if __name__ == "__main__":

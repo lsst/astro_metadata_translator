@@ -27,7 +27,7 @@ from helper import MetadataAssertHelper
 
 class HscTestCase(unittest.TestCase, MetadataAssertHelper):
 
-    def testHscTranslator(self):
+    def test_hsc_translator(self):
         test_data = (("fitsheader-hsc.yaml",
                       dict(telescope="Subaru",
                            instrument="HSC",
@@ -72,7 +72,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)
 
-    def testSuprimeCamTranslator(self):
+    def test_suprimecam_translator(self):
         # In this case the airmass is average during observation
         # but it looks like ALTITUDE is from a different time so loosen amdelta
         test_data = (("fitsheader-suprimecam-CORR40535770.yaml",
@@ -94,7 +94,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                            science_program="o07222",
                            temperature=273.15*u.K,
                            visit=53577,
-                           wcsParams=dict(amdelta=0.015))),
+                           wcs_params=dict(amdelta=0.015))),
                      )
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)

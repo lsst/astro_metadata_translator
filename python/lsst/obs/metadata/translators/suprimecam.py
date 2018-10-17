@@ -41,31 +41,31 @@ class SuprimeCamTranslator(SubaruTranslator):
     name = "SuprimeCam"
     """Name of this translation class"""
 
-    supportedInstrument = "SuprimeCam"
+    supported_instrument = "SuprimeCam"
     """Supports the SuprimeCam instrument."""
 
-    _constMap = {"boresight_rotation_coord": "unknown"}
+    _const_map = {"boresight_rotation_coord": "unknown"}
     """Constant mappings"""
 
-    _trivialMap = {"obsid": "EXP-ID",
-                   "object": "OBJECT",
-                   "science_program": "PROP-ID",
-                   "detector_num": "DET-ID",
-                   "detector_name": "DETECTOR",
-                   "boresight_airmass": "AIRMASS",
-                   "relative_humidity": "OUT-HUM",
-                   "temperature": ("OUT-TMP", dict(unit=u.K)),
-                   "pressure": ("OUT-PRS", dict(unit=u.hPa)),
-                   "exposure_time": "EXPTIME",
-                   "dark_time": "EXPTIME",  # Assume same as exposure time
-                   }
+    _trivial_map = {"obsid": "EXP-ID",
+                    "object": "OBJECT",
+                    "science_program": "PROP-ID",
+                    "detector_num": "DET-ID",
+                    "detector_name": "DETECTOR",
+                    "boresight_airmass": "AIRMASS",
+                    "relative_humidity": "OUT-HUM",
+                    "temperature": ("OUT-TMP", dict(unit=u.K)),
+                    "pressure": ("OUT-PRS", dict(unit=u.hPa)),
+                    "exposure_time": "EXPTIME",
+                    "dark_time": "EXPTIME",  # Assume same as exposure time
+                    }
     """One-to-one mappings"""
 
     # Zero point for SuprimeCam dates: 2004-01-01
     _DAY0 = 53005
 
     @classmethod
-    def canTranslate(cls, header):
+    def can_translate(cls, header):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -109,14 +109,14 @@ class SuprimeCamTranslator(SubaruTranslator):
     def to_datetime_begin(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UT"], scale="utc")
+                                            time_str=self._header["UT"], scale="utc")
         self._used_these_cards("DATE-OBS", "UT")
         return value
 
     def to_datetime_end(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UT-END"], scale="utc")
+                                            time_str=self._header["UT-END"], scale="utc")
         self._used_these_cards("DATE-OBS", "UT-END")
         return value
 
@@ -128,17 +128,17 @@ class SuprimeCamTranslator(SubaruTranslator):
         visit : `int`
             Integer uniquely identifying this exposure.
         """
-        expId = self._header["EXP-ID"].strip()
-        m = re.search(r"^SUP[A-Z](\d{7})0$", expId)
+        exp_id = self._header["EXP-ID"].strip()
+        m = re.search(r"^SUP[A-Z](\d{7})0$", exp_id)
         if not m:
-            raise RuntimeError("Unable to interpret EXP-ID: %s" % expId)
+            raise RuntimeError("Unable to interpret EXP-ID: %s" % exp_id)
         exposure = int(m.group(1))
         if int(exposure) == 0:
             # Don't believe it
-            frameId = self._header["FRAMEID"].strip()
-            m = re.search(r"^SUP[A-Z](\d{7})\d{1}$", frameId)
+            frame_id = self._header["FRAMEID"].strip()
+            m = re.search(r"^SUP[A-Z](\d{7})\d{1}$", frame_id)
             if not m:
-                raise RuntimeError("Unable to interpret FRAMEID: %s" % frameId)
+                raise RuntimeError("Unable to interpret FRAMEID: %s" % frame_id)
             exposure = int(m.group(1))
         self._used_these_cards("EXP-ID", "FRAMEID")
         return exposure

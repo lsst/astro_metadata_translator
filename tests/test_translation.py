@@ -32,14 +32,14 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     name = "TestTranslator"
 
     # Indicate the instrument this class understands
-    supportedInstrument = "SCUBA_test"
+    supported_instrument = "SCUBA_test"
 
     # Some new mappings, including an override
-    _trivialMap = {"foobar": "BAZ",
-                   "telescope": "TELCODE",
-                   "obsid": "OBSID"}
+    _trivial_map = {"foobar": "BAZ",
+                    "telescope": "TELCODE",
+                    "obsid": "OBSID"}
 
-    _constMap = {"format": "HDF5"}
+    _const_map = {"format": "HDF5"}
 
 
 class TranslatorTestCase(unittest.TestCase):
@@ -57,13 +57,13 @@ class TranslatorTestCase(unittest.TestCase):
                        "OBSID": "20000101_00002",
                        "BAZ": "bar"}
 
-    def testManualTranslation(self):
+    def test_manual_translation(self):
 
         header = self.header
         translator = FitsTranslator(header)
 
         # Treat the header as standard FITS
-        self.assertFalse(FitsTranslator.canTranslate(header))
+        self.assertFalse(FitsTranslator.can_translate(header))
         self.assertEqual(translator.to_telescope(), "JCMT")
         self.assertEqual(translator.to_instrument(), "SCUBA_test")
         self.assertEqual(translator.to_datetime_begin(),
@@ -71,13 +71,13 @@ class TranslatorTestCase(unittest.TestCase):
 
         # Use the special test translator instead
         translator = InstrumentTestTranslator(header)
-        self.assertTrue(InstrumentTestTranslator.canTranslate(header))
+        self.assertTrue(InstrumentTestTranslator.can_translate(header))
         self.assertEqual(translator.to_telescope(), "LSST")
         self.assertEqual(translator.to_instrument(), "SCUBA_test")
         self.assertEqual(translator.to_format(), "HDF5")
         self.assertEqual(translator.to_foobar(), "bar")
 
-    def testTranslator(self):
+    def test_translator(self):
         header = self.header
 
         # Specify a translation class
@@ -98,10 +98,10 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertAlmostEqual(location.height.to("m").to_value(), 4123.0, places=1)
 
         # Check that headers have been removed
-        newHdr = v1.strippedHeader()
-        self.assertNotIn("INSTRUME", newHdr)
-        self.assertNotIn("OBSGEO-X", newHdr)
-        self.assertIn("TELESCOP", newHdr)
+        new_hdr = v1.stripped_header()
+        self.assertNotIn("INSTRUME", new_hdr)
+        self.assertNotIn("OBSGEO-X", new_hdr)
+        self.assertIn("TELESCOP", new_hdr)
 
         # Check the list of cards that were used
         used = v1.cards_used

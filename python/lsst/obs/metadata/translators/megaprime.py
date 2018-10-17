@@ -50,37 +50,37 @@ class MegaPrimeTranslator(FitsTranslator):
     name = "MegaPrime"
     """Name of this translation class"""
 
-    supportedInstrument = "MegaPrime"
+    supported_instrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
 
-    _constMap = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                 "boresight_rotation_coord": "unknown"}
+    _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
+                  "boresight_rotation_coord": "unknown"}
 
-    _trivialMap = {"physical_filter": "FILTER",
-                   "dark_time": "DARKTIME",
-                   "exposure_time": "EXPTIME",
-                   "obsid": "OBSID",
-                   "object": "OBJECT",
-                   "science_program": "RUNID",
-                   "exposure": "EXPNUM",
-                   "visit": "EXPNUM",
-                   "detector_name": "CCDNAME",
-                   "relative_humidity": "RELHUMID",
-                   "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
-                   "pressure": ("PRESSURE", dict(unit=cds.mmHg)),
-                   "boresight_airmass": "AIRMASS"}
+    _trivial_map = {"physical_filter": "FILTER",
+                    "dark_time": "DARKTIME",
+                    "exposure_time": "EXPTIME",
+                    "obsid": "OBSID",
+                    "object": "OBJECT",
+                    "science_program": "RUNID",
+                    "exposure": "EXPNUM",
+                    "visit": "EXPNUM",
+                    "detector_name": "CCDNAME",
+                    "relative_humidity": "RELHUMID",
+                    "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
+                    "pressure": ("PRESSURE", dict(unit=cds.mmHg)),
+                    "boresight_airmass": "AIRMASS"}
 
     def to_datetime_begin(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UTC-OBS"], scale="utc")
+                                            time_str=self._header["UTC-OBS"], scale="utc")
         self._used_these_cards("DATE-OBS", "UTC-OBS")
         return value
 
     def to_datetime_end(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UTCEND"], scale="utc")
+                                            time_str=self._header["UTCEND"], scale="utc")
         self._used_these_cards("DATE-OBS", "UTCEND")
         return value
 

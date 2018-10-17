@@ -69,7 +69,7 @@ class ObservationInfo:
             header = header.toOrderedDict()
 
         if translator_class is None:
-            translator_class = MetadataTranslator.determineTranslator(header)
+            translator_class = MetadataTranslator.determine_translator(header)
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
@@ -100,7 +100,7 @@ class ObservationInfo:
     def cards_used(self):
         return self._translator.cards_used()
 
-    def strippedHeader(self):
+    def stripped_header(self):
         """Return a copy of the supplied header with used keywords removed.
 
         Returns
@@ -157,7 +157,7 @@ class ObservationInfo:
 
 
 # Method to add the standard properties
-def _makeProperty(property, doc, return_type):
+def _make_property(property, doc, return_type):
     """Create a getter method with associated docstring.
 
     Parameters
@@ -191,4 +191,4 @@ def _makeProperty(property, doc, return_type):
 # getter methods.
 for name, description in ObservationInfo._PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_makeProperty(name, *description)))
+    setattr(ObservationInfo, name, property(_make_property(name, *description)))
