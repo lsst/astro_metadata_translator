@@ -34,6 +34,15 @@ is determined by asking each registered translator whether it knows how to
 translate it.  If an explicit translation class should be used it can be
 specified explicitly.
 
+
+.. warning::
+  The existing set of property names in
+  `~astro_metadata_translator.ObservationInfo` should be considered as beta
+  quality.
+  Some of the names could yet be changed for consistency with other data
+  dictionaries.
+
+
 Project info
 ============
 
