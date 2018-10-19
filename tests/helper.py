@@ -172,10 +172,14 @@ class MetadataAssertHelper:
         for property, expected in kwargs.items():
             calculated = getattr(obsinfo, property)
             msg = f"Comparing property {property}"
+            print(f"{property}: {calculated} vs {expected}")
             if isinstance(expected, u.Quantity):
                 calculated = calculated.to_value(unit=expected.unit)
                 expected = expected.to_value()
                 self.assertAlmostEqual(calculated, expected, msg=msg)
+            elif isinstance(calculated, u.Quantity):
+                # Only happens if the test is not a quantity when it should be
+                self.fail(f"Expected {expected!r} for property {property} but got Quantity '{calculated}'")
             elif isinstance(expected, float):
                 self.assertAlmostEqual(calculated, expected, msg=msg)
             else:

@@ -57,13 +57,13 @@ class MegaPrimeTranslator(FitsTranslator):
                   "boresight_rotation_coord": "unknown"}
 
     _trivial_map = {"physical_filter": "FILTER",
-                    "dark_time": "DARKTIME",
-                    "exposure_time": "EXPTIME",
-                    "obsid": "OBSID",
+                    "dark_time": ("DARKTIME", dict(unit=u.s)),
+                    "exposure_time": ("EXPTIME", dict(unit=u.s)),
+                    "observation_id": "OBSID",
                     "object": "OBJECT",
                     "science_program": "RUNID",
-                    "exposure": "EXPNUM",
-                    "visit": "EXPNUM",
+                    "exposure_id": "EXPNUM",
+                    "visit_id": "EXPNUM",
                     "detector_name": "CCDNAME",
                     "relative_humidity": "RELHUMID",
                     "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
@@ -107,7 +107,7 @@ class MegaPrimeTranslator(FitsTranslator):
             # Dummy value, intended for PHU (need something to get filename)
             return 99
 
-    def to_obstype(self):
+    def to_observation_type(self):
         """Calculate the observation type.
 
         Returns
@@ -140,4 +140,4 @@ class MegaPrimeTranslator(FitsTranslator):
         return altaz
 
     def to_detector_exposure_id(self):
-        return self.to_exposure() * 36 + self.to_detector_num()
+        return self.to_exposure_id() * 36 + self.to_detector_num()

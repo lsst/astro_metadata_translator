@@ -45,10 +45,10 @@ class DecamTranslator(FitsTranslator):
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
                   "boresight_rotation_coord": "unknown"}
 
-    _trivial_map = {"exposure_time": "EXPTIME",
-                    "dark_time": "DARKTIME",
+    _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
+                    "dark_time": ("DARKTIME", dict(unit=u.s)),
                     "boresight_airmass": "AIRMASS",
-                    "obsid": "OBSID",
+                    "observation_id": "OBSID",
                     "object": "OBJECT",
                     "science_program": "PROPID",
                     "detector_num": "CCDNUM",
@@ -60,8 +60,8 @@ class DecamTranslator(FitsTranslator):
                     # which is the SI equivalent of mbar.
                     "pressure": ("PRESSURE", dict(unit=u.hPa,
                                  default=771.611, minimum=700., maximum=850.)),
-                    "exposure": "EXPNUM",
-                    "visit": "EXPNUM"}
+                    "exposure_id": "EXPNUM",
+                    "visit_id": "EXPNUM"}
 
     def to_datetime_end(self):
         return self._from_fits_date("DTUTC")
@@ -73,7 +73,7 @@ class DecamTranslator(FitsTranslator):
         saved in its FITS header CALIB_ID.
         """
         data = self._header["CALIB_ID"]
-        match = re.search(".*%s=(\S+)" % field, data)
+        match = re.search(r".*%s=(\S+)" % field, data)
         self._used_these_cards("CALIB_ID")
         return match.groups()[0]
 
@@ -89,7 +89,7 @@ class DecamTranslator(FitsTranslator):
             The full filter name.
         """
         if "FILTER" in self._header:
-            if self.to_obstype() == "zero":
+            if self.to_observation_type() == "zero":
                 return "NONE"
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
@@ -113,7 +113,7 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
         return value
 
-    def to_obstype(self):
+    def to_observation_type(self):
         """Calculate the observation type.
 
         Returns
@@ -150,4 +150,4 @@ class DecamTranslator(FitsTranslator):
         return altaz
 
     def to_detector_exposure_id(self):
-        return int("{:07d}{:02d}".format(self.to_exposure(), self.to_detector_num()))
+        return int("{:07d}{:02d}".format(self.to_exposure_id(), self.to_detector_num()))

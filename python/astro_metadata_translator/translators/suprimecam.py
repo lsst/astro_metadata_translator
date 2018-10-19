@@ -47,7 +47,7 @@ class SuprimeCamTranslator(SubaruTranslator):
     _const_map = {"boresight_rotation_coord": "unknown"}
     """Constant mappings"""
 
-    _trivial_map = {"obsid": "EXP-ID",
+    _trivial_map = {"observation_id": "EXP-ID",
                     "object": "OBJECT",
                     "science_program": "PROP-ID",
                     "detector_num": "DET-ID",
@@ -56,8 +56,8 @@ class SuprimeCamTranslator(SubaruTranslator):
                     "relative_humidity": "OUT-HUM",
                     "temperature": ("OUT-TMP", dict(unit=u.K)),
                     "pressure": ("OUT-PRS", dict(unit=u.hPa)),
-                    "exposure_time": "EXPTIME",
-                    "dark_time": "EXPTIME",  # Assume same as exposure time
+                    "exposure_time": ("EXPTIME", dict(unit=u.s)),
+                    "dark_time": ("EXPTIME", dict(unit=u.s)),  # Assume same as exposure time
                     }
     """One-to-one mappings"""
 
@@ -120,7 +120,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         self._used_these_cards("DATE-OBS", "UT-END")
         return value
 
-    def to_exposure(self):
+    def to_exposure_id(self):
         """Calculate unique exposure integer for this observation
 
         Returns
@@ -143,7 +143,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         self._used_these_cards("EXP-ID", "FRAMEID")
         return exposure
 
-    def to_visit(self):
+    def to_visit_id(self):
         """Calculate the unique integer ID for this visit.
 
         Assumed to be identical to the exposure ID in this implementation.
@@ -153,11 +153,11 @@ class SuprimeCamTranslator(SubaruTranslator):
         exp : `int`
             Unique visit identifier.
         """
-        if self.to_obstype() == "science":
-            return self.to_exposure()
+        if self.to_observation_type() == "science":
+            return self.to_exposure_id()
         return None
 
-    def to_obstype(self):
+    def to_observation_type(self):
         """Calculate the observation type.
 
         Returns
@@ -195,4 +195,4 @@ class SuprimeCamTranslator(SubaruTranslator):
         return angle
 
     def to_detector_exposure_id(self):
-        return self.to_exposure() * 10 + self.to_detector_num()
+        return self.to_exposure_id() * 10 + self.to_detector_num()

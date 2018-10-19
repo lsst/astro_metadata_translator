@@ -37,7 +37,7 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     # Some new mappings, including an override
     _trivial_map = {"foobar": "BAZ",
                     "telescope": "TELCODE",
-                    "obsid": "OBSID"}
+                    "observation_id": "OBSID"}
 
     _const_map = {"format": "HDF5"}
 

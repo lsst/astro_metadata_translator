@@ -93,7 +93,7 @@ class HscTranslator(SuprimeCamTranslator):
                     return True
         return False
 
-    def to_exposure(self):
+    def to_exposure_id(self):
         """Calculate unique exposure integer for this observation
 
         Returns
@@ -102,13 +102,13 @@ class HscTranslator(SuprimeCamTranslator):
             Integer uniquely identifying this exposure.
         """
         exp_id = self._header["EXP-ID"].strip()
-        m = re.search("^HSCE(\d{8})$", exp_id)  # 2016-06-14 and new scheme
+        m = re.search(r"^HSCE(\d{8})$", exp_id)  # 2016-06-14 and new scheme
         if m:
             self._used_these_cards("EXP-ID")
             return int(m.group(1))
 
         # Fallback to old scheme
-        m = re.search("^HSC([A-Z])(\d{6})00$", exp_id)
+        m = re.search(r"^HSC([A-Z])(\d{6})00$", exp_id)
         if not m:
             raise RuntimeError(f"Unable to interpret EXP-ID: {exp_id}")
         letter, visit = m.groups()
@@ -116,7 +116,7 @@ class HscTranslator(SuprimeCamTranslator):
         if visit == 0:
             # Don't believe it
             frame_id = self._header["FRAMEID"].strip()
-            m = re.search("^HSC([A-Z])(\d{6})\d{2}$", frame_id)
+            m = re.search(r"^HSC([A-Z])(\d{6})\d{2}$", frame_id)
             if not m:
                 raise RuntimeError(f"Unable to interpret FRAMEID: {frame_id}")
             letter, visit = m.groups()
@@ -157,4 +157,4 @@ class HscTranslator(SuprimeCamTranslator):
         return ccd
 
     def to_detector_exposure_id(self):
-        return self.to_exposure() * 200 + self.to_detector_num()
+        return self.to_exposure_id() * 200 + self.to_detector_num()
