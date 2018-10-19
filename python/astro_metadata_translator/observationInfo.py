@@ -98,6 +98,13 @@ class ObservationInfo:
 
     @property
     def cards_used(self):
+        """Header cards used for the translation.
+
+        Returns
+        -------
+        used : `frozenset` of `str`
+            Set of card used.
+        """
         return self._translator.cards_used()
 
     def stripped_header(self):

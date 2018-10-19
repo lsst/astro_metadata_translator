@@ -251,6 +251,12 @@ class MetadataTranslator(metaclass=MetadataMeta):
         translator : `MetadataTranslator`
             Translation class that knows how to extract metadata from
             the supplied header.
+
+        Raises
+        ------
+        ValueError
+            None of the registered translation classes understood the supplied
+            header.
         """
         for name, trans in cls.translators.items():
             if trans.can_translate(header):
@@ -274,7 +280,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
 
         Returns
         -------
-        used : `frozenset`
+        used : `frozenset` of `str`
             Cards used when extracting metadata.
         """
         return frozenset(self._used_cards)
