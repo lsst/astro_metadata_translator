@@ -123,7 +123,7 @@ class MegaPrimeTranslator(FitsTranslator):
     def to_tracking_radec(self):
         frame = self._header["OBJRADEC"].strip().lower()
         if frame == "gappt":
-            self._used_cards("OBJRADEC")
+            self._used_these_cards("OBJRADEC")
             # Moving target
             return None
         radec = SkyCoord(self._header["RA_DEG"], self._header["DEC_DEG"],
