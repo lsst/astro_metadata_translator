@@ -25,7 +25,6 @@ __all__ = ("MegaPrimeTranslator", )
 
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
-import astropy.units.cds as cds
 
 from .fits import FitsTranslator
 
@@ -67,7 +66,7 @@ class MegaPrimeTranslator(FitsTranslator):
                     "detector_name": "CCDNAME",
                     "relative_humidity": "RELHUMID",
                     "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
-                    "pressure": ("PRESSURE", dict(unit=cds.mmHg)),
+                    "pressure": ("PRESSURE", dict(unit=u.hPa)),
                     "boresight_airmass": "AIRMASS"}
 
     def to_datetime_begin(self):

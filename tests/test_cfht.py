@@ -21,7 +21,6 @@
 
 import unittest
 import astropy.units as u
-import astropy.units.cds as cds
 
 from helper import read_test_file, MetadataAssertHelper
 from astro_metadata_translator import ObservationInfo
@@ -44,7 +43,7 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                            observation_id="1038843",
                            observation_type="science",
                            physical_filter="i.MP9702",
-                           pressure=617.65*cds.mmHg,
+                           pressure=617.65*u.hPa,
                            relative_humidity=39.77,
                            science_program="08BL05",
                            temperature=0.9*u.deg_C,
