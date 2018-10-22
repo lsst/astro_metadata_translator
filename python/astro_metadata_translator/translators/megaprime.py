@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -25,7 +25,6 @@ __all__ = ("MegaPrimeTranslator", )
 
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
-import astropy.units.cds as cds
 
 from .fits import FitsTranslator
 
@@ -50,43 +49,37 @@ class MegaPrimeTranslator(FitsTranslator):
     name = "MegaPrime"
     """Name of this translation class"""
 
-    supportedInstrument = "MegaPrime"
+    supported_instrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
 
-    _constMap = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                 "boresight_rotation_coord": "unknown"}
+    _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
+                  "boresight_rotation_coord": "unknown"}
 
-    _trivialMap = {"physical_filter": "FILTER",
-                   "dark_time": "DARKTIME",
-                   "exposure_time": "EXPTIME",
-                   "obsid": "OBSID",
-                   "object": "OBJECT",
-                   "science_program": "RUNID",
-                   "exposure": "EXPNUM",
-                   "visit": "EXPNUM",
-                   "detector_name": "CCDNAME",
-                   "relative_humidity": "RELHUMID",
-                   "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
-                   "pressure": ("PRESSURE", dict(unit=cds.mmHg)),
-                   "boresight_airmass": "AIRMASS"}
-
-    def to_abstract_filter(self):
-        physical = self.to_physical_filter()
-        if physical in filters:
-            return filters[physical][0]
-        return None
+    _trivial_map = {"physical_filter": "FILTER",
+                    "dark_time": ("DARKTIME", dict(unit=u.s)),
+                    "exposure_time": ("EXPTIME", dict(unit=u.s)),
+                    "observation_id": "OBSID",
+                    "object": "OBJECT",
+                    "science_program": "RUNID",
+                    "exposure_id": "EXPNUM",
+                    "visit_id": "EXPNUM",
+                    "detector_name": "CCDNAME",
+                    "relative_humidity": "RELHUMID",
+                    "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
+                    "pressure": ("PRESSURE", dict(unit=u.hPa)),
+                    "boresight_airmass": "AIRMASS"}
 
     def to_datetime_begin(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UTC-OBS"], scale="utc")
+                                            time_str=self._header["UTC-OBS"], scale="utc")
         self._used_these_cards("DATE-OBS", "UTC-OBS")
         return value
 
     def to_datetime_end(self):
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            timeStr=self._header["UTCEND"], scale="utc")
+                                            time_str=self._header["UTCEND"], scale="utc")
         self._used_these_cards("DATE-OBS", "UTCEND")
         return value
 
@@ -113,7 +106,7 @@ class MegaPrimeTranslator(FitsTranslator):
             # Dummy value, intended for PHU (need something to get filename)
             return 99
 
-    def to_obstype(self):
+    def to_observation_type(self):
         """Calculate the observation type.
 
         Returns
@@ -130,7 +123,7 @@ class MegaPrimeTranslator(FitsTranslator):
     def to_tracking_radec(self):
         frame = self._header["OBJRADEC"].strip().lower()
         if frame == "gappt":
-            self._used_cards("OBJRADEC")
+            self._used_these_cards("OBJRADEC")
             # Moving target
             return None
         radec = SkyCoord(self._header["RA_DEG"], self._header["DEC_DEG"],
@@ -146,4 +139,4 @@ class MegaPrimeTranslator(FitsTranslator):
         return altaz
 
     def to_detector_exposure_id(self):
-        return self.to_exposure() * 36 + self.to_detector_num()
+        return self.to_exposure_id() * 36 + self.to_detector_num()

@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -21,13 +21,13 @@
 
 import unittest
 
-import lsst.obs.metadata
+import astro_metadata_translator
 
 
 class BasicTestCase(unittest.TestCase):
 
-    def testBasic(self):
-        version = lsst.obs.metadata.__version__
+    def test_basic(self):
+        version = astro_metadata_translator.__version__
         self.assertIsNotNone(version)
 
 

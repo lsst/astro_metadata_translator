@@ -4,11 +4,11 @@ This configuration only affects single-package Sphinx documenation builds.
 """
 
 from documenteer.sphinxconfig.stackconf import build_package_configs
-import lsst.obs.metadata
-import lsst.obs.metadata.version
+import astro_metadata_translator
+import astro_metadata_translator.version
 
 
 _g = globals()
 _g.update(build_package_configs(
-    project_name="obs_metadata",
-    version=lsst.obs.metadata.version.__version__))
+    project_name="astro_metadata_translator",
+    version=astro_metadata_translator.version.__version__))

@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -61,12 +61,12 @@ class MetadataMeta(ABCMeta):
     """
 
     @staticmethod
-    def _makeConstMapping(standardKey, constant):
+    def _make_const_mapping(property_key, constant):
         """Make a translator method that returns a constant value.
 
         Parameters
         ----------
-        standardKey : `str`
+        property_key : `str`
             Name of the property to be calculated (for the docstring).
         constant : `str` or `numbers.Number`
             Value to return for this translator.
@@ -79,11 +79,11 @@ class MetadataMeta(ABCMeta):
         def constant_translator(self):
             return constant
 
-        if standardKey in PROPERTIES:
-            property_doc, return_type = PROPERTIES[standardKey]
+        if property_key in PROPERTIES:
+            property_doc, return_type = PROPERTIES[property_key]
         else:
             return_type = type(constant).__name__
-            property_doc = f"Returns constant value for '{standardKey}' property"
+            property_doc = f"Returns constant value for '{property_key}' property"
 
         constant_translator.__doc__ = f"""{property_doc}
 
@@ -95,7 +95,7 @@ class MetadataMeta(ABCMeta):
         return constant_translator
 
     @staticmethod
-    def _makeTrivialMapping(standardKey, headerKey, default=None, minimum=None, maximum=None, unit=None):
+    def _make_trivial_mapping(property_key, header_key, default=None, minimum=None, maximum=None, unit=None):
         """Make a translator method returning a header value.
 
         The header value can be converted to a `~astropy.units.Quantity`
@@ -106,13 +106,13 @@ class MetadataMeta(ABCMeta):
 
         Parameters
         ----------
-        standardKey : `str`
+        property_key : `str`
             Name of the translator to be constructed (for the docstring).
-        headerKey : `str`
+        header_key : `str`
             Name of the key to look up in the header.
-        default : `numbers.Number` or `astropy.units.Quantity`, optional
+        default : `numbers.Number` or `astropy.units.Quantity`, `str`, optional
             If not `None`, default value to be used if the parameter read from
-            the header is not defined.
+            the header is not defined or if the header is missing.
         minimum : `numbers.Number` or `astropy.units.Quantity`, optional
             If not `None`, and if ``default`` is not `None`, minimum value
             acceptable for this parameter.
@@ -129,26 +129,32 @@ class MetadataMeta(ABCMeta):
             Function implementing a translator with the specified
             parameters.
         """
-        if standardKey in PROPERTIES:
-            property_doc, return_type = PROPERTIES[standardKey]
+        if property_key in PROPERTIES:
+            property_doc, return_type = PROPERTIES[property_key]
         else:
             return_type = "str` or `numbers.Number"
-            property_doc = f"Map '{headerKey}' header keyword to '{standardKey}' property"
+            property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
 
         def trivial_translator(self):
             if unit is not None:
-                return self.quantity_from_card(headerKey, unit,
+                return self.quantity_from_card(header_key, unit,
                                                default=default, minimum=minimum, maximum=maximum)
-            value = self._header[headerKey]
-            if default is not None:
-                value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
-            self._used_these_cards(headerKey)
+            if header_key not in self._header and default is not None:
+                value = default
+            else:
+                value = self._header[header_key]
+                if default is not None and not isinstance(value, str):
+                    value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
+                self._used_these_cards(header_key)
 
             # If we know this is meant to be a string, force to a string.
             # Sometimes headers represent items as integers which generically
-            # we want as strings (eg OBSID)
-            if return_type == "str":
+            # we want as strings (eg OBSID).  Sometimes also floats are
+            # written as "NaN" strings.
+            if return_type == "str" and not isinstance(value, str):
                 value = str(value)
+            elif return_type == "float" and not isinstance(value, float):
+                value = float(value)
 
             return value
 
@@ -172,23 +178,23 @@ class MetadataMeta(ABCMeta):
 
         # Go through the trival mappings for this class and create
         # corresponding translator methods
-        for standardKey, headerKey in cls._trivialMap.items():
+        for property_key, header_key in cls._trivial_map.items():
             kwargs = {}
-            if type(headerKey) == tuple:
-                kwargs = headerKey[1]
-                headerKey = headerKey[0]
-            translator = cls._makeTrivialMapping(standardKey, headerKey, **kwargs)
-            setattr(cls, f"to_{standardKey}", translator)
-            if standardKey not in PROPERTIES:
-                log.warning(f"Unexpected trivial translator for '{standardKey}' defined in {cls}")
+            if type(header_key) == tuple:
+                kwargs = header_key[1]
+                header_key = header_key[0]
+            translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
+            setattr(cls, f"to_{property_key}", translator)
+            if property_key not in PROPERTIES:
+                log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
 
         # Go through the constant mappings for this class and create
         # corresponding translator methods
-        for standardKey, constant in cls._constMap.items():
-            translator = cls._makeConstMapping(standardKey, constant)
-            setattr(cls, f"to_{standardKey}", translator)
-            if standardKey not in PROPERTIES:
-                log.warning(f"Unexpected constant translator for '{standardKey}' defined in {cls}")
+        for property_key, constant in cls._const_map.items():
+            translator = cls._make_const_mapping(property_key, constant)
+            setattr(cls, f"to_{property_key}", translator)
+            if property_key not in PROPERTIES:
+                log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
 
 
 class MetadataTranslator(metaclass=MetadataMeta):
@@ -201,17 +207,17 @@ class MetadataTranslator(metaclass=MetadataMeta):
         as if it was a `dict`.
     """
 
-    _trivialMap = {}
+    _trivial_map = {}
     """Dict of one-to-one mappings for header translation from standard
     property to corresponding keyword."""
 
-    _constMap = {}
+    _const_map = {}
     """Dict defining a constant for specified standard properties."""
 
     translators = dict()
     """All registered metadata translation classes."""
 
-    supportedInstrument = None
+    supported_instrument = None
     """Name of instrument understood by this translation class."""
 
     def __init__(self, header):
@@ -220,7 +226,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
 
     @classmethod
     @abstractmethod
-    def canTranslate(cls, header):
+    def can_translate(cls, header):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -238,7 +244,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
         raise NotImplementedError()
 
     @classmethod
-    def determineTranslator(cls, header):
+    def determine_translator(cls, header):
         """Determine a translation class by examining the header
 
         Parameters
@@ -251,9 +257,15 @@ class MetadataTranslator(metaclass=MetadataMeta):
         translator : `MetadataTranslator`
             Translation class that knows how to extract metadata from
             the supplied header.
+
+        Raises
+        ------
+        ValueError
+            None of the registered translation classes understood the supplied
+            header.
         """
         for name, trans in cls.translators.items():
-            if trans.canTranslate(header):
+            if trans.can_translate(header):
                 log.debug(f"Using translation class {name}")
                 return trans
         else:
@@ -274,7 +286,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
 
         Returns
         -------
-        used : `frozenset`
+        used : `frozenset` of `str`
             Cards used when extracting metadata.
         """
         return frozenset(self._used_cards)
@@ -348,7 +360,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
         return u.Quantity(value, unit=unit)
 
 
-def _makeAbstractTranslatorMethod(property, doc, return_type):
+def _make_abstract_translator_method(property, doc, return_type):
     """Create a an abstract translation method for this property.
 
     Parameters
@@ -389,7 +401,7 @@ def _makeAbstractTranslatorMethod(property, doc, return_type):
 
 for name, description in PROPERTIES.items():
     setattr(MetadataTranslator, f"to_{name}",
-            abstractmethod(_makeAbstractTranslatorMethod(name, *description)))
+            abstractmethod(_make_abstract_translator_method(name, *description)))
 
 
 class StubTranslator(MetadataTranslator):
@@ -405,7 +417,7 @@ class StubTranslator(MetadataTranslator):
     pass
 
 
-def _makeStubTranslatorMethod(property, doc, return_type):
+def _make_stub_translator_method(property, doc, return_type):
     """Create a an stub translation method for this property.
 
     Parameters
@@ -443,4 +455,4 @@ def _makeStubTranslatorMethod(property, doc, return_type):
 
 # Create stub translation methods
 for name, description in PROPERTIES.items():
-    setattr(StubTranslator, f"to_{name}", _makeStubTranslatorMethod(name, *description))
+    setattr(StubTranslator, f"to_{name}", _make_stub_translator_method(name, *description))

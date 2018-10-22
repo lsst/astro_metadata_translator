@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -19,7 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .observationInfo import *
-from .translator import *
-from .translators import *
-from .version import *
+from .fits import *
+from .decam import *
+from .hsc import *
+from .megaprime import *
+from .subaru import *
+from .hsc import *
+from .suprimecam import *

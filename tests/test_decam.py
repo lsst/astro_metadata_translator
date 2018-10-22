@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -27,28 +27,27 @@ from helper import MetadataAssertHelper
 
 class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
 
-    def testDecamTranslator(self):
+    def test_decam_translator(self):
         test_data = (("fitsheader-decam.yaml",
                       dict(telescope="CTIO 4.0-m telescope",
                            instrument="DECam",
-                           abstract_filter="z",
                            boresight_rotation_coord="unknown",
-                           dark_time=201.15662,
+                           dark_time=201.15662*u.s,
                            detector_exposure_id=22938825,
                            detector_name="S1",
                            detector_num=25,
-                           exposure=229388,
-                           exposure_time=200.0,
+                           exposure_id=229388,
+                           exposure_time=200.0*u.s,
                            object="DES supernova hex SN-S1 tiling 22",
-                           obsid="ct4m20130901t060255",
-                           obstype="science",
+                           observation_id="ct4m20130901t060255",
+                           observation_type="science",
                            physical_filter="z DECam SDSS c0004 9260.0 1520.0",
                            pressure=779.0*u.hPa,
                            relative_humidity=23.0,
                            science_program="2012B-0001",
                            temperature=11.9*u.deg_C,
-                           visit=229388,
-                           wcsParams=dict(max_sep=1.5))),
+                           visit_id=229388,
+                           wcs_params=dict(max_sep=1.5))),
                      )
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)

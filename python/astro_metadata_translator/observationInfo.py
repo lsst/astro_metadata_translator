@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -23,6 +23,7 @@
 
 __all__ = ("ObservationInfo", )
 
+import itertools
 import logging
 import copy
 
@@ -44,6 +45,10 @@ class ObservationInfo:
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
         be asked in turn if it knows how to translate the supplied header.
+    pedantic : `bool`, optional
+        If True the translation must succeed for all properties.  If False
+        individual property translations must all be implemented but can fail
+        and a warning will be issued.
 
     Raises
     ------
@@ -58,7 +63,7 @@ class ObservationInfo:
     """All the properties supported by this class with associated
     documentation."""
 
-    def __init__(self, header, translator_class=None):
+    def __init__(self, header, translator_class=None, pedantic=False):
 
         # Store the supplied header for later stripping
         self._header = header
@@ -69,7 +74,7 @@ class ObservationInfo:
             header = header.toOrderedDict()
 
         if translator_class is None:
-            translator_class = MetadataTranslator.determineTranslator(header)
+            translator_class = MetadataTranslator.determine_translator(header)
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
@@ -79,9 +84,7 @@ class ObservationInfo:
         # Store the translator
         self._translator = translator
 
-        # Loop over each translation (not final form -- this should be
-        # defined in one place and consistent with translation classes)
-
+        # Loop over each property and request the translated form
         for t in self._PROPERTIES:
             # prototype code
             method = f"to_{t}"
@@ -93,14 +96,24 @@ class ObservationInfo:
                 raise NotImplementedError(f"No translation exists for property '{t}'"
                                           f" using translator {translator.__class__}") from e
             except KeyError as e:
-                raise KeyError(f"Error calculating property '{t}'"
-                               " using translator {translator.__class__}") from e
+                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}"
+                if pedantic:
+                    raise KeyError(err_msg) from e
+                else:
+                    log.warning(err_msg)
 
     @property
     def cards_used(self):
+        """Header cards used for the translation.
+
+        Returns
+        -------
+        used : `frozenset` of `str`
+            Set of card used.
+        """
         return self._translator.cards_used()
 
-    def strippedHeader(self):
+    def stripped_header(self):
         """Return a copy of the supplied header with used keywords removed.
 
         Returns
@@ -114,6 +127,18 @@ class ObservationInfo:
         for c in used:
             del hdr[c]
         return hdr
+
+    def __str__(self):
+        # Put more interesting answers at front of list
+        # and then do remainder
+        priority = ("instrument", "telescope", "datetime_begin")
+        properties = sorted(set(self._PROPERTIES.keys()) - set(priority))
+
+        result = ""
+        for p in itertools.chain(priority, properties):
+            result += f"{p}: {getattr(self, p)}\n"
+
+        return result
 
     def __eq__(self, other):
         """Compares equal if standard properties are equal
@@ -157,7 +182,7 @@ class ObservationInfo:
 
 
 # Method to add the standard properties
-def _makeProperty(property, doc, return_type):
+def _make_property(property, doc, return_type):
     """Create a getter method with associated docstring.
 
     Parameters
@@ -191,4 +216,4 @@ def _makeProperty(property, doc, return_type):
 # getter methods.
 for name, description in ObservationInfo._PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_makeProperty(name, *description)))
+    setattr(ObservationInfo, name, property(_make_property(name, *description)))

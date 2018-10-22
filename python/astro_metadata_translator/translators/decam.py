@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -29,7 +29,7 @@ from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
 
 from .fits import FitsTranslator
-from .helpers import altitudeFromZenithDistance
+from .helpers import altitude_from_zenith_distance
 
 
 class DecamTranslator(FitsTranslator):
@@ -39,58 +39,43 @@ class DecamTranslator(FitsTranslator):
     name = "DECam"
     """Name of this translation class"""
 
-    supportedInstrument = "DECam"
+    supported_instrument = "DECam"
     """Supports the DECam instrument."""
 
-    _constMap = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                 "boresight_rotation_coord": "unknown"}
+    _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
+                  "boresight_rotation_coord": "unknown"}
 
-    _trivialMap = {"exposure_time": "EXPTIME",
-                   "dark_time": "DARKTIME",
-                   "boresight_airmass": "AIRMASS",
-                   "obsid": "OBSID",
-                   "object": "OBJECT",
-                   "science_program": "PROPID",
-                   "detector_num": "CCDNUM",
-                   "detector_name": "DETPOS",
-                   # Ensure that reasonable values are always available
-                   "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
-                   "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10., minimum=-10., maximum=40.)),
-                   # Header says torr but seems to be mbar. Use hPa unit
-                   # which is the SI equivalent of mbar.
-                   "pressure": ("PRESSURE", dict(unit=u.hPa,
-                                default=771.611, minimum=700., maximum=850.)),
-                   "exposure": "EXPNUM",
-                   "visit": "EXPNUM"}
+    _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
+                    "dark_time": ("DARKTIME", dict(unit=u.s)),
+                    "boresight_airmass": "AIRMASS",
+                    "observation_id": "OBSID",
+                    "object": "OBJECT",
+                    "science_program": "PROPID",
+                    "detector_num": "CCDNUM",
+                    "detector_name": "DETPOS",
+                    # Ensure that reasonable values are always available
+                    "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
+                    "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10., minimum=-10., maximum=40.)),
+                    # Header says torr but seems to be mbar. Use hPa unit
+                    # which is the SI equivalent of mbar.
+                    "pressure": ("PRESSURE", dict(unit=u.hPa,
+                                 default=771.611, minimum=700., maximum=850.)),
+                    "exposure_id": "EXPNUM",
+                    "visit_id": "EXPNUM"}
 
     def to_datetime_end(self):
         return self._from_fits_date("DTUTC")
 
-    def _translateFromCalibId(self, field):
+    def _translate_from_calib_id(self, field):
         """Fetch the ID from the CALIB_ID header.
 
         Calibration products made with constructCalibs have some metadata
         saved in its FITS header CALIB_ID.
         """
         data = self._header["CALIB_ID"]
-        match = re.search(".*%s=(\S+)" % field, data)
+        match = re.search(r".*%s=(\S+)" % field, data)
         self._used_these_cards("CALIB_ID")
         return match.groups()[0]
-
-    def to_abstract_filter(self):
-        """Calculate the abstract filter.
-
-        Returns
-        -------
-        filter : `str`
-            The abstract filter name.
-
-        """
-        # The abstract filter can be derived from the first word in the
-        # physical filter description
-        physical = self.to_physical_filter()
-        if physical:
-            return physical.split()[0]
 
     def to_physical_filter(self):
         """Calculate physical filter.
@@ -104,13 +89,13 @@ class DecamTranslator(FitsTranslator):
             The full filter name.
         """
         if "FILTER" in self._header:
-            if self.to_obstype() == "zero":
+            if self.to_observation_type() == "zero":
                 return "NONE"
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
             return value
         elif "CALIB_ID" in self._header:
-            return self._translateFromCalibId("filter")
+            return self._translate_from_calib_id("filter")
         else:
             return None
 
@@ -128,7 +113,7 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
         return value
 
-    def to_obstype(self):
+    def to_observation_type(self):
         """Calculate the observation type.
 
         Returns
@@ -159,10 +144,10 @@ class DecamTranslator(FitsTranslator):
 
     def to_altaz_begin(self):
         altaz = AltAz(self._header["AZ"] * u.deg,
-                      altitudeFromZenithDistance(self._header["ZD"] * u.deg),
+                      altitude_from_zenith_distance(self._header["ZD"] * u.deg),
                       obstime=self.to_datetime_begin(), location=self.to_location())
         self._used_these_cards("AZ", "ZD")
         return altaz
 
     def to_detector_exposure_id(self):
-        return int("{:07d}{:02d}".format(self.to_exposure(), self.to_detector_num()))
+        return int("{:07d}{:02d}".format(self.to_exposure_id(), self.to_detector_num()))

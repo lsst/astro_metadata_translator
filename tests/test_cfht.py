@@ -1,4 +1,4 @@
-# This file is part of obs_metadata.
+# This file is part of astro_metadata_translator.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -21,49 +21,47 @@
 
 import unittest
 import astropy.units as u
-import astropy.units.cds as cds
 
-from helper import readTestFile, MetadataAssertHelper
-from lsst.obs.metadata import ObservationInfo
+from helper import read_test_file, MetadataAssertHelper
+from astro_metadata_translator import ObservationInfo
 
 
 class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
 
-    def testMegaPrimeTranslator(self):
+    def test_megaprime_translator(self):
         test_data = (("fitsheader-megaprime.yaml",
                       dict(telescope="CFHT 3.6m",
                            instrument="MegaPrime",
-                           abstract_filter="i",
                            boresight_rotation_coord="unknown",
-                           dark_time=615.0,
+                           dark_time=615.0*u.s,
                            detector_exposure_id=37398350,
                            detector_name="8352-15-3",
                            detector_num=2,
-                           exposure=1038843,
-                           exposure_time=615.037,
+                           exposure_id=1038843,
+                           exposure_time=615.037*u.s,
                            object="w2.+2+2",
-                           obsid="1038843",
-                           obstype="science",
+                           observation_id="1038843",
+                           observation_type="science",
                            physical_filter="i.MP9702",
-                           pressure=617.65*cds.mmHg,
+                           pressure=617.65*u.hPa,
                            relative_humidity=39.77,
                            science_program="08BL05",
                            temperature=0.9*u.deg_C,
-                           visit=1038843,
+                           visit_id=1038843,
                            )),
                      )
         for file, expected in test_data:
             self.assertObservationInfoFromYaml(file, **expected)
 
-    def testMegaPrimeStripping(self):
-        header = readTestFile("fitsheader-megaprime.yaml")
+    def test_megaprime_stripping(self):
+        header = read_test_file("fitsheader-megaprime.yaml")
         v1 = ObservationInfo(header)
 
         # Check that headers have been removed
-        newHdr = v1.strippedHeader()
-        self.assertNotIn("INSTRUME", newHdr)
-        self.assertNotIn("TELESCOP", newHdr)
-        self.assertIn("CCD", newHdr)
+        new_hdr = v1.stripped_header()
+        self.assertNotIn("INSTRUME", new_hdr)
+        self.assertNotIn("TELESCOP", new_hdr)
+        self.assertIn("CCD", new_hdr)
 
 
 if __name__ == "__main__":
