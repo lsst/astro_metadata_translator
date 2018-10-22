@@ -151,9 +151,9 @@ class MetadataMeta(ABCMeta):
             # Sometimes headers represent items as integers which generically
             # we want as strings (eg OBSID).  Sometimes also floats are
             # written as "NaN" strings.
-            if return_type == "str" and not isinstance(return_type, str):
+            if return_type == "str" and not isinstance(value, str):
                 value = str(value)
-            elif return_type == "float" and not isinstance(return_type, float):
+            elif return_type == "float" and not isinstance(value, float):
                 value = float(value)
 
             return value
