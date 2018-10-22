@@ -100,7 +100,7 @@ class ObservationInfo:
                 if pedantic:
                     raise KeyError(err_msg) from e
                 else:
-                    log.warn(err_msg)
+                    log.warning(err_msg)
 
     @property
     def cards_used(self):
