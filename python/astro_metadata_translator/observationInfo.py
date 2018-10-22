@@ -45,6 +45,10 @@ class ObservationInfo:
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
         be asked in turn if it knows how to translate the supplied header.
+    pedantic : `bool`, optional
+        If True the translation must succeed for all properties.  If False
+        individual property translations must all be implemented but can fail
+        and a warning will be issued.
 
     Raises
     ------
@@ -59,7 +63,7 @@ class ObservationInfo:
     """All the properties supported by this class with associated
     documentation."""
 
-    def __init__(self, header, translator_class=None):
+    def __init__(self, header, translator_class=None, pedantic=False):
 
         # Store the supplied header for later stripping
         self._header = header
@@ -80,9 +84,7 @@ class ObservationInfo:
         # Store the translator
         self._translator = translator
 
-        # Loop over each translation (not final form -- this should be
-        # defined in one place and consistent with translation classes)
-
+        # Loop over each property and request the translated form
         for t in self._PROPERTIES:
             # prototype code
             method = f"to_{t}"
@@ -94,8 +96,11 @@ class ObservationInfo:
                 raise NotImplementedError(f"No translation exists for property '{t}'"
                                           f" using translator {translator.__class__}") from e
             except KeyError as e:
-                raise KeyError(f"Error calculating property '{t}'"
-                               f" using translator {translator.__class__}") from e
+                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}"
+                if pedantic:
+                    raise KeyError(err_msg) from e
+                else:
+                    log.warn(err_msg)
 
     @property
     def cards_used(self):
