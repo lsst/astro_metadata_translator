@@ -23,6 +23,7 @@
 
 __all__ = ("ObservationInfo", )
 
+import itertools
 import logging
 import copy
 
@@ -121,6 +122,18 @@ class ObservationInfo:
         for c in used:
             del hdr[c]
         return hdr
+
+    def __str__(self):
+        # Put more interesting answers at front of list
+        # and then do remainder
+        priority = ("instrument", "telescope", "datetime_begin")
+        properties = sorted(set(self._PROPERTIES.keys()) - set(priority))
+
+        result = ""
+        for p in itertools.chain(priority, properties):
+            result += f"{p}: {getattr(self, p)}\n"
+
+        return result
 
     def __eq__(self, other):
         """Compares equal if standard properties are equal
