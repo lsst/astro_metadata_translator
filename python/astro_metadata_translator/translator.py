@@ -110,9 +110,9 @@ class MetadataMeta(ABCMeta):
             Name of the translator to be constructed (for the docstring).
         header_key : `str`
             Name of the key to look up in the header.
-        default : `numbers.Number` or `astropy.units.Quantity`, optional
+        default : `numbers.Number` or `astropy.units.Quantity`, `str`, optional
             If not `None`, default value to be used if the parameter read from
-            the header is not defined.
+            the header is not defined or if the header is missing.
         minimum : `numbers.Number` or `astropy.units.Quantity`, optional
             If not `None`, and if ``default`` is not `None`, minimum value
             acceptable for this parameter.
@@ -139,16 +139,22 @@ class MetadataMeta(ABCMeta):
             if unit is not None:
                 return self.quantity_from_card(header_key, unit,
                                                default=default, minimum=minimum, maximum=maximum)
-            value = self._header[header_key]
-            if default is not None:
-                value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
-            self._used_these_cards(header_key)
+            if header_key not in self._header and default is not None:
+                value = default
+            else:
+                value = self._header[header_key]
+                if default is not None and not isinstance(value, str):
+                    value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
+                self._used_these_cards(header_key)
 
             # If we know this is meant to be a string, force to a string.
             # Sometimes headers represent items as integers which generically
-            # we want as strings (eg OBSID)
-            if return_type == "str":
+            # we want as strings (eg OBSID).  Sometimes also floats are
+            # written as "NaN" strings.
+            if return_type == "str" and not isinstance(return_type, str):
                 value = str(value)
+            elif return_type == "float" and not isinstance(return_type, float):
+                value = float(value)
 
             return value
 
