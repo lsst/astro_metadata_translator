@@ -94,7 +94,7 @@ class ObservationInfo:
                                           f" using translator {translator.__class__}") from e
             except KeyError as e:
                 raise KeyError(f"Error calculating property '{t}'"
-                               " using translator {translator.__class__}") from e
+                               f" using translator {translator.__class__}") from e
 
     @property
     def cards_used(self):
