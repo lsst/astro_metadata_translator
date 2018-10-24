@@ -77,10 +77,15 @@ class MegaPrimeTranslator(FitsTranslator):
         return value
 
     def to_datetime_end(self):
-        # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UTCEND"], scale="utc")
-        self._used_these_cards("DATE-OBS", "UTCEND")
+        # Older files are missing UTCEND
+        if "UTCEND" in self._header:
+            # We know it is UTC
+            value = self._from_fits_date_string(self._header["DATE-OBS"],
+                                                time_str=self._header["UTCEND"], scale="utc")
+            self._used_these_cards("DATE-OBS", "UTCEND")
+        else:
+            # Take a guess by adding on the exposure time
+            value = self.to_datetime_begin() + self.to_exposure_time()
         return value
 
     def to_location(self):
@@ -121,15 +126,21 @@ class MegaPrimeTranslator(FitsTranslator):
         return obstype
 
     def to_tracking_radec(self):
-        frame = self._header["OBJRADEC"].strip().lower()
-        if frame == "gappt":
-            self._used_these_cards("OBJRADEC")
-            # Moving target
-            return None
+        used = []
+        for k in ("RADECSYS", "OBJRADEC", "RADESYS"):
+            if k in self._header:
+                frame = self._header[k].strip().lower()
+                used.append(k)
+                if frame == "gappt":
+                    self._used_these_cards(*used)
+                    # Moving target
+                    return None
+        else:
+            frame = "icrs"
         radec = SkyCoord(self._header["RA_DEG"], self._header["DEC_DEG"],
                          frame=frame, unit=u.deg, obstime=self.to_datetime_begin(),
                          location=self.to_location())
-        self._used_these_cards("OBJRADEC", "RA_DEG", "DEC_DEG")
+        self._used_these_cards("RA_DEG", "DEC_DEG", *used)
         return radec
 
     def to_altaz_begin(self):
