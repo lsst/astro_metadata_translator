@@ -128,9 +128,12 @@ class FitsTranslator(MetadataTranslator):
             used.append("TIMESYS")
         else:
             scale = "utc"
-        date_str = self._header[date_key]
-        value = self._from_fits_date_string(date_str, scale=scale)
-        self._used_these_cards(*used)
+        if date_key in self._header:
+            date_str = self._header[date_key]
+            value = self._from_fits_date_string(date_str, scale=scale)
+            self._used_these_cards(*used)
+        else:
+            value = None
         return value
 
     def to_datetime_begin(self):
