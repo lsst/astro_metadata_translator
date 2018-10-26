@@ -33,6 +33,7 @@ translation classes without using `MetadataTranslator` properties.
 """
 
 __all__ = ("to_location_via_telescope_name",
+           "is_non_science",
            "altitude_from_zenith_distance")
 
 from astropy.coordinates import EarthLocation
@@ -48,6 +49,19 @@ def to_location_via_telescope_name(self):
         Location of the observatory.
     """
     return EarthLocation.of_site(self.to_telescope())
+
+
+def is_non_science(self):
+    """Raise an exception if this is a science observation.
+
+    Raises
+    ------
+    KeyError
+        Is a science observation.
+    """
+    if self.to_observation_type() == "science":
+        raise KeyError("Header represents science observation and can not default")
+    return
 
 
 def altitude_from_zenith_distance(zd):
