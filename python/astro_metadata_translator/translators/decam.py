@@ -29,7 +29,7 @@ from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
 
 from .fits import FitsTranslator
-from .helpers import altitude_from_zenith_distance
+from .helpers import altitude_from_zenith_distance, is_non_science
 
 
 class DecamTranslator(FitsTranslator):
@@ -47,7 +47,7 @@ class DecamTranslator(FitsTranslator):
 
     _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
-                    "boresight_airmass": "AIRMASS",
+                    "boresight_airmass": ("AIRMASS", dict(checker=is_non_science)),
                     "observation_id": "OBSID",
                     "object": "OBJECT",
                     "science_program": "PROPID",
