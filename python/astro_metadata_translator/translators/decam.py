@@ -119,8 +119,6 @@ class DecamTranslator(FitsTranslator):
             The full filter name.
         """
         if "FILTER" in self._header:
-            if self.to_observation_type() == "zero":
-                return "NONE"
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
             return value
