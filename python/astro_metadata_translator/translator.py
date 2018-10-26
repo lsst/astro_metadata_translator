@@ -95,7 +95,8 @@ class MetadataMeta(ABCMeta):
         return constant_translator
 
     @staticmethod
-    def _make_trivial_mapping(property_key, header_key, default=None, minimum=None, maximum=None, unit=None):
+    def _make_trivial_mapping(property_key, header_key, default=None, minimum=None, maximum=None,
+                              unit=None, checker=None):
         """Make a translator method returning a header value.
 
         The header value can be converted to a `~astropy.units.Quantity`
@@ -124,6 +125,11 @@ class MetadataMeta(ABCMeta):
         unit : `astropy.units.Unit`, optional
             If not `None`, the value read from the header will be converted
             to a `~astropy.units.Quantity`.  Only supported for numeric values.
+        checker : `function`, optional
+            Callback function to be used by the translator method in case the
+            keyword is not present.  Function will be executed as if it is
+            a method of the translator class.  Running without raising an
+            exception will allow the default to be used.
 
         Returns
         -------
@@ -151,8 +157,15 @@ class MetadataMeta(ABCMeta):
                     self._used_these_cards(key)
                     break
             else:
-                # No keywords found, use default or raise
-                if default is not None:
+                # No keywords found, use default, checking first, or raise
+                if checker is not None:
+                    checker(self)
+                    if default is None:
+                        # Checker has passed but no default, implies None
+                        # is okay.
+                        return None
+                    value = default
+                elif default is not None:
                     value = default
                 else:
                     raise KeyError(f"Could not find {keywords} in header")
