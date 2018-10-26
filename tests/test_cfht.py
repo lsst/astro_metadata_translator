@@ -71,7 +71,8 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                            )),
                      )
         for file, expected in test_data:
-            self.assertObservationInfoFromYaml(file, **expected)
+            with self.subTest(f"Testing {file}"):
+                self.assertObservationInfoFromYaml(file, **expected)
 
     def test_megaprime_stripping(self):
         header = read_test_file("fitsheader-megaprime.yaml")

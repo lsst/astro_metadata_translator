@@ -70,7 +70,8 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                            )),
                      )
         for file, expected in test_data:
-            self.assertObservationInfoFromYaml(file, **expected)
+            with self.subTest(f"Testing {file}"):
+                self.assertObservationInfoFromYaml(file, **expected)
 
     def test_suprimecam_translator(self):
         # In this case the airmass is average during observation
@@ -97,7 +98,8 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                            wcs_params=dict(amdelta=0.015))),
                      )
         for file, expected in test_data:
-            self.assertObservationInfoFromYaml(file, **expected)
+            with self.subTest(f"Testing {file}"):
+                self.assertObservationInfoFromYaml(file, **expected)
 
 
 if __name__ == "__main__":

@@ -50,7 +50,8 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                            wcs_params=dict(max_sep=1.5))),
                      )
         for file, expected in test_data:
-            self.assertObservationInfoFromYaml(file, **expected)
+            with self.subTest(f"Testing {file}"):
+                self.assertObservationInfoFromYaml(file, **expected)
 
 
 if __name__ == "__main__":
