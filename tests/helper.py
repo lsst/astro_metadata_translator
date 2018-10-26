@@ -149,7 +149,9 @@ class MetadataAssertHelper:
         header : `dict`-like
             Header to be checked.
         check_wcs : `bool`, optional
-            Check the consistency of the RA/Dec and AltAz values.
+            Check the consistency of the RA/Dec and AltAz values.  Checks
+            are automatically disabled if the translated header does
+            not appear to be "science".
         wcs_params : `dict`, optional
             Parameters to pass to `assertCoordinatesConsistent`.
         kwargs : `dict`
@@ -186,7 +188,7 @@ class MetadataAssertHelper:
                 self.assertEqual(calculated, expected, msg=msg)
 
         # Check the WCS consistency
-        if check_wcs:
+        if check_wcs and obsinfo.observation_type == "science":
             if wcs_params is None:
                 wcs_params = {}
             self.assertCoordinatesConsistent(obsinfo, **wcs_params)
