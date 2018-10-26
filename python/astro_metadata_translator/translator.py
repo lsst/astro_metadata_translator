@@ -108,8 +108,10 @@ class MetadataMeta(ABCMeta):
         ----------
         property_key : `str`
             Name of the translator to be constructed (for the docstring).
-        header_key : `str`
-            Name of the key to look up in the header.
+        header_key : `str` or `list` of `str`
+            Name of the key to look up in the header. If a `list` each
+            key will be tested in turn.  This can deal with header styles
+            that evolve over time.
         default : `numbers.Number` or `astropy.units.Quantity`, `str`, optional
             If not `None`, default value to be used if the parameter read from
             the header is not defined or if the header is missing.
@@ -139,13 +141,21 @@ class MetadataMeta(ABCMeta):
             if unit is not None:
                 return self.quantity_from_card(header_key, unit,
                                                default=default, minimum=minimum, maximum=maximum)
-            if header_key not in self._header and default is not None:
-                value = default
+
+            keywords = header_key if isinstance(header_key, list) else [header_key]
+            for key in keywords:
+                if key in self._header:
+                    value = self._header[key]
+                    if default is not None and not isinstance(value, str):
+                        value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
+                    self._used_these_cards(key)
+                    break
             else:
-                value = self._header[header_key]
-                if default is not None and not isinstance(value, str):
-                    value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
-                self._used_these_cards(header_key)
+                # No keywords found, use default or raise
+                if default is not None:
+                    value = default
+                else:
+                    raise KeyError(f"Could not find {keywords} in header")
 
             # If we know this is meant to be a string, force to a string.
             # Sometimes headers represent items as integers which generically
@@ -155,7 +165,6 @@ class MetadataMeta(ABCMeta):
                 value = str(value)
             elif return_type == "float" and not isinstance(value, float):
                 value = float(value)
-
             return value
 
         # Docstring inheritance means it is confusing to specify here
@@ -324,13 +333,14 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 value = default
         return value
 
-    def quantity_from_card(self, keyword, unit, default=None, minimum=None, maximum=None):
+    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
         ----------
-        keyword : `str`
-            Keyword to use from header.
+        keywords : `str` or `list` of `str`
+            Keyword to use from header.  If a list each keyword will be tried
+            in turn until one matches.
         unit : `astropy.units.UnitBase`
             Unit of the item in the header.
         default : `float`, optional
@@ -348,8 +358,20 @@ class MetadataTranslator(metaclass=MetadataMeta):
         -------
         q : `astropy.units.Quantity`
             Quantity representing the header value.
+
+        Raises
+        ------
+        KeyError
+            The supplied header key is not present.
         """
-        value = self._header[keyword]
+        keywords = keywords if isinstance(keywords, list) else [keywords]
+        for k in keywords:
+            if k in self._header:
+                value = self._header[k]
+                keyword = k
+                break
+        else:
+            raise KeyError(f"Could not find {keywords} in header")
         if isinstance(value, str):
             # Sometimes the header has the wrong type in it but this must
             # be a number if we are creating a quantity.
