@@ -64,10 +64,9 @@ class MegaPrimeTranslator(FitsTranslator):
                     "exposure_id": "EXPNUM",
                     "visit_id": "EXPNUM",
                     "detector_name": "CCDNAME",
-                    "relative_humidity": "RELHUMID",
-                    "temperature": ("TEMPERAT", dict(unit=u.deg_C)),
-                    "pressure": ("PRESSURE", dict(unit=u.hPa)),
-                    "boresight_airmass": "AIRMASS"}
+                    "relative_humidity": ["RELHUMID", "HUMIDITY"],
+                    "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
+                    "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
 
     def to_datetime_begin(self):
         # We know it is UTC
@@ -96,9 +95,14 @@ class MegaPrimeTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-        # Height is not in MegaPrime files. Use the value from EarthLocation.of_site("CFHT")
-        value = EarthLocation.from_geodetic(self._header["LONGITUD"], self._header["LATITUDE"], 4215.0)
-        self._used_these_cards("LONGITUD", "LATITUDE")
+        # Height is not in some MegaPrime files. Use the value from EarthLocation.of_site("CFHT")
+        # Some data uses OBS-LONG, OBS-LAT, other data uses LONGITUD and LATITUDE
+        for long_key, lat_key in (("LONGITUD", "LATITUDE"), ("OBS-LONG", "OBS-LAT")):
+            if long_key in self._header and lat_key in self._header:
+                value = EarthLocation.from_geodetic(self._header[long_key], self._header[lat_key], 4215.0)
+                self._used_these_cards(long_key, lat_key)
+        else:
+            value = EarthLocation.of_site("CFHT")
         return value
 
     def to_detector_num(self):
@@ -107,7 +111,7 @@ class MegaPrimeTranslator(FitsTranslator):
             num = int(extname[3:])  # chop off "ccd"
             self._used_these_cards("EXTNAME")
             return num
-        except KeyError:
+        except (KeyError, ValueError):
             # Dummy value, intended for PHU (need something to get filename)
             return 99
 
@@ -137,17 +141,41 @@ class MegaPrimeTranslator(FitsTranslator):
                     return None
         else:
             frame = "icrs"
-        radec = SkyCoord(self._header["RA_DEG"], self._header["DEC_DEG"],
-                         frame=frame, unit=u.deg, obstime=self.to_datetime_begin(),
-                         location=self.to_location())
-        self._used_these_cards("RA_DEG", "DEC_DEG", *used)
-        return radec
+        for ra_key, dec_key in (("RA_DEG", "DEC_DEG"), ("BORE-RA", "BORE-DEC")):
+            if ra_key in self._header and dec_key in self._header:
+                radec = SkyCoord(self._header[ra_key], self._header[dec_key],
+                                 frame=frame, unit=u.deg, obstime=self.to_datetime_begin(),
+                                 location=self.to_location())
+                self._used_these_cards(ra_key, dec_key, *used)
+                return radec
+        if self.to_observation_type() == "science":
+            raise KeyError("Unable to determine tracking RA/Dec of science observation")
+        return None
 
     def to_altaz_begin(self):
-        altaz = AltAz(self._header["TELAZ"] * u.deg, self._header["TELALT"] * u.deg,
-                      obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("TELALT", "TELAZ")
-        return altaz
+        for az_key, alt_key in (("TELAZ", "TELALT"), ("BORE-AZ", "BORE-ALT")):
+            if az_key in self._header and alt_key in self._header:
+                az = self._header[az_key]
+                alt = self._header[alt_key]
+                if az < 1.0 or alt < 1.0:
+                    # Calibrations have magic values of -9999 when telescope not
+                    # involved in observation.
+                    return None
+                altaz = AltAz(az * u.deg, alt * u.deg,
+                              obstime=self.to_datetime_begin(), location=self.to_location())
+                self._used_these_cards(az_key, alt_key)
+                return altaz
+        if self.to_observation_type() == "science":
+            raise KeyError("Unable to determine alt/az of science observation")
+        return None
 
     def to_detector_exposure_id(self):
         return self.to_exposure_id() * 36 + self.to_detector_num()
+
+    def to_pressure(self):
+        # Can be either AIRPRESS in Pa or PRESSURE in mbar
+        for key, unit in (("PRESSURE", u.hPa), ("AIRPRESS", u.Pa)):
+            if key in self._header:
+                return self.quantity_from_card(key, unit)
+        else:
+            raise KeyError("Could not find pressure keywords in header")
