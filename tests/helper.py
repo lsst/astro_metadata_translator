@@ -164,7 +164,9 @@ class MetadataAssertHelper:
             A value in the ObservationInfo derived from the file is
             inconsistent.
         """
-        obsinfo = ObservationInfo(header)
+        # For testing we force pedantic mode since we are in charge
+        # of all the translations
+        obsinfo = ObservationInfo(header, pedantic=True)
 
         # Check that we can pickle and get back the same properties
         newinfo = pickle.loads(pickle.dumps(obsinfo))
