@@ -101,6 +101,7 @@ class MegaPrimeTranslator(FitsTranslator):
             if long_key in self._header and lat_key in self._header:
                 value = EarthLocation.from_geodetic(self._header[long_key], self._header[lat_key], 4215.0)
                 self._used_these_cards(long_key, lat_key)
+                break
         else:
             value = EarthLocation.of_site("CFHT")
         return value
@@ -139,6 +140,7 @@ class MegaPrimeTranslator(FitsTranslator):
                     self._used_these_cards(*used)
                     # Moving target
                     return None
+                break
         else:
             frame = "icrs"
         for ra_key, dec_key in (("RA_DEG", "DEC_DEG"), ("BORE-RA", "BORE-DEC")):
