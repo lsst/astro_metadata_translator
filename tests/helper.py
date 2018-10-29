@@ -176,7 +176,6 @@ class MetadataAssertHelper:
         for property, expected in kwargs.items():
             calculated = getattr(obsinfo, property)
             msg = f"Comparing property {property}"
-            print(f"{property}: {calculated} vs {expected}")
             if isinstance(expected, u.Quantity):
                 calculated = calculated.to_value(unit=expected.unit)
                 expected = expected.to_value()
