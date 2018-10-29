@@ -28,6 +28,7 @@ import re
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
 import astropy.units as u
 
+from ..translator import cache_translation
 from .fits import FitsTranslator
 from .helpers import altitude_from_zenith_distance, is_non_science
 
@@ -107,6 +108,7 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("CALIB_ID")
         return match.groups()[0]
 
+    @cache_translation
     def to_physical_filter(self):
         """Calculate physical filter.
 
@@ -127,6 +129,7 @@ class DecamTranslator(FitsTranslator):
         else:
             return None
 
+    @cache_translation
     def to_location(self):
         """Calculate the observatory location.
 
@@ -147,6 +150,7 @@ class DecamTranslator(FitsTranslator):
 
         return value
 
+    @cache_translation
     def to_observation_type(self):
         """Calculate the observation type.
 
@@ -163,6 +167,7 @@ class DecamTranslator(FitsTranslator):
             return "science"
         return obstype
 
+    @cache_translation
     def to_tracking_radec(self):
         used = []
         if "RADESYS" in self._header:
@@ -180,6 +185,7 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("TELRA", "TELDEC", *used)
         return radec
 
+    @cache_translation
     def to_altaz_begin(self):
         if "AZ" not in self._header or "ZD" not in self._header:
             return None
@@ -189,6 +195,7 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("AZ", "ZD")
         return altaz
 
+    @cache_translation
     def to_detector_exposure_id(self):
         exposure_id = self.to_exposure_id()
         if exposure_id is None:

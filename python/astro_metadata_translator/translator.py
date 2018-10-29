@@ -21,7 +21,7 @@
 
 """Classes and support code for metadata translation"""
 
-__all__ = ("MetadataTranslator", "StubTranslator")
+__all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
 from abc import abstractmethod, ABCMeta
 import logging
@@ -34,6 +34,29 @@ from .properties import PROPERTIES
 
 
 log = logging.getLogger(__name__)
+
+
+def cache_translation(func, method=None):
+    """Decorator to cache the result of a translation method.
+
+    Especially useful when a translation uses many other translation
+    methods.  Should be used only on ``to_x()`` methods.
+
+    Parameters
+    ----------
+    func : `function`
+        Translation method to cache.
+    method : `str`, optional
+        Name of the translation method to cache.  Not needed if the decorator
+        is used around a normal method, but necessary when the decorator is
+        being used in a metaclass.
+    """
+    def func_wrapper(self):
+        name = func.__name__ if method is None else method
+        if name not in self._translation_cache:
+            self._translation_cache[name] = func(self)
+        return self._translation_cache[name]
+    return func_wrapper
 
 
 class MetadataMeta(ABCMeta):
@@ -206,7 +229,8 @@ class MetadataMeta(ABCMeta):
                 kwargs = header_key[1]
                 header_key = header_key[0]
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
-            setattr(cls, f"to_{property_key}", translator)
+            method = f"to_{property_key}"
+            setattr(cls, method, cache_translation(translator, method=method))
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
 
@@ -245,6 +269,9 @@ class MetadataTranslator(metaclass=MetadataMeta):
     def __init__(self, header):
         self._header = header
         self._used_cards = set()
+
+        # Cache assumes header is read-only once stored in object
+        self._translation_cache = {}
 
     @classmethod
     @abstractmethod
