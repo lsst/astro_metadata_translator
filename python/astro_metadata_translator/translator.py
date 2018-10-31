@@ -50,6 +50,11 @@ def cache_translation(func, method=None):
         Name of the translation method to cache.  Not needed if the decorator
         is used around a normal method, but necessary when the decorator is
         being used in a metaclass.
+
+    Returns
+    -------
+    wrapped : `function`
+        Method wrapped by the caching function.
     """
     def func_wrapper(self):
         name = func.__name__ if method is None else method
