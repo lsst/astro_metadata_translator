@@ -27,7 +27,7 @@ from astropy.time import Time
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 
-from ..translator import MetadataTranslator
+from ..translator import MetadataTranslator, cache_translation
 
 
 class FitsTranslator(MetadataTranslator):
@@ -136,6 +136,7 @@ class FitsTranslator(MetadataTranslator):
             value = None
         return value
 
+    @cache_translation
     def to_datetime_begin(self):
         """Calculate start time of observation.
 
@@ -148,6 +149,7 @@ class FitsTranslator(MetadataTranslator):
         """
         return self._from_fits_date("DATE-OBS")
 
+    @cache_translation
     def to_datetime_end(self):
         """Calculate end time of observation.
 
@@ -160,6 +162,7 @@ class FitsTranslator(MetadataTranslator):
         """
         return self._from_fits_date("DATE-END")
 
+    @cache_translation
     def to_location(self):
         """Calculate the observatory location.
 

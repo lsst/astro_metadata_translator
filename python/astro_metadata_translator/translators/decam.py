@@ -94,6 +94,7 @@ class DecamTranslator(FitsTranslator):
             return True
         return False
 
+    @cache_translation
     def to_exposure_id(self):
         """Calculate exposure ID solely for science observations.
 
@@ -108,10 +109,12 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("EXPNUM")
         return value
 
+    @cache_translation
     def to_visit_id(self):
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id()
 
+    @cache_translation
     def to_datetime_end(self):
         # Docstring will be inherited. Property defined in properties.py
         return self._from_fits_date("DTUTC")

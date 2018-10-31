@@ -26,6 +26,7 @@ __all__ = ("MegaPrimeTranslator", )
 from astropy.coordinates import EarthLocation, AltAz, Angle
 import astropy.units as u
 
+from ..translator import cache_translation
 from .fits import FitsTranslator
 from .helpers import tracking_from_degree_headers
 
@@ -69,6 +70,7 @@ class MegaPrimeTranslator(FitsTranslator):
                     "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
                     "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
 
+    @cache_translation
     def to_datetime_begin(self):
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
@@ -77,6 +79,7 @@ class MegaPrimeTranslator(FitsTranslator):
         self._used_these_cards("DATE-OBS", "UTC-OBS")
         return value
 
+    @cache_translation
     def to_datetime_end(self):
         # Docstring will be inherited. Property defined in properties.py
         # Older files are missing UTCEND
@@ -90,6 +93,7 @@ class MegaPrimeTranslator(FitsTranslator):
             value = self.to_datetime_begin() + self.to_exposure_time()
         return value
 
+    @cache_translation
     def to_location(self):
         """Calculate the observatory location.
 
@@ -109,6 +113,7 @@ class MegaPrimeTranslator(FitsTranslator):
             value = EarthLocation.of_site("CFHT")
         return value
 
+    @cache_translation
     def to_detector_num(self):
         # Docstring will be inherited. Property defined in properties.py
         try:
@@ -120,6 +125,7 @@ class MegaPrimeTranslator(FitsTranslator):
             # Dummy value, intended for PHU (need something to get filename)
             return 99
 
+    @cache_translation
     def to_observation_type(self):
         """Calculate the observation type.
 
@@ -134,6 +140,7 @@ class MegaPrimeTranslator(FitsTranslator):
             return "science"
         return obstype
 
+    @cache_translation
     def to_tracking_radec(self):
         """Calculate the tracking RA/Dec for this observation.
 
@@ -152,6 +159,7 @@ class MegaPrimeTranslator(FitsTranslator):
         radecpairs = (("RA_DEG", "DEC_DEG"), ("BORE-RA", "BORE-DEC"))
         return tracking_from_degree_headers(self, radecsys, radecpairs)
 
+    @cache_translation
     def to_altaz_begin(self):
         """Calculate the azimuth and elevation for the start of the
         observation.
@@ -182,10 +190,12 @@ class MegaPrimeTranslator(FitsTranslator):
             raise KeyError("Unable to determine alt/az of science observation")
         return None
 
+    @cache_translation
     def to_detector_exposure_id(self):
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 36 + self.to_detector_num()
 
+    @cache_translation
     def to_pressure(self):
         # Docstring will be inherited. Property defined in properties.py
         # Can be either AIRPRESS in Pa or PRESSURE in mbar
