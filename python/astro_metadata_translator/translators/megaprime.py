@@ -23,10 +23,11 @@
 
 __all__ = ("MegaPrimeTranslator", )
 
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
+from astropy.coordinates import EarthLocation, AltAz, Angle
 import astropy.units as u
 
 from .fits import FitsTranslator
+from .helpers import tracking_from_degree_headers
 
 filters = {'u.MP9301': 'u',
            'u.MP9302': 'u2',
@@ -131,28 +132,22 @@ class MegaPrimeTranslator(FitsTranslator):
         return obstype
 
     def to_tracking_radec(self):
-        used = []
-        for k in ("RADECSYS", "OBJRADEC", "RADESYS"):
-            if k in self._header:
-                frame = self._header[k].strip().lower()
-                used.append(k)
-                if frame == "gappt":
-                    self._used_these_cards(*used)
-                    # Moving target
-                    return None
-                break
-        else:
-            frame = "icrs"
-        for ra_key, dec_key in (("RA_DEG", "DEC_DEG"), ("BORE-RA", "BORE-DEC")):
-            if ra_key in self._header and dec_key in self._header:
-                radec = SkyCoord(self._header[ra_key], self._header[dec_key],
-                                 frame=frame, unit=u.deg, obstime=self.to_datetime_begin(),
-                                 location=self.to_location())
-                self._used_these_cards(ra_key, dec_key, *used)
-                return radec
-        if self.to_observation_type() == "science":
-            raise KeyError("Unable to determine tracking RA/Dec of science observation")
-        return None
+        """Calculate the tracking RA/Dec for this observation.
+
+        Currently will be `None` for geocentric apparent coordinates.
+        Additionally, can be `None` for non-science observations.
+
+        The method supports multiple versions of header defining tracking
+        coordinates.
+
+        Returns
+        -------
+        coords : `astropy.coordinates.SkyCoord`
+            The tracking coordinates.
+        """
+        radecsys = ("RADECSYS", "OBJRADEC", "RADESYS")
+        radecpairs = (("RA_DEG", "DEC_DEG"), ("BORE-RA", "BORE-DEC"))
+        return tracking_from_degree_headers(self, radecsys, radecpairs)
 
     def to_altaz_begin(self):
         """Calculate the azimuth and elevation for the start of the

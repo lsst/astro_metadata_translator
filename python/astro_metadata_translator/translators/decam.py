@@ -25,12 +25,13 @@ __all__ = ("DecamTranslator", )
 
 import re
 
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
+from astropy.coordinates import EarthLocation, AltAz, Angle
 import astropy.units as u
 
 from ..translator import cache_translation
 from .fits import FitsTranslator
-from .helpers import altitude_from_zenith_distance, is_non_science
+from .helpers import altitude_from_zenith_distance, is_non_science, \
+    tracking_from_degree_headers
 
 
 class DecamTranslator(FitsTranslator):
@@ -169,21 +170,9 @@ class DecamTranslator(FitsTranslator):
 
     @cache_translation
     def to_tracking_radec(self):
-        used = []
-        if "RADESYS" in self._header:
-            frame = self._header["RADESYS"].strip().lower()
-            used.append("RADESYS")
-            if frame == "gappt":
-                self._used_these_cards(*used)
-                # Moving target
-                return None
-        else:
-            frame = "icrs"
-        radec = SkyCoord(self._header["TELRA"], self._header["TELDEC"],
-                         frame=frame, unit=(u.hourangle, u.deg),
-                         obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("TELRA", "TELDEC", *used)
-        return radec
+        radecsys = ("RADESYS",)
+        radecpairs = (("TELRA", "TELDEC"),)
+        return tracking_from_degree_headers(self, radecsys, radecpairs, unit=(u.hourangle, u.deg))
 
     @cache_translation
     def to_altaz_begin(self):
