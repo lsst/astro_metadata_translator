@@ -127,6 +127,7 @@ class HscTranslator(SuprimeCamTranslator):
         return visit + 1000000*(ord(letter) - ord("A"))
 
     def to_boresight_rotation_angle(self):
+        # Docstring will be inherited. Property defined in properties.py
         # Rotation angle formula determined empirically from visual inspection
         # of HSC images.  See DM-9111.
         angle = Angle(270.*u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
@@ -157,4 +158,5 @@ class HscTranslator(SuprimeCamTranslator):
         return ccd
 
     def to_detector_exposure_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 200 + self.to_detector_num()

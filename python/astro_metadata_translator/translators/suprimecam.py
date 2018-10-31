@@ -102,11 +102,13 @@ class SuprimeCamTranslator(SubaruTranslator):
         return int(mjd) - self._DAY0
 
     def to_physical_filter(self):
+        # Docstring will be inherited. Property defined in properties.py
         value = self._header["FILTER01"].strip().upper()
         self._used_these_cards("FILTER01")
         return value
 
     def to_datetime_begin(self):
+        # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
                                             time_str=self._header["UT"], scale="utc")
@@ -114,6 +116,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return value
 
     def to_datetime_end(self):
+        # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
                                             time_str=self._header["UT-END"], scale="utc")
@@ -172,6 +175,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return obstype
 
     def to_tracking_radec(self):
+        # Docstring will be inherited. Property defined in properties.py
         radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
                          frame="icrs", unit=(u.hourangle, u.deg),
                          obstime=self.to_datetime_begin(), location=self.to_location())
@@ -179,6 +183,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return radec
 
     def to_altaz_begin(self):
+        # Docstring will be inherited. Property defined in properties.py
         altitude = self._header["ALTITUDE"]
         if altitude > 90.0:
             log.warning("Clipping altitude (%f) at 90 degrees", altitude)
@@ -190,9 +195,11 @@ class SuprimeCamTranslator(SubaruTranslator):
         return altaz
 
     def to_boresight_rotation_angle(self):
+        # Docstring will be inherited. Property defined in properties.py
         angle = Angle(self.quantity_from_card("INR-STR", u.deg))
         angle = angle.wrap_at("360d")
         return angle
 
     def to_detector_exposure_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 10 + self.to_detector_num()

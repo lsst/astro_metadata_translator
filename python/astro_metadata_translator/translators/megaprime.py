@@ -70,6 +70,7 @@ class MegaPrimeTranslator(FitsTranslator):
                     "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
 
     def to_datetime_begin(self):
+        # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
                                             time_str=self._header["UTC-OBS"], scale="utc")
@@ -77,6 +78,7 @@ class MegaPrimeTranslator(FitsTranslator):
         return value
 
     def to_datetime_end(self):
+        # Docstring will be inherited. Property defined in properties.py
         # Older files are missing UTCEND
         if "UTCEND" in self._header:
             # We know it is UTC
@@ -108,6 +110,7 @@ class MegaPrimeTranslator(FitsTranslator):
         return value
 
     def to_detector_num(self):
+        # Docstring will be inherited. Property defined in properties.py
         try:
             extname = self._header["EXTNAME"]
             num = int(extname[3:])  # chop off "ccd"
@@ -180,9 +183,11 @@ class MegaPrimeTranslator(FitsTranslator):
         return None
 
     def to_detector_exposure_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 36 + self.to_detector_num()
 
     def to_pressure(self):
+        # Docstring will be inherited. Property defined in properties.py
         # Can be either AIRPRESS in Pa or PRESSURE in mbar
         for key, unit in (("PRESSURE", u.hPa), ("AIRPRESS", u.Pa)):
             if key in self._header:

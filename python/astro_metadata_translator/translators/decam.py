@@ -68,6 +68,22 @@ class DecamTranslator(FitsTranslator):
 
     @classmethod
     def can_translate(cls, header):
+        """Indicate whether this translation class can translate the
+        supplied header.
+
+        Checks the INSTRUME and FILTER headers.
+
+        Parameters
+        ----------
+        header : `dict`-like
+           Header to convert to standardized form.
+
+        Returns
+        -------
+        can : `bool`
+            `True` if the header is recognized by this class. `False`
+            otherwise.
+        """
         # Use INSTRUME. Because of defaulting behavior only do this
         # if we really have an INSTRUME header
         if "INSTRUME" in header:
@@ -93,9 +109,11 @@ class DecamTranslator(FitsTranslator):
         return value
 
     def to_visit_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id()
 
     def to_datetime_end(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self._from_fits_date("DTUTC")
 
     def _translate_from_calib_id(self, field):
@@ -170,6 +188,7 @@ class DecamTranslator(FitsTranslator):
 
     @cache_translation
     def to_tracking_radec(self):
+        # Docstring will be inherited. Property defined in properties.py
         radecsys = ("RADESYS",)
         radecpairs = (("TELRA", "TELDEC"),)
         return tracking_from_degree_headers(self, radecsys, radecpairs, unit=(u.hourangle, u.deg))
@@ -196,6 +215,7 @@ class DecamTranslator(FitsTranslator):
 
     @cache_translation
     def to_detector_exposure_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         exposure_id = self.to_exposure_id()
         if exposure_id is None:
             return None
