@@ -155,6 +155,19 @@ class MegaPrimeTranslator(FitsTranslator):
         return None
 
     def to_altaz_begin(self):
+        """Calculate the azimuth and elevation for the start of the
+        observation.
+
+        Can be `None` for non-science observations.
+        Two different header schemes are supported.
+        If headers indicate negative values it is assumed that this is
+        an observation where the telescope position was not relevant.
+
+        Returns
+        -------
+        altaz : `astropy.coordinates.AltAz`
+            The telescope coordinates.
+        """
         for az_key, alt_key in (("TELAZ", "TELALT"), ("BORE-AZ", "BORE-ALT")):
             if az_key in self._header and alt_key in self._header:
                 az = self._header[az_key]

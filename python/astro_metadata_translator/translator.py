@@ -134,8 +134,8 @@ class MetadataMeta(ABCMeta):
             Name of the translator to be constructed (for the docstring).
         header_key : `str` or `list` of `str`
             Name of the key to look up in the header. If a `list` each
-            key will be tested in turn.  This can deal with header styles
-            that evolve over time.
+            key will be tested in turn until one matches.  This can deal with
+            header styles that evolve over time.
         default : `numbers.Number` or `astropy.units.Quantity`, `str`, optional
             If not `None`, default value to be used if the parameter read from
             the header is not defined or if the header is missing.

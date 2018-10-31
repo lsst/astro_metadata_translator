@@ -187,6 +187,16 @@ class DecamTranslator(FitsTranslator):
 
     @cache_translation
     def to_altaz_begin(self):
+        """Calculate the azimuth and elevation for the start of the
+        observation.
+
+        Can be `None` for non-science observations.
+
+        Returns
+        -------
+        altaz : `astropy.coordinates.AltAz`
+            The telescope coordinates.
+        """
         if "AZ" not in self._header or "ZD" not in self._header:
             return None
         altaz = AltAz(self._header["AZ"] * u.deg,
