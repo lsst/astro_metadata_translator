@@ -114,7 +114,7 @@ class MetadataAssertHelper:
 
         # Is AltAz from headers close to AltAz from RA/Dec headers?
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
-        self.assertLess(sep.to_value(unit="arcmin"), max_sep)
+        self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
     def assertObservationInfoFromYaml(self, file, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
         """Check contents of an ObservationInfo.
