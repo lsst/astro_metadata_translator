@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import re
+import argparse
 import os
+import re
 import sys
 import traceback
-import argparse
 import yaml
 from astro_metadata_translator import ObservationInfo
 

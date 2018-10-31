@@ -21,12 +21,11 @@
 
 __all__ = ("read_test_file", "MetadataAssertHelper")
 
-import os
-import yaml
-import pickle
-from collections import OrderedDict
-
 import astropy.units as u
+import os
+import pickle
+import yaml
+from collections import OrderedDict
 
 from astro_metadata_translator import ObservationInfo
 
