@@ -25,11 +25,13 @@ __all__ = ("DecamTranslator", )
 
 import re
 
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, Angle
+from astropy.coordinates import EarthLocation, AltAz, Angle
 import astropy.units as u
 
+from ..translator import cache_translation
 from .fits import FitsTranslator
-from .helpers import altitude_from_zenith_distance
+from .helpers import altitude_from_zenith_distance, is_non_science, \
+    tracking_from_degree_headers
 
 
 class DecamTranslator(FitsTranslator):
@@ -47,12 +49,14 @@ class DecamTranslator(FitsTranslator):
 
     _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
-                    "boresight_airmass": "AIRMASS",
+                    "boresight_airmass": ("AIRMASS", dict(checker=is_non_science)),
                     "observation_id": "OBSID",
                     "object": "OBJECT",
                     "science_program": "PROPID",
                     "detector_num": "CCDNUM",
                     "detector_name": "DETPOS",
+                    "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
+                    "instrument": ("INSTRUME", dict(default="DECam")),
                     # Ensure that reasonable values are always available
                     "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
                     "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10., minimum=-10., maximum=40.)),
@@ -60,10 +64,59 @@ class DecamTranslator(FitsTranslator):
                     # which is the SI equivalent of mbar.
                     "pressure": ("PRESSURE", dict(unit=u.hPa,
                                  default=771.611, minimum=700., maximum=850.)),
-                    "exposure_id": "EXPNUM",
-                    "visit_id": "EXPNUM"}
+                    }
 
+    @classmethod
+    def can_translate(cls, header):
+        """Indicate whether this translation class can translate the
+        supplied header.
+
+        Checks the INSTRUME and FILTER headers.
+
+        Parameters
+        ----------
+        header : `dict`-like
+           Header to convert to standardized form.
+
+        Returns
+        -------
+        can : `bool`
+            `True` if the header is recognized by this class. `False`
+            otherwise.
+        """
+        # Use INSTRUME. Because of defaulting behavior only do this
+        # if we really have an INSTRUME header
+        if "INSTRUME" in header:
+            via_instrume = super().can_translate(header)
+            if via_instrume:
+                return via_instrume
+        if "FILTER" in header and "DECam" in header["FILTER"]:
+            return True
+        return False
+
+    @cache_translation
+    def to_exposure_id(self):
+        """Calculate exposure ID solely for science observations.
+
+        Returns
+        -------
+        id : `int`
+            ID of exposure.
+        """
+        if self.to_observation_type() != "science":
+            return None
+        value = self._header["EXPNUM"]
+        self._used_these_cards("EXPNUM")
+        return value
+
+    @cache_translation
+    def to_visit_id(self):
+        # Docstring will be inherited. Property defined in properties.py
+        return self.to_exposure_id()
+
+    @cache_translation
     def to_datetime_end(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self._from_fits_date("DTUTC")
 
     def _translate_from_calib_id(self, field):
@@ -77,6 +130,7 @@ class DecamTranslator(FitsTranslator):
         self._used_these_cards("CALIB_ID")
         return match.groups()[0]
 
+    @cache_translation
     def to_physical_filter(self):
         """Calculate physical filter.
 
@@ -89,8 +143,6 @@ class DecamTranslator(FitsTranslator):
             The full filter name.
         """
         if "FILTER" in self._header:
-            if self.to_observation_type() == "zero":
-                return "NONE"
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
             return value
@@ -99,6 +151,7 @@ class DecamTranslator(FitsTranslator):
         else:
             return None
 
+    @cache_translation
     def to_location(self):
         """Calculate the observatory location.
 
@@ -107,12 +160,19 @@ class DecamTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-        # OBS-LONG has west-positive sign so must be flipped
-        lon = self._header["OBS-LONG"] * -1.0
-        value = EarthLocation.from_geodetic(lon, self._header["OBS-LAT"], self._header["OBS-ELEV"])
-        self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
+
+        if "OBS-LONG" in self._header:
+            # OBS-LONG has west-positive sign so must be flipped
+            lon = self._header["OBS-LONG"] * -1.0
+            value = EarthLocation.from_geodetic(lon, self._header["OBS-LAT"], self._header["OBS-ELEV"])
+            self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
+        else:
+            # Look up the value since some files do not have location
+            value = EarthLocation.of_site("ctio")
+
         return value
 
+    @cache_translation
     def to_observation_type(self):
         """Calculate the observation type.
 
@@ -121,33 +181,45 @@ class DecamTranslator(FitsTranslator):
         typ : `str`
             Observation type. Normalized to standard set.
         """
+        if "OBSTYPE" not in self._header:
+            return "none"
         obstype = self._header["OBSTYPE"].strip().lower()
         self._used_these_cards("OBSTYPE")
         if obstype == "object":
             return "science"
         return obstype
 
+    @cache_translation
     def to_tracking_radec(self):
-        if "RADESYS" in self._header:
-            frame = self._header["RADESYS"].strip().lower()
-            if frame == "gappt":
-                self._used_these_cards("RADESYS")
-                # Moving target
-                return None
-        else:
-            frame = "icrs"
-        radec = SkyCoord(self._header["TELRA"], self._header["TELDEC"],
-                         frame=frame, unit=(u.hourangle, u.deg),
-                         obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("RADESYS", "TELRA", "TELDEC")
-        return radec
+        # Docstring will be inherited. Property defined in properties.py
+        radecsys = ("RADESYS",)
+        radecpairs = (("TELRA", "TELDEC"),)
+        return tracking_from_degree_headers(self, radecsys, radecpairs, unit=(u.hourangle, u.deg))
 
+    @cache_translation
     def to_altaz_begin(self):
+        """Calculate the azimuth and elevation for the start of the
+        observation.
+
+        Can be `None` for non-science observations.
+
+        Returns
+        -------
+        altaz : `astropy.coordinates.AltAz`
+            The telescope coordinates.
+        """
+        if "AZ" not in self._header or "ZD" not in self._header:
+            return None
         altaz = AltAz(self._header["AZ"] * u.deg,
                       altitude_from_zenith_distance(self._header["ZD"] * u.deg),
                       obstime=self.to_datetime_begin(), location=self.to_location())
         self._used_these_cards("AZ", "ZD")
         return altaz
 
+    @cache_translation
     def to_detector_exposure_id(self):
-        return int("{:07d}{:02d}".format(self.to_exposure_id(), self.to_detector_num()))
+        # Docstring will be inherited. Property defined in properties.py
+        exposure_id = self.to_exposure_id()
+        if exposure_id is None:
+            return None
+        return int("{:07d}{:02d}".format(exposure_id, self.to_detector_num()))

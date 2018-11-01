@@ -29,6 +29,7 @@ import logging
 import astropy.units as u
 from astropy.coordinates import SkyCoord, AltAz, Angle
 
+from ..translator import cache_translation
 from .subaru import SubaruTranslator
 
 log = logging.getLogger(__name__)
@@ -101,25 +102,32 @@ class SuprimeCamTranslator(SubaruTranslator):
         self._used_these_cards("MJD")
         return int(mjd) - self._DAY0
 
+    @cache_translation
     def to_physical_filter(self):
+        # Docstring will be inherited. Property defined in properties.py
         value = self._header["FILTER01"].strip().upper()
         self._used_these_cards("FILTER01")
         return value
 
+    @cache_translation
     def to_datetime_begin(self):
+        # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
                                             time_str=self._header["UT"], scale="utc")
         self._used_these_cards("DATE-OBS", "UT")
         return value
 
+    @cache_translation
     def to_datetime_end(self):
+        # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
                                             time_str=self._header["UT-END"], scale="utc")
         self._used_these_cards("DATE-OBS", "UT-END")
         return value
 
+    @cache_translation
     def to_exposure_id(self):
         """Calculate unique exposure integer for this observation
 
@@ -143,6 +151,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         self._used_these_cards("EXP-ID", "FRAMEID")
         return exposure
 
+    @cache_translation
     def to_visit_id(self):
         """Calculate the unique integer ID for this visit.
 
@@ -157,6 +166,7 @@ class SuprimeCamTranslator(SubaruTranslator):
             return self.to_exposure_id()
         return None
 
+    @cache_translation
     def to_observation_type(self):
         """Calculate the observation type.
 
@@ -171,14 +181,18 @@ class SuprimeCamTranslator(SubaruTranslator):
             return "science"
         return obstype
 
+    @cache_translation
     def to_tracking_radec(self):
+        # Docstring will be inherited. Property defined in properties.py
         radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
                          frame="icrs", unit=(u.hourangle, u.deg),
                          obstime=self.to_datetime_begin(), location=self.to_location())
         self._used_these_cards("RA2000", "DEC2000")
         return radec
 
+    @cache_translation
     def to_altaz_begin(self):
+        # Docstring will be inherited. Property defined in properties.py
         altitude = self._header["ALTITUDE"]
         if altitude > 90.0:
             log.warning("Clipping altitude (%f) at 90 degrees", altitude)
@@ -189,10 +203,14 @@ class SuprimeCamTranslator(SubaruTranslator):
         self._used_these_cards("AZIMUTH", "ALTITUDE")
         return altaz
 
+    @cache_translation
     def to_boresight_rotation_angle(self):
+        # Docstring will be inherited. Property defined in properties.py
         angle = Angle(self.quantity_from_card("INR-STR", u.deg))
         angle = angle.wrap_at("360d")
         return angle
 
+    @cache_translation
     def to_detector_exposure_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 10 + self.to_detector_num()

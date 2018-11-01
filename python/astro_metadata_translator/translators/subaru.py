@@ -25,6 +25,7 @@ __all__ = ("SubaruTranslator", )
 
 from astropy.coordinates import EarthLocation
 
+from ..translator import cache_translation
 from .fits import FitsTranslator
 
 
@@ -32,6 +33,7 @@ class SubaruTranslator(FitsTranslator):
     """Metadata translator for Subaru telescope headers.
     """
 
+    @cache_translation
     def to_location(self):
         """Returns the location of the Subaru telescope on Mauna Kea.
 

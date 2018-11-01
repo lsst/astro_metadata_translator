@@ -29,6 +29,7 @@ import logging
 import astropy.units as u
 from astropy.coordinates import Angle
 
+from ..translator import cache_translation
 from .suprimecam import SuprimeCamTranslator
 
 log = logging.getLogger(__name__)
@@ -93,6 +94,7 @@ class HscTranslator(SuprimeCamTranslator):
                     return True
         return False
 
+    @cache_translation
     def to_exposure_id(self):
         """Calculate unique exposure integer for this observation
 
@@ -126,13 +128,16 @@ class HscTranslator(SuprimeCamTranslator):
         self._used_these_cards("EXP-ID", "FRAMEID")
         return visit + 1000000*(ord(letter) - ord("A"))
 
+    @cache_translation
     def to_boresight_rotation_angle(self):
+        # Docstring will be inherited. Property defined in properties.py
         # Rotation angle formula determined empirically from visual inspection
         # of HSC images.  See DM-9111.
         angle = Angle(270.*u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
         angle = angle.wrap_at("360d")
         return angle
 
+    @cache_translation
     def to_detector_num(self):
         """Calculate the detector number.
 
@@ -156,5 +161,7 @@ class HscTranslator(SuprimeCamTranslator):
 
         return ccd
 
+    @cache_translation
     def to_detector_exposure_id(self):
+        # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 200 + self.to_detector_num()

@@ -49,9 +49,30 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                            temperature=0.9*u.deg_C,
                            visit_id=1038843,
                            )),
+                     ("fitsheader-megaprime-calexp-849375-14.yaml",
+                      dict(telescope="CFHT 3.6m",
+                           instrument="MegaPrime",
+                           boresight_rotation_coord="unknown",
+                           dark_time=300.0*u.s,
+                           detector_exposure_id=30577599,
+                           detector_name="8434-13-5",
+                           detector_num=99,
+                           exposure_id=849375,
+                           exposure_time=300.202*u.s,
+                           object="D3",
+                           observation_id="849375",
+                           observation_type="science",
+                           physical_filter="r",
+                           pressure=615.79*u.hPa,
+                           relative_humidity=15.76,
+                           science_program="06AL01",
+                           temperature=1.75*u.deg_C,
+                           visit_id=849375,
+                           )),
                      )
         for file, expected in test_data:
-            self.assertObservationInfoFromYaml(file, **expected)
+            with self.subTest(f"Testing {file}"):
+                self.assertObservationInfoFromYaml(file, **expected)
 
     def test_megaprime_stripping(self):
         header = read_test_file("fitsheader-megaprime.yaml")

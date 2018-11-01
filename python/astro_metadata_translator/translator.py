@@ -21,7 +21,7 @@
 
 """Classes and support code for metadata translation"""
 
-__all__ = ("MetadataTranslator", "StubTranslator")
+__all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
 from abc import abstractmethod, ABCMeta
 import logging
@@ -34,6 +34,34 @@ from .properties import PROPERTIES
 
 
 log = logging.getLogger(__name__)
+
+
+def cache_translation(func, method=None):
+    """Decorator to cache the result of a translation method.
+
+    Especially useful when a translation uses many other translation
+    methods.  Should be used only on ``to_x()`` methods.
+
+    Parameters
+    ----------
+    func : `function`
+        Translation method to cache.
+    method : `str`, optional
+        Name of the translation method to cache.  Not needed if the decorator
+        is used around a normal method, but necessary when the decorator is
+        being used in a metaclass.
+
+    Returns
+    -------
+    wrapped : `function`
+        Method wrapped by the caching function.
+    """
+    def func_wrapper(self):
+        name = func.__name__ if method is None else method
+        if name not in self._translation_cache:
+            self._translation_cache[name] = func(self)
+        return self._translation_cache[name]
+    return func_wrapper
 
 
 class MetadataMeta(ABCMeta):
@@ -95,7 +123,8 @@ class MetadataMeta(ABCMeta):
         return constant_translator
 
     @staticmethod
-    def _make_trivial_mapping(property_key, header_key, default=None, minimum=None, maximum=None, unit=None):
+    def _make_trivial_mapping(property_key, header_key, default=None, minimum=None, maximum=None,
+                              unit=None, checker=None):
         """Make a translator method returning a header value.
 
         The header value can be converted to a `~astropy.units.Quantity`
@@ -108,8 +137,10 @@ class MetadataMeta(ABCMeta):
         ----------
         property_key : `str`
             Name of the translator to be constructed (for the docstring).
-        header_key : `str`
-            Name of the key to look up in the header.
+        header_key : `str` or `list` of `str`
+            Name of the key to look up in the header. If a `list` each
+            key will be tested in turn until one matches.  This can deal with
+            header styles that evolve over time.
         default : `numbers.Number` or `astropy.units.Quantity`, `str`, optional
             If not `None`, default value to be used if the parameter read from
             the header is not defined or if the header is missing.
@@ -122,6 +153,11 @@ class MetadataMeta(ABCMeta):
         unit : `astropy.units.Unit`, optional
             If not `None`, the value read from the header will be converted
             to a `~astropy.units.Quantity`.  Only supported for numeric values.
+        checker : `function`, optional
+            Callback function to be used by the translator method in case the
+            keyword is not present.  Function will be executed as if it is
+            a method of the translator class.  Running without raising an
+            exception will allow the default to be used.
 
         Returns
         -------
@@ -139,13 +175,28 @@ class MetadataMeta(ABCMeta):
             if unit is not None:
                 return self.quantity_from_card(header_key, unit,
                                                default=default, minimum=minimum, maximum=maximum)
-            if header_key not in self._header and default is not None:
-                value = default
+
+            keywords = header_key if isinstance(header_key, list) else [header_key]
+            for key in keywords:
+                if key in self._header:
+                    value = self._header[key]
+                    if default is not None and not isinstance(value, str):
+                        value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
+                    self._used_these_cards(key)
+                    break
             else:
-                value = self._header[header_key]
-                if default is not None and not isinstance(value, str):
-                    value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
-                self._used_these_cards(header_key)
+                # No keywords found, use default, checking first, or raise
+                if checker is not None:
+                    checker(self)
+                    if default is None:
+                        # Checker has passed but no default, implies None
+                        # is okay.
+                        return None
+                    value = default
+                elif default is not None:
+                    value = default
+                else:
+                    raise KeyError(f"Could not find {keywords} in header")
 
             # If we know this is meant to be a string, force to a string.
             # Sometimes headers represent items as integers which generically
@@ -155,7 +206,6 @@ class MetadataMeta(ABCMeta):
                 value = str(value)
             elif return_type == "float" and not isinstance(value, float):
                 value = float(value)
-
             return value
 
         # Docstring inheritance means it is confusing to specify here
@@ -184,7 +234,8 @@ class MetadataMeta(ABCMeta):
                 kwargs = header_key[1]
                 header_key = header_key[0]
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
-            setattr(cls, f"to_{property_key}", translator)
+            method = f"to_{property_key}"
+            setattr(cls, method, cache_translation(translator, method=method))
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
 
@@ -223,6 +274,9 @@ class MetadataTranslator(metaclass=MetadataMeta):
     def __init__(self, header):
         self._header = header
         self._used_cards = set()
+
+        # Cache assumes header is read-only once stored in object
+        self._translation_cache = {}
 
     @classmethod
     @abstractmethod
@@ -324,13 +378,14 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 value = default
         return value
 
-    def quantity_from_card(self, keyword, unit, default=None, minimum=None, maximum=None):
+    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
         ----------
-        keyword : `str`
-            Keyword to use from header.
+        keywords : `str` or `list` of `str`
+            Keyword to use from header.  If a list each keyword will be tried
+            in turn until one matches.
         unit : `astropy.units.UnitBase`
             Unit of the item in the header.
         default : `float`, optional
@@ -348,8 +403,20 @@ class MetadataTranslator(metaclass=MetadataMeta):
         -------
         q : `astropy.units.Quantity`
             Quantity representing the header value.
+
+        Raises
+        ------
+        KeyError
+            The supplied header key is not present.
         """
-        value = self._header[keyword]
+        keywords = keywords if isinstance(keywords, list) else [keywords]
+        for k in keywords:
+            if k in self._header:
+                value = self._header[k]
+                keyword = k
+                break
+        else:
+            raise KeyError(f"Could not find {keywords} in header")
         if isinstance(value, str):
             # Sometimes the header has the wrong type in it but this must
             # be a number if we are creating a quantity.

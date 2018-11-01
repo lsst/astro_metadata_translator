@@ -21,12 +21,11 @@
 
 __all__ = ("read_test_file", "MetadataAssertHelper")
 
-import os
-import yaml
-import pickle
-from collections import OrderedDict
-
 import astropy.units as u
+import os
+import pickle
+import yaml
+from collections import OrderedDict
 
 from astro_metadata_translator import ObservationInfo
 
@@ -115,7 +114,7 @@ class MetadataAssertHelper:
 
         # Is AltAz from headers close to AltAz from RA/Dec headers?
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
-        self.assertLess(sep.to_value(unit="arcmin"), max_sep)
+        self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
     def assertObservationInfoFromYaml(self, file, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
         """Check contents of an ObservationInfo.
@@ -149,7 +148,9 @@ class MetadataAssertHelper:
         header : `dict`-like
             Header to be checked.
         check_wcs : `bool`, optional
-            Check the consistency of the RA/Dec and AltAz values.
+            Check the consistency of the RA/Dec and AltAz values.  Checks
+            are automatically disabled if the translated header does
+            not appear to be "science".
         wcs_params : `dict`, optional
             Parameters to pass to `assertCoordinatesConsistent`.
         kwargs : `dict`
@@ -162,7 +163,9 @@ class MetadataAssertHelper:
             A value in the ObservationInfo derived from the file is
             inconsistent.
         """
-        obsinfo = ObservationInfo(header)
+        # For testing we force pedantic mode since we are in charge
+        # of all the translations
+        obsinfo = ObservationInfo(header, pedantic=True)
 
         # Check that we can pickle and get back the same properties
         newinfo = pickle.loads(pickle.dumps(obsinfo))
@@ -172,7 +175,6 @@ class MetadataAssertHelper:
         for property, expected in kwargs.items():
             calculated = getattr(obsinfo, property)
             msg = f"Comparing property {property}"
-            print(f"{property}: {calculated} vs {expected}")
             if isinstance(expected, u.Quantity):
                 calculated = calculated.to_value(unit=expected.unit)
                 expected = expected.to_value()
@@ -186,7 +188,7 @@ class MetadataAssertHelper:
                 self.assertEqual(calculated, expected, msg=msg)
 
         # Check the WCS consistency
-        if check_wcs:
+        if check_wcs and obsinfo.observation_type == "science":
             if wcs_params is None:
                 wcs_params = {}
             self.assertCoordinatesConsistent(obsinfo, **wcs_params)
