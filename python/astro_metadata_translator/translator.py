@@ -256,6 +256,10 @@ class MetadataTranslator(metaclass=MetadataMeta):
     header : `dict`-like
         Representation of an instrument header that can be manipulated
         as if it was a `dict`.
+    filename : `str`, optional
+        Name of the file whose header is being translated.  For some
+        datasets with missing header information this can sometimes
+        allow for some fixups in translations.
     """
 
     _trivial_map = {}
@@ -271,8 +275,9 @@ class MetadataTranslator(metaclass=MetadataMeta):
     supported_instrument = None
     """Name of instrument understood by this translation class."""
 
-    def __init__(self, header):
+    def __init__(self, header, filename=None):
         self._header = header
+        self.filename = filename
         self._used_cards = set()
 
         # Cache assumes header is read-only once stored in object

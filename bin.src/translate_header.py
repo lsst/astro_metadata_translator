@@ -46,7 +46,7 @@ def read_file(file, failed):
         if args.dumphdr:
             print(yaml.dump(md))
             return
-        obs_info = ObservationInfo(md, pedantic=True)
+        obs_info = ObservationInfo(md, pedantic=True, filename=file)
         if not args.quiet:
             print(f"{obs_info}")
     except Exception as e:

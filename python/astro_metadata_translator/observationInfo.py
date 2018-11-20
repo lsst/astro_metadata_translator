@@ -41,7 +41,11 @@ class ObservationInfo:
     ----------
     header : `dict`-like
         Representation of an instrument header accessible as a `dict`.
-    translator_class : `MetadataTranslator`-class, `optional`
+    filename : `str`, optional
+        Name of the file whose header is being translated.  For some
+        datasets with missing header information this can sometimes
+        allow for some fixups in translations.
+    translator_class : `MetadataTranslator`-class, optional
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
         be asked in turn if it knows how to translate the supplied header.
@@ -63,10 +67,13 @@ class ObservationInfo:
     """All the properties supported by this class with associated
     documentation."""
 
-    def __init__(self, header, translator_class=None, pedantic=False):
+    def __init__(self, header, filename=None, translator_class=None, pedantic=False):
 
         # Store the supplied header for later stripping
         self._header = header
+
+        # Store the filename
+        self.filename = filename
 
         # PropertyList is not dict-like so force to a dict here to simplify
         # the translation code.
@@ -79,7 +86,7 @@ class ObservationInfo:
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
         # Create an instance for this header
-        translator = translator_class(header)
+        translator = translator_class(header, filename=filename)
 
         # Store the translator
         self._translator = translator
