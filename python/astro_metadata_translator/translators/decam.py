@@ -67,7 +67,7 @@ class DecamTranslator(FitsTranslator):
                     }
 
     @classmethod
-    def can_translate(cls, header):
+    def can_translate(cls, header, filename=None):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -76,7 +76,9 @@ class DecamTranslator(FitsTranslator):
         Parameters
         ----------
         header : `dict`-like
-           Header to convert to standardized form.
+            Header to convert to standardized form.
+        filename : `str`, optional
+            Name of file being translated.
 
         Returns
         -------
@@ -87,7 +89,7 @@ class DecamTranslator(FitsTranslator):
         # Use INSTRUME. Because of defaulting behavior only do this
         # if we really have an INSTRUME header
         if "INSTRUME" in header:
-            via_instrume = super().can_translate(header)
+            via_instrume = super().can_translate(header, filename=filename)
             if via_instrume:
                 return via_instrume
         if "FILTER" in header and "DECam" in header["FILTER"]:

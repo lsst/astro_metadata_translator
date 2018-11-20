@@ -81,7 +81,7 @@ class ObservationInfo:
             header = header.toOrderedDict()
 
         if translator_class is None:
-            translator_class = MetadataTranslator.determine_translator(header)
+            translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
