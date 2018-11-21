@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import traceback
+import importlib
 import yaml
 from astro_metadata_translator import ObservationInfo
 
@@ -32,11 +33,19 @@ parser.add_argument("--traceback", const=True, default=False, action="store_cons
                     help="Give detailed trace back when any errors encountered")
 
 re_default = r"\.fit[s]?\b"
-parser.add_argument("--regex", "-r", default=re_default,
+parser.add_argument("-r", "--regex", default=re_default,
                     help="When looking in a directory, regular expression to use to determine whether"
                     f" a file should be examined. Default: '{re_default}'")
 
+parser.add_argument("-p", "--packages", default=None, action="append", type=str,
+                    help="Python packages to import to register additional translators")
+
 args = parser.parse_args()
+
+# Process import requests
+if args.packages:
+    for m in args.packages:
+        importlib.import_module(m)
 
 
 def read_file(file, failed):
