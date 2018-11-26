@@ -25,11 +25,11 @@ parser.add_argument("files", metavar="file", type=str, nargs="+",
                     help="File(s) from which headers will be parsed."
                     " If a directory is given it will be scanned for files matching the regular"
                     " expression defined in --regex.")
-parser.add_argument("-q", "--quiet", const=True, default=False, action="store_const",
+parser.add_argument("-q", "--quiet", action="store_true",
                     help="Do not report the translation content from each header")
-parser.add_argument("-d", "--dumphdr", const=True, default=False, action="store_const",
+parser.add_argument("-d", "--dumphdr", action="store_true",
                     help="Dump the header in YAML format to standard output rather than translating it")
-parser.add_argument("--traceback", const=True, default=False, action="store_const",
+parser.add_argument("--traceback", action="store_true",
                     help="Give detailed trace back when any errors encountered")
 
 re_default = r"\.fit[s]?\b"
@@ -37,7 +37,7 @@ parser.add_argument("-r", "--regex", default=re_default,
                     help="When looking in a directory, regular expression to use to determine whether"
                     f" a file should be examined. Default: '{re_default}'")
 
-parser.add_argument("-p", "--packages", default=None, action="append", type=str,
+parser.add_argument("-p", "--packages", action="append", type=str,
                     help="Python packages to import to register additional translators")
 
 args = parser.parse_args()
