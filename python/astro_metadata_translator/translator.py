@@ -332,7 +332,8 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 log.debug(f"Using translation class {name}")
                 return trans
         else:
-            raise ValueError("None of the registered translation classes understood this header")
+            raise ValueError(f"None of the registered translation classes {list(cls.translators.keys())}"
+                             " understood this header")
 
     def _used_these_cards(self, *args):
         """Indicate that the supplied cards have been used for translation.
