@@ -27,10 +27,11 @@ import re
 import logging
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord, AltAz, Angle
+from astropy.coordinates import SkyCoord, Angle
 
 from ..translator import cache_translation
 from .subaru import SubaruTranslator
+from .helpers import altaz_from_degree_headers
 
 log = logging.getLogger(__name__)
 
@@ -195,15 +196,8 @@ class SuprimeCamTranslator(SubaruTranslator):
     @cache_translation
     def to_altaz_begin(self):
         # Docstring will be inherited. Property defined in properties.py
-        altitude = self._header["ALTITUDE"]
-        if altitude > 90.0:
-            log.warning("Clipping altitude (%f) at 90 degrees", altitude)
-            altitude = 90.0
-
-        altaz = AltAz(self._header["AZIMUTH"] * u.deg, altitude * u.deg,
-                      obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("AZIMUTH", "ALTITUDE")
-        return altaz
+        return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),),
+                                         self.to_datetime_begin())
 
     @cache_translation
     def to_boresight_rotation_angle(self):
