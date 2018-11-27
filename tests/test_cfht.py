@@ -19,14 +19,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import unittest
 import astropy.units as u
 
-from helper import read_test_file, MetadataAssertHelper
+from astro_metadata_translator.tests import read_test_file, MetadataAssertHelper
 from astro_metadata_translator import ObservationInfo
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
+    datadir = os.path.join(TESTDIR, "data")
 
     def test_megaprime_translator(self):
         test_data = (("fitsheader-megaprime.yaml",
@@ -72,10 +76,10 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, self.datadir, **expected)
 
     def test_megaprime_stripping(self):
-        header = read_test_file("fitsheader-megaprime.yaml")
+        header = read_test_file("fitsheader-megaprime.yaml", dir=self.datadir)
         v1 = ObservationInfo(header)
 
         # Check that headers have been removed

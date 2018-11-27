@@ -19,13 +19,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import unittest
 import astropy.units as u
 
-from helper import MetadataAssertHelper
+from astro_metadata_translator.tests import MetadataAssertHelper
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class HscTestCase(unittest.TestCase, MetadataAssertHelper):
+    datadir = os.path.join(TESTDIR, "data")
 
     def test_hsc_translator(self):
         test_data = (("fitsheader-hsc.yaml",
@@ -71,7 +75,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
     def test_suprimecam_translator(self):
         # In this case the airmass is average during observation
@@ -99,7 +103,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
 
 if __name__ == "__main__":

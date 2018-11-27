@@ -36,9 +36,6 @@ except ImportError:
     dafBase = None
 
 
-TESTDIR = os.path.abspath(os.path.dirname(__file__))
-
-
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
 # we can use if daf_base is not available.
 def pl_constructor(loader, node):
@@ -61,20 +58,25 @@ if dafBase is None:
     yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
 
 
-def read_test_file(filename):
+def read_test_file(filename, dir=None):
     """Read the named test file relative to the location of this helper
 
     Parameters
     ----------
     filename : `str`
         Name of file in the data directory.
+    dir : `str`, optional.
+        Directory from which to read file. Current directory used if none
+        specified.
 
     Returns
     -------
     header : `dict`-like
         Header read from file.
     """
-    with open(os.path.join(TESTDIR, "data", filename)) as fd:
+    if dir is not None and not os.path.isabs(filename):
+        filename = os.path.join(dir, filename)
+    with open(filename) as fd:
         header = yaml.load(fd)
     return header
 
@@ -116,13 +118,16 @@ class MetadataAssertHelper:
         sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
-    def assertObservationInfoFromYaml(self, file, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
+    def assertObservationInfoFromYaml(self, file, dir=None, check_wcs=True,  # noqa: N802
+                                      wcs_params=None, **kwargs):
         """Check contents of an ObservationInfo.
 
         Parameters
         ----------
         file : `str`
             Path to YAML file representing the header.
+        dir : `str`, optional
+            Optional directory from which to read ``file``.
         check_wcs : `bool`, optional
             Check the consistency of the RA/Dec and AltAz values.
         wcs_params : `dict`, optional
@@ -137,7 +142,7 @@ class MetadataAssertHelper:
             A value in the ObservationInfo derived from the file is
             inconsistent.
         """
-        header = read_test_file(file)
+        header = read_test_file(file, dir=dir)
         self.assertObservationInfo(header, check_wcs=check_wcs, wcs_params=wcs_params, **kwargs)
 
     def assertObservationInfo(self, header, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
