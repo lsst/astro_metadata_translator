@@ -7,18 +7,29 @@ import sys
 import traceback
 import importlib
 import yaml
-from astro_metadata_translator import ObservationInfo
+from astro_metadata_translator import ObservationInfo, merge_headers
 
 # Prefer afw over Astropy
 try:
-    from lsst.afw.fits import readMetadata as read_metadata  # noqa: N813
+    from lsst.afw.fits import readMetadata
     import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
+
+    def read_metadata(file, hdu=0):
+        try:
+            return readMetadata(file, hdu=hdu)
+        except lsst.afw.fits.FitsError:
+            return None
+
 except ImportError:
     from astropy.io import fits
 
-    def read_metadata(file, hdu=1):
+    def read_metadata(file, hdu=0):
         fits_file = fits.open(file)
-        return fits_file[hdu].header
+        try:
+            header = fits_file[hdu].header
+        except IndexError:
+            header = None
+        return header
 
 parser = argparse.ArgumentParser(description="Summarize headers from astronomical data files")
 parser.add_argument("files", metavar="file", type=str, nargs="+",
@@ -31,6 +42,10 @@ parser.add_argument("-d", "--dumphdr", action="store_true",
                     help="Dump the header in YAML format to standard output rather than translating it")
 parser.add_argument("--traceback", action="store_true",
                     help="Give detailed trace back when any errors encountered")
+parser.add_argument("-n", "--hdrnum", default=1,
+                    help="HDU number to read.  If the HDU can not be found, a warning is issued but "
+                         "translation is attempted using the primary header.  "
+                         "The primary header is always read and merged with this header.")
 
 re_default = r"\.fit[s]?\b"
 parser.add_argument("-r", "--regex", default=re_default,
@@ -51,7 +66,16 @@ if args.packages:
 def read_file(file, failed):
     print(f"Analyzing {file}...", file=sys.stderr)
     try:
-        md = read_metadata(file)
+        md = read_metadata(file, hdu=0)
+        if args.hdrnum != 0:
+            mdn = read_metadata(file, hdu=args.hdrnum)
+            # Astropy does not allow append mode since it does not
+            # convert lists to multiple cards. Overwrite for now
+            if mdn is not None:
+                md = merge_headers([md, mdn], mode="overwrite")
+            else:
+                print(f"HDU {args.hdrnum} was not found. Ignoring request.", file=sys.stderr)
+
         if args.dumphdr:
             print(yaml.dump(md))
             return
