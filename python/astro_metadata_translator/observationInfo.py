@@ -27,6 +27,8 @@ import itertools
 import logging
 import copy
 
+import astropy.time
+
 from .translator import MetadataTranslator
 from .properties import PROPERTIES
 
@@ -143,7 +145,11 @@ class ObservationInfo:
 
         result = ""
         for p in itertools.chain(priority, properties):
-            result += f"{p}: {getattr(self, p)}\n"
+            value = getattr(self, p)
+            if isinstance(value, astropy.time.Time):
+                value.format = "isot"
+                value = str(value.value)
+            result += f"{p}: {value}\n"
 
         return result
 
