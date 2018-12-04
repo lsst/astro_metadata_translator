@@ -23,7 +23,7 @@
 
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod
 import logging
 import warnings
 import math
@@ -64,29 +64,34 @@ def cache_translation(func, method=None):
     return func_wrapper
 
 
-class MetadataMeta(ABCMeta):
-    """Register all subclasses with the base class and create dynamic
-    translator methods.
+class MetadataTranslator:
+    """Per-instrument metadata translation support
 
-    The metaclass provides two facilities.  Firstly, every subclass
-    of `MetadataTranslator` that includes a ``name`` class property is
-    registered as a translator class that could be selected when automatic
-    header translation is attempted.  Only name translator subclasses that
-    correspond to a complete instrument.  Translation classes providing
-    generic translation support for multiple instrument translators should
-    not be named.
-
-    The second feature of this metaclass is to convert simple translations
-    to full translator methods.  Sometimes a translation is fixed (for
-    example a specific instrument name should be used) and rather than provide
-    a full ``to_property()`` translation method the mapping can be defined
-    in a class variable named ``_constMap``.  Similarly, for one-to-one
-    trivial mappings from a header to a property, ``_trivialMap`` can be
-    defined.  Trivial mappings are a dict mapping a generic property
-    to either a header keyword, or a tuple consisting of the header keyword
-    and a dict containing key value pairs suitable for the
-    `MetadataTranslator.quantity_from_card()` method.
+    Parameters
+    ----------
+    header : `dict`-like
+        Representation of an instrument header that can be manipulated
+        as if it was a `dict`.
+    filename : `str`, optional
+        Name of the file whose header is being translated.  For some
+        datasets with missing header information this can sometimes
+        allow for some fixups in translations.
     """
+
+    # These are all deliberately empty in the base class.
+
+    _trivial_map = {}
+    """Dict of one-to-one mappings for header translation from standard
+    property to corresponding keyword."""
+
+    _const_map = {}
+    """Dict defining a constant for specified standard properties."""
+
+    translators = dict()
+    """All registered metadata translation classes."""
+
+    supported_instrument = None
+    """Name of instrument understood by this translation class."""
 
     @staticmethod
     def _make_const_mapping(property_key, constant):
@@ -219,8 +224,31 @@ class MetadataMeta(ABCMeta):
         """
         return trivial_translator
 
-    def __init__(cls, name, bases, dct):  # noqa: N805  pep8-naming can not tell ABCMeta is type
-        super().__init__(name, bases, dct)
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        """Register all subclasses with the base class and create dynamic
+        translator methods.
+
+        The method provides two facilities.  Firstly, every subclass
+        of `MetadataTranslator` that includes a ``name`` class property is
+        registered as a translator class that could be selected when automatic
+        header translation is attempted.  Only name translator subclasses that
+        correspond to a complete instrument.  Translation classes providing
+        generic translation support for multiple instrument translators should
+        not be named.
+
+        The second feature of this method is to convert simple translations
+        to full translator methods.  Sometimes a translation is fixed (for
+        example a specific instrument name should be used) and rather than provide
+        a full ``to_property()`` translation method the mapping can be defined
+        in a class variable named ``_constMap``.  Similarly, for one-to-one
+        trivial mappings from a header to a property, ``_trivialMap`` can be
+        defined.  Trivial mappings are a dict mapping a generic property
+        to either a header keyword, or a tuple consisting of the header keyword
+        and a dict containing key value pairs suitable for the
+        `MetadataTranslator.quantity_from_card()` method.
+        """
+        super().__init_subclass__(**kwargs)
 
         # Only register classes with declared names
         if hasattr(cls, "name") and cls.name is not None:
@@ -246,34 +274,6 @@ class MetadataMeta(ABCMeta):
             setattr(cls, f"to_{property_key}", translator)
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
-
-
-class MetadataTranslator(metaclass=MetadataMeta):
-    """Per-instrument metadata translation support
-
-    Parameters
-    ----------
-    header : `dict`-like
-        Representation of an instrument header that can be manipulated
-        as if it was a `dict`.
-    filename : `str`, optional
-        Name of the file whose header is being translated.  For some
-        datasets with missing header information this can sometimes
-        allow for some fixups in translations.
-    """
-
-    _trivial_map = {}
-    """Dict of one-to-one mappings for header translation from standard
-    property to corresponding keyword."""
-
-    _const_map = {}
-    """Dict defining a constant for specified standard properties."""
-
-    translators = dict()
-    """All registered metadata translation classes."""
-
-    supported_instrument = None
-    """Name of instrument understood by this translation class."""
 
     def __init__(self, header, filename=None):
         self._header = header
