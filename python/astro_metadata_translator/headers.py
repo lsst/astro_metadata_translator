@@ -41,13 +41,14 @@ def merge_headers(headers, mode="overwrite"):
     mode : `str`
         Scheme to use when a header has the same key as another header
         but different value. Options are:
-        - overwrite : Value in later header overwrites earlier value.
-        - drop : Entire key is dropped.
-        - first : Retain first value encountered.
-        - append : Convert value to list with a value for each header
-                   (`None` if the key was not present). If the value is
-                   identical in multiple headers but key is missing in
-                   some, then the single identical header is stored.
+
+        - ``'overwrite'`` : Value in later header overwrites earlier value.
+        - ``'drop'`` : Entire key is dropped.
+        - ``'first'`` : Retain first value encountered.
+        - ``'append'`` : Convert value to list with a value for each header
+          (`None` if the key was not present). If the value is
+          identical in multiple headers but key is missing in
+          some, then the single identical header is stored.
 
     Returns
     -------
