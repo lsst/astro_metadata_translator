@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import os
 from setuptools import setup
 
 version = "0.1.0"
@@ -15,11 +14,11 @@ setup(
     author_email='tjenness@lsst.org',
     url='https://github.com/lsst/astro_metadata_translator',
     packages=['astro_metadata_translator'],
-    package_dir={'':'python'},
+    package_dir={'': 'python'},
     license='GPLv3',
     install_requires=[
         'astropy'
     ],
-    tests_require=['pytest', 'responses',],
+    tests_require=['pytest', 'pytest-flake8',],
     scripts=["bin.src/translate_header.py"]
 )
