@@ -61,6 +61,7 @@ def cache_translation(func, method=None):
         if name not in self._translation_cache:
             self._translation_cache[name] = func(self)
         return self._translation_cache[name]
+    func_wrapper.__doc__ = func.__doc__
     return func_wrapper
 
 
