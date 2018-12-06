@@ -19,6 +19,6 @@ setup(
     install_requires=[
         'astropy'
     ],
-    tests_require=['pytest', 'pytest-flake8',],
+    tests_require=['pytest', 'pytest-flake8'],
     scripts=["bin.src/translate_header.py"]
 )
