@@ -56,12 +56,14 @@ def cache_translation(func, method=None):
     wrapped : `function`
         Method wrapped by the caching function.
     """
+    name = func.__name__ if method is None else method
+
     def func_wrapper(self):
-        name = func.__name__ if method is None else method
         if name not in self._translation_cache:
             self._translation_cache[name] = func(self)
         return self._translation_cache[name]
     func_wrapper.__doc__ = func.__doc__
+    func_wrapper.__name__ = f"{name}_cached"
     return func_wrapper
 
 
