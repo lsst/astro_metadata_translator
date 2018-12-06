@@ -68,7 +68,7 @@ def read_file(file, failed):
     try:
         md = read_metadata(file, hdu=0)
         if args.hdrnum != 0:
-            mdn = read_metadata(file, hdu=args.hdrnum)
+            mdn = read_metadata(file, hdu=int(args.hdrnum))
             # Astropy does not allow append mode since it does not
             # convert lists to multiple cards. Overwrite for now
             if mdn is not None:
