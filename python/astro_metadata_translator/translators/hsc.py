@@ -49,7 +49,8 @@ class HscTranslator(SuprimeCamTranslator):
                   "boresight_rotation_coord": "sky"}
     """Hard wire HSC even though modern headers call it Hyper Suprime-Cam"""
 
-    _trivial_map = {"detector_name": "T_CCDSN",
+    _trivial_map = {"detector_serial": "T_CCDSN",
+                    "detector_name": "T_CCDSN",  # T_CCDID seems to always be undefined
                     }
     """One-to-one mappings"""
 

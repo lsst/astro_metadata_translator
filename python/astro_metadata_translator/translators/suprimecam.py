@@ -46,7 +46,8 @@ class SuprimeCamTranslator(SubaruTranslator):
     supported_instrument = "SuprimeCam"
     """Supports the SuprimeCam instrument."""
 
-    _const_map = {"boresight_rotation_coord": "unknown"}
+    _const_map = {"boresight_rotation_coord": "unknown",
+                  "detector_group": None}
     """Constant mappings"""
 
     _trivial_map = {"observation_id": "EXP-ID",
@@ -54,6 +55,7 @@ class SuprimeCamTranslator(SubaruTranslator):
                     "science_program": "PROP-ID",
                     "detector_num": "DET-ID",
                     "detector_name": "DETECTOR",
+                    "detector_serial": "DETECTOR",  # DETNAME seems to be identical to DETECTOR
                     "boresight_airmass": "AIRMASS",
                     "relative_humidity": "OUT-HUM",
                     "temperature": ("OUT-TMP", dict(unit=u.K)),

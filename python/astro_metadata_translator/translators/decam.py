@@ -45,7 +45,8 @@ class DecamTranslator(FitsTranslator):
     """Supports the DECam instrument."""
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                  "boresight_rotation_coord": "unknown"}
+                  "boresight_rotation_coord": "unknown",
+                  "detector_group": None}
 
     _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
@@ -54,6 +55,7 @@ class DecamTranslator(FitsTranslator):
                     "object": "OBJECT",
                     "science_program": "PROPID",
                     "detector_num": "CCDNUM",
+                    "detector_serial": "DETECTOR",
                     "detector_name": "DETPOS",
                     "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
                     "instrument": ("INSTRUME", dict(default="DECam")),

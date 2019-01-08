@@ -55,7 +55,8 @@ class MegaPrimeTranslator(FitsTranslator):
     """Supports the MegaPrime instrument."""
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                  "boresight_rotation_coord": "unknown"}
+                  "boresight_rotation_coord": "unknown",
+                  "detector_group": None}
 
     _trivial_map = {"physical_filter": "FILTER",
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
@@ -65,7 +66,8 @@ class MegaPrimeTranslator(FitsTranslator):
                     "science_program": "RUNID",
                     "exposure_id": "EXPNUM",
                     "visit_id": "EXPNUM",
-                    "detector_name": "CCDNAME",
+                    "detector_serial": "CCDNAME",
+                    "detector_name": "CCDNICK",
                     "relative_humidity": ["RELHUMID", "HUMIDITY"],
                     "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
                     "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
