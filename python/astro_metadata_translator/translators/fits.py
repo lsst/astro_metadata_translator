@@ -73,7 +73,7 @@ class FitsTranslator(MetadataTranslator):
         # Protect against being able to always find a standard
         # header for instrument
         try:
-            translator = cls(header)
+            translator = cls(header, filename=filename)
             instrument = translator.to_instrument()
         except KeyError:
             return False
