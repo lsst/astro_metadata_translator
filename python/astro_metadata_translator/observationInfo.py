@@ -92,6 +92,7 @@ class ObservationInfo:
 
         # Store the translator
         self._translator = translator
+        self.translator_class_name = translator_class.__name__
 
         # Loop over each property and request the translated form
         for t in self._PROPERTIES:

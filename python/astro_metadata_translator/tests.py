@@ -171,6 +171,7 @@ class MetadataAssertHelper:
         # For testing we force pedantic mode since we are in charge
         # of all the translations
         obsinfo = ObservationInfo(header, pedantic=True)
+        translator = obsinfo.translator_class_name
 
         # Check that we can pickle and get back the same properties
         newinfo = pickle.loads(pickle.dumps(obsinfo))
@@ -179,14 +180,15 @@ class MetadataAssertHelper:
         # Check the properties
         for property, expected in kwargs.items():
             calculated = getattr(obsinfo, property)
-            msg = f"Comparing property {property}"
+            msg = f"Comparing property {property} using translator {translator}"
             if isinstance(expected, u.Quantity):
                 calculated = calculated.to_value(unit=expected.unit)
                 expected = expected.to_value()
                 self.assertAlmostEqual(calculated, expected, msg=msg)
             elif isinstance(calculated, u.Quantity):
                 # Only happens if the test is not a quantity when it should be
-                self.fail(f"Expected {expected!r} for property {property} but got Quantity '{calculated}'")
+                self.fail(f"Expected {expected!r} for property {property} but got Quantity '{calculated}'"
+                          f" via translator {translator}")
             elif isinstance(expected, float):
                 self.assertAlmostEqual(calculated, expected, msg=msg)
             else:
