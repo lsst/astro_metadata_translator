@@ -311,6 +311,40 @@ class MetadataTranslator:
         raise NotImplementedError()
 
     @classmethod
+    def can_translate_with_options(cls, header, options, filename=None):
+        """Helper method for `can_translate` allowing options.
+
+        Parameters
+        ----------
+        header : `dict`-like
+            Header to convert to standardized form.
+        options : `dict`
+            Headers to try to determine whether this header can
+            be translated by this class.  If a card is found it will
+            be compared with the expected value and will return that
+            comparison.  Each card will be tried in turn until one is
+            found.
+        filename : `str`, optional
+            Name of file being translated.
+
+        Returns
+        -------
+        can : `bool`
+            `True` if the header is recognized by this class. `False`
+            otherwise.
+
+        Notes
+        -----
+        Intended to be used from within `can_translate` implementations
+        for specific translators.  Is not intended to be called directly
+        from `determine_translator`.
+        """
+        for card, value in options.items():
+            if card in header:
+                return header[card] == value
+        return False
+
+    @classmethod
     def determine_translator(cls, header, filename=None):
         """Determine a translation class by examining the header
 
