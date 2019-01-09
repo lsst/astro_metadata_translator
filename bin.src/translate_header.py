@@ -94,10 +94,11 @@ file_regex = re.compile(args.regex)
 failed = []
 for file in args.files:
     if os.path.isdir(file):
-        for name in os.listdir(file):
-            path = os.path.join(file, name)
-            if os.path.isfile(path) and file_regex.search(name):
-                read_file(path, failed)
+        for root, dirs, files in os.walk(file):
+            for name in files:
+                path = os.path.join(root, name)
+                if os.path.isfile(path) and file_regex.search(name):
+                    read_file(path, failed)
     else:
         read_file(file, failed)
 
