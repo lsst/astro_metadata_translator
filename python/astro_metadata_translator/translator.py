@@ -165,7 +165,8 @@ class MetadataTranslator:
             Callback function to be used by the translator method in case the
             keyword is not present.  Function will be executed as if it is
             a method of the translator class.  Running without raising an
-            exception will allow the default to be used.
+            exception will allow the default to be used. Should usually raise
+            `KeyError`.
 
         Returns
         -------
@@ -182,7 +183,8 @@ class MetadataTranslator:
         def trivial_translator(self):
             if unit is not None:
                 return self.quantity_from_card(header_key, unit,
-                                               default=default, minimum=minimum, maximum=maximum)
+                                               default=default, minimum=minimum, maximum=maximum,
+                                               checker=checker)
 
             keywords = header_key if isinstance(header_key, list) else [header_key]
             for key in keywords:
@@ -194,12 +196,13 @@ class MetadataTranslator:
                     break
             else:
                 # No keywords found, use default, checking first, or raise
+                # A None default is only allowed if a checker is provided.
                 if checker is not None:
-                    checker(self)
-                    if default is None:
-                        # Checker has passed but no default, implies None
-                        # is okay.
-                        return None
+                    try:
+                        checker(self)
+                        return default
+                    except Exception:
+                        raise KeyError(f"Could not find {keywords} in header")
                     value = default
                 elif default is not None:
                     value = default
@@ -428,7 +431,7 @@ class MetadataTranslator:
                 value = default
         return value
 
-    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None):
+    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None, checker=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
@@ -442,12 +445,18 @@ class MetadataTranslator:
             Default value to use if the header value is invalid.  Assumed
             to be in the same units as the value expected in the header.  If
             None, no default value is used.
-        minimum : `float`
+        minimum : `float`, optional
             Minimum possible valid value, optional.  If the calculated value
             is below this value, the default value will be used.
-        maximum : `float`
+        maximum : `float`, optional
             Maximum possible valid value, optional.  If the calculated value
             is above this value, the default value will be used.
+        checker : `function`, optional
+            Callback function to be used by the translator method in case the
+            keyword is not present.  Function will be executed as if it is
+            a method of the translator class.  Running without raising an
+            exception will allow the default to be used. Should usually raise
+            `KeyError`.
 
         Returns
         -------
@@ -466,6 +475,15 @@ class MetadataTranslator:
                 keyword = k
                 break
         else:
+            if checker is not None:
+                try:
+                    checker(self)
+                    value = default
+                    if value is not None:
+                        value = u.Quantity(value, unit=unit)
+                    return value
+                except Exception:
+                    pass
             raise KeyError(f"Could not find {keywords} in header")
         if isinstance(value, str):
             # Sometimes the header has the wrong type in it but this must
