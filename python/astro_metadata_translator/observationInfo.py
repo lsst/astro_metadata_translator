@@ -106,11 +106,17 @@ class ObservationInfo:
                 raise NotImplementedError(f"No translation exists for property '{t}'"
                                           f" using translator {translator.__class__}") from e
             except KeyError as e:
-                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}"
+                if filename:
+                    file_info = f" and file {filename}"
+                else:
+                    file_info = ""
+                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}" \
+                    f"{file_info}"
                 if pedantic:
                     raise KeyError(err_msg) from e
                 else:
-                    log.warning(err_msg)
+                    log.warning(header)
+                    log.warning(f"{err_msg}: {e}")
 
     @property
     def cards_used(self):
