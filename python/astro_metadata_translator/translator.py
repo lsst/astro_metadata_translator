@@ -29,6 +29,7 @@ import warnings
 import math
 
 import astropy.units as u
+from astropy.coordinates import Angle
 
 from .properties import PROPERTIES
 
@@ -182,9 +183,13 @@ class MetadataTranslator:
 
         def trivial_translator(self):
             if unit is not None:
-                return self.quantity_from_card(header_key, unit,
-                                               default=default, minimum=minimum, maximum=maximum,
-                                               checker=checker)
+                q = self.quantity_from_card(header_key, unit,
+                                            default=default, minimum=minimum, maximum=maximum,
+                                            checker=checker)
+                # Convert to Angle if this quantity is an angle
+                if return_type == "astropy.coordinates.Angle":
+                    q = Angle(q)
+                return q
 
             keywords = header_key if isinstance(header_key, list) else [header_key]
             for key in keywords:
