@@ -175,7 +175,7 @@ def altaz_from_degree_headers(self, altazpairs, obstime, is_zd=None):
             if is_zd and alt_key in is_zd:
                 alt = altitude_from_zenith_distance(alt * u.deg).value
 
-            if az < 0.0 or alt < 0.0:
+            if az < -360.0 or alt < 0.0:
                 # Break out of loop since we have found values but
                 # they are bad.
                 break
