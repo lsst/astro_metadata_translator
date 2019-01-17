@@ -14,7 +14,7 @@ try:
     from lsst.afw.fits import readMetadata
     import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
 
-    def read_metadata(file, hdu=0):
+    def read_metadata(file, hdu):
         try:
             return readMetadata(file, hdu=hdu)
         except lsst.afw.fits.FitsError:
@@ -23,7 +23,7 @@ try:
 except ImportError:
     from astropy.io import fits
 
-    def read_metadata(file, hdu=0):
+    def read_metadata(file, hdu):
         fits_file = fits.open(file)
         try:
             header = fits_file[hdu].header
@@ -66,9 +66,9 @@ if args.packages:
 def read_file(file, failed):
     print(f"Analyzing {file}...", file=sys.stderr)
     try:
-        md = read_metadata(file, hdu=0)
+        md = read_metadata(file, 0)
         if args.hdrnum != 0:
-            mdn = read_metadata(file, hdu=int(args.hdrnum))
+            mdn = read_metadata(file, int(args.hdrnum))
             # Astropy does not allow append mode since it does not
             # convert lists to multiple cards. Overwrite for now
             if mdn is not None:
