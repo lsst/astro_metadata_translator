@@ -19,14 +19,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import unittest
 import astropy.units as u
 
-from helper import read_test_file, MetadataAssertHelper
+from astro_metadata_translator.tests import read_test_file, MetadataAssertHelper
 from astro_metadata_translator import ObservationInfo
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
+    datadir = os.path.join(TESTDIR, "data")
 
     def test_megaprime_translator(self):
         test_data = (("fitsheader-megaprime.yaml",
@@ -35,8 +39,9 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                            boresight_rotation_coord="unknown",
                            dark_time=615.0*u.s,
                            detector_exposure_id=37398350,
-                           detector_name="8352-15-3",
+                           detector_name="Aubin",
                            detector_num=2,
+                           detector_serial="8352-15-3",
                            exposure_id=1038843,
                            exposure_time=615.037*u.s,
                            object="w2.+2+2",
@@ -55,8 +60,9 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                            boresight_rotation_coord="unknown",
                            dark_time=300.0*u.s,
                            detector_exposure_id=30577599,
-                           detector_name="8434-13-5",
+                           detector_name="Andre",
                            detector_num=99,
+                           detector_serial="8434-13-5",
                            exposure_id=849375,
                            exposure_time=300.202*u.s,
                            object="D3",
@@ -72,10 +78,10 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, self.datadir, **expected)
 
     def test_megaprime_stripping(self):
-        header = read_test_file("fitsheader-megaprime.yaml")
+        header = read_test_file("fitsheader-megaprime.yaml", dir=self.datadir)
         v1 = ObservationInfo(header)
 
         # Check that headers have been removed

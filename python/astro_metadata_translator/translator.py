@@ -23,12 +23,13 @@
 
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod
 import logging
 import warnings
 import math
 
 import astropy.units as u
+from astropy.coordinates import Angle
 
 from .properties import PROPERTIES
 
@@ -56,37 +57,45 @@ def cache_translation(func, method=None):
     wrapped : `function`
         Method wrapped by the caching function.
     """
+    name = func.__name__ if method is None else method
+
     def func_wrapper(self):
-        name = func.__name__ if method is None else method
         if name not in self._translation_cache:
             self._translation_cache[name] = func(self)
         return self._translation_cache[name]
+    func_wrapper.__doc__ = func.__doc__
+    func_wrapper.__name__ = f"{name}_cached"
     return func_wrapper
 
 
-class MetadataMeta(ABCMeta):
-    """Register all subclasses with the base class and create dynamic
-    translator methods.
+class MetadataTranslator:
+    """Per-instrument metadata translation support
 
-    The metaclass provides two facilities.  Firstly, every subclass
-    of `MetadataTranslator` that includes a ``name`` class property is
-    registered as a translator class that could be selected when automatic
-    header translation is attempted.  Only name translator subclasses that
-    correspond to a complete instrument.  Translation classes providing
-    generic translation support for multiple instrument translators should
-    not be named.
-
-    The second feature of this metaclass is to convert simple translations
-    to full translator methods.  Sometimes a translation is fixed (for
-    example a specific instrument name should be used) and rather than provide
-    a full ``to_property()`` translation method the mapping can be defined
-    in a class variable named ``_constMap``.  Similarly, for one-to-one
-    trivial mappings from a header to a property, ``_trivialMap`` can be
-    defined.  Trivial mappings are a dict mapping a generic property
-    to either a header keyword, or a tuple consisting of the header keyword
-    and a dict containing key value pairs suitable for the
-    `MetadataTranslator.quantity_from_card()` method.
+    Parameters
+    ----------
+    header : `dict`-like
+        Representation of an instrument header that can be manipulated
+        as if it was a `dict`.
+    filename : `str`, optional
+        Name of the file whose header is being translated.  For some
+        datasets with missing header information this can sometimes
+        allow for some fixups in translations.
     """
+
+    # These are all deliberately empty in the base class.
+
+    _trivial_map = {}
+    """Dict of one-to-one mappings for header translation from standard
+    property to corresponding keyword."""
+
+    _const_map = {}
+    """Dict defining a constant for specified standard properties."""
+
+    translators = dict()
+    """All registered metadata translation classes."""
+
+    supported_instrument = None
+    """Name of instrument understood by this translation class."""
 
     @staticmethod
     def _make_const_mapping(property_key, constant):
@@ -157,7 +166,8 @@ class MetadataMeta(ABCMeta):
             Callback function to be used by the translator method in case the
             keyword is not present.  Function will be executed as if it is
             a method of the translator class.  Running without raising an
-            exception will allow the default to be used.
+            exception will allow the default to be used. Should usually raise
+            `KeyError`.
 
         Returns
         -------
@@ -173,8 +183,13 @@ class MetadataMeta(ABCMeta):
 
         def trivial_translator(self):
             if unit is not None:
-                return self.quantity_from_card(header_key, unit,
-                                               default=default, minimum=minimum, maximum=maximum)
+                q = self.quantity_from_card(header_key, unit,
+                                            default=default, minimum=minimum, maximum=maximum,
+                                            checker=checker)
+                # Convert to Angle if this quantity is an angle
+                if return_type == "astropy.coordinates.Angle":
+                    q = Angle(q)
+                return q
 
             keywords = header_key if isinstance(header_key, list) else [header_key]
             for key in keywords:
@@ -186,12 +201,13 @@ class MetadataMeta(ABCMeta):
                     break
             else:
                 # No keywords found, use default, checking first, or raise
+                # A None default is only allowed if a checker is provided.
                 if checker is not None:
-                    checker(self)
-                    if default is None:
-                        # Checker has passed but no default, implies None
-                        # is okay.
-                        return None
+                    try:
+                        checker(self)
+                        return default
+                    except Exception:
+                        raise KeyError(f"Could not find {keywords} in header")
                     value = default
                 elif default is not None:
                     value = default
@@ -219,8 +235,31 @@ class MetadataMeta(ABCMeta):
         """
         return trivial_translator
 
-    def __init__(cls, name, bases, dct):  # noqa: N805  pep8-naming can not tell ABCMeta is type
-        super().__init__(name, bases, dct)
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        """Register all subclasses with the base class and create dynamic
+        translator methods.
+
+        The method provides two facilities.  Firstly, every subclass
+        of `MetadataTranslator` that includes a ``name`` class property is
+        registered as a translator class that could be selected when automatic
+        header translation is attempted.  Only name translator subclasses that
+        correspond to a complete instrument.  Translation classes providing
+        generic translation support for multiple instrument translators should
+        not be named.
+
+        The second feature of this method is to convert simple translations
+        to full translator methods.  Sometimes a translation is fixed (for
+        example a specific instrument name should be used) and rather than provide
+        a full ``to_property()`` translation method the mapping can be defined
+        in a class variable named ``_constMap``.  Similarly, for one-to-one
+        trivial mappings from a header to a property, ``_trivialMap`` can be
+        defined.  Trivial mappings are a dict mapping a generic property
+        to either a header keyword, or a tuple consisting of the header keyword
+        and a dict containing key value pairs suitable for the
+        `MetadataTranslator.quantity_from_card()` method.
+        """
+        super().__init_subclass__(**kwargs)
 
         # Only register classes with declared names
         if hasattr(cls, "name") and cls.name is not None:
@@ -235,6 +274,7 @@ class MetadataMeta(ABCMeta):
                 header_key = header_key[0]
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
             method = f"to_{property_key}"
+            translator.__name__ = f"{method}_trivial"
             setattr(cls, method, cache_translation(translator, method=method))
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
@@ -243,36 +283,15 @@ class MetadataMeta(ABCMeta):
         # corresponding translator methods
         for property_key, constant in cls._const_map.items():
             translator = cls._make_const_mapping(property_key, constant)
-            setattr(cls, f"to_{property_key}", translator)
+            method = f"to_{property_key}"
+            translator.__name__ = f"{method}_constant"
+            setattr(cls, method, translator)
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
 
-
-class MetadataTranslator(metaclass=MetadataMeta):
-    """Per-instrument metadata translation support
-
-    Parameters
-    ----------
-    header : `dict`-like
-        Representation of an instrument header that can be manipulated
-        as if it was a `dict`.
-    """
-
-    _trivial_map = {}
-    """Dict of one-to-one mappings for header translation from standard
-    property to corresponding keyword."""
-
-    _const_map = {}
-    """Dict defining a constant for specified standard properties."""
-
-    translators = dict()
-    """All registered metadata translation classes."""
-
-    supported_instrument = None
-    """Name of instrument understood by this translation class."""
-
-    def __init__(self, header):
+    def __init__(self, header, filename=None):
         self._header = header
+        self.filename = filename
         self._used_cards = set()
 
         # Cache assumes header is read-only once stored in object
@@ -280,14 +299,16 @@ class MetadataTranslator(metaclass=MetadataMeta):
 
     @classmethod
     @abstractmethod
-    def can_translate(cls, header):
+    def can_translate(cls, header, filename=None):
         """Indicate whether this translation class can translate the
         supplied header.
 
         Parameters
         ----------
         header : `dict`-like
-           Header to convert to standardized form.
+            Header to convert to standardized form.
+        filename : `str`, optional
+            Name of file being translated.
 
         Returns
         -------
@@ -298,13 +319,49 @@ class MetadataTranslator(metaclass=MetadataMeta):
         raise NotImplementedError()
 
     @classmethod
-    def determine_translator(cls, header):
+    def can_translate_with_options(cls, header, options, filename=None):
+        """Helper method for `can_translate` allowing options.
+
+        Parameters
+        ----------
+        header : `dict`-like
+            Header to convert to standardized form.
+        options : `dict`
+            Headers to try to determine whether this header can
+            be translated by this class.  If a card is found it will
+            be compared with the expected value and will return that
+            comparison.  Each card will be tried in turn until one is
+            found.
+        filename : `str`, optional
+            Name of file being translated.
+
+        Returns
+        -------
+        can : `bool`
+            `True` if the header is recognized by this class. `False`
+            otherwise.
+
+        Notes
+        -----
+        Intended to be used from within `can_translate` implementations
+        for specific translators.  Is not intended to be called directly
+        from `determine_translator`.
+        """
+        for card, value in options.items():
+            if card in header:
+                return header[card] == value
+        return False
+
+    @classmethod
+    def determine_translator(cls, header, filename=None):
         """Determine a translation class by examining the header
 
         Parameters
         ----------
         header : `dict`-like
             Representation of a header.
+        filename : `str`, optional
+            Name of file being translated.
 
         Returns
         -------
@@ -319,11 +376,12 @@ class MetadataTranslator(metaclass=MetadataMeta):
             header.
         """
         for name, trans in cls.translators.items():
-            if trans.can_translate(header):
+            if trans.can_translate(header, filename=filename):
                 log.debug(f"Using translation class {name}")
                 return trans
         else:
-            raise ValueError("None of the registered translation classes understood this header")
+            raise ValueError(f"None of the registered translation classes {list(cls.translators.keys())}"
+                             " understood this header")
 
     def _used_these_cards(self, *args):
         """Indicate that the supplied cards have been used for translation.
@@ -378,7 +436,7 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 value = default
         return value
 
-    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None):
+    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None, checker=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
@@ -392,12 +450,18 @@ class MetadataTranslator(metaclass=MetadataMeta):
             Default value to use if the header value is invalid.  Assumed
             to be in the same units as the value expected in the header.  If
             None, no default value is used.
-        minimum : `float`
+        minimum : `float`, optional
             Minimum possible valid value, optional.  If the calculated value
             is below this value, the default value will be used.
-        maximum : `float`
+        maximum : `float`, optional
             Maximum possible valid value, optional.  If the calculated value
             is above this value, the default value will be used.
+        checker : `function`, optional
+            Callback function to be used by the translator method in case the
+            keyword is not present.  Function will be executed as if it is
+            a method of the translator class.  Running without raising an
+            exception will allow the default to be used. Should usually raise
+            `KeyError`.
 
         Returns
         -------
@@ -416,6 +480,15 @@ class MetadataTranslator(metaclass=MetadataMeta):
                 keyword = k
                 break
         else:
+            if checker is not None:
+                try:
+                    checker(self)
+                    value = default
+                    if value is not None:
+                        value = u.Quantity(value, unit=unit)
+                    return value
+                except Exception:
+                    pass
             raise KeyError(f"Could not find {keywords} in header")
         if isinstance(value, str):
             # Sometimes the header has the wrong type in it but this must

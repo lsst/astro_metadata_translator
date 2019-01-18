@@ -27,10 +27,11 @@ import re
 import logging
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord, AltAz, Angle
+from astropy.coordinates import SkyCoord, Angle
 
 from ..translator import cache_translation
 from .subaru import SubaruTranslator
+from .helpers import altaz_from_degree_headers
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +46,8 @@ class SuprimeCamTranslator(SubaruTranslator):
     supported_instrument = "SuprimeCam"
     """Supports the SuprimeCam instrument."""
 
-    _const_map = {"boresight_rotation_coord": "unknown"}
+    _const_map = {"boresight_rotation_coord": "unknown",
+                  "detector_group": None}
     """Constant mappings"""
 
     _trivial_map = {"observation_id": "EXP-ID",
@@ -53,6 +55,7 @@ class SuprimeCamTranslator(SubaruTranslator):
                     "science_program": "PROP-ID",
                     "detector_num": "DET-ID",
                     "detector_name": "DETECTOR",
+                    "detector_serial": "DETECTOR",  # DETNAME seems to be identical to DETECTOR
                     "boresight_airmass": "AIRMASS",
                     "relative_humidity": "OUT-HUM",
                     "temperature": ("OUT-TMP", dict(unit=u.K)),
@@ -66,14 +69,16 @@ class SuprimeCamTranslator(SubaruTranslator):
     _DAY0 = 53005
 
     @classmethod
-    def can_translate(cls, header):
+    def can_translate(cls, header, filename=None):
         """Indicate whether this translation class can translate the
         supplied header.
 
         Parameters
         ----------
         header : `dict`-like
-           Header to convert to standardized form.
+            Header to convert to standardized form.
+        filename : `str`, optional
+            Name of file being translated.
 
         Returns
         -------
@@ -193,15 +198,8 @@ class SuprimeCamTranslator(SubaruTranslator):
     @cache_translation
     def to_altaz_begin(self):
         # Docstring will be inherited. Property defined in properties.py
-        altitude = self._header["ALTITUDE"]
-        if altitude > 90.0:
-            log.warning("Clipping altitude (%f) at 90 degrees", altitude)
-            altitude = 90.0
-
-        altaz = AltAz(self._header["AZIMUTH"] * u.deg, altitude * u.deg,
-                      obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("AZIMUTH", "ALTITUDE")
-        return altaz
+        return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),),
+                                         self.to_datetime_begin())
 
     @cache_translation
     def to_boresight_rotation_angle(self):

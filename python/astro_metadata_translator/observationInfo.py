@@ -27,6 +27,8 @@ import itertools
 import logging
 import copy
 
+import astropy.time
+
 from .translator import MetadataTranslator
 from .properties import PROPERTIES
 
@@ -41,7 +43,11 @@ class ObservationInfo:
     ----------
     header : `dict`-like
         Representation of an instrument header accessible as a `dict`.
-    translator_class : `MetadataTranslator`-class, `optional`
+    filename : `str`, optional
+        Name of the file whose header is being translated.  For some
+        datasets with missing header information this can sometimes
+        allow for some fixups in translations.
+    translator_class : `MetadataTranslator`-class, optional
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
         be asked in turn if it knows how to translate the supplied header.
@@ -63,10 +69,13 @@ class ObservationInfo:
     """All the properties supported by this class with associated
     documentation."""
 
-    def __init__(self, header, translator_class=None, pedantic=False):
+    def __init__(self, header, filename=None, translator_class=None, pedantic=False):
 
         # Store the supplied header for later stripping
         self._header = header
+
+        # Store the filename
+        self.filename = filename
 
         # PropertyList is not dict-like so force to a dict here to simplify
         # the translation code.
@@ -74,15 +83,16 @@ class ObservationInfo:
             header = header.toOrderedDict()
 
         if translator_class is None:
-            translator_class = MetadataTranslator.determine_translator(header)
+            translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
         # Create an instance for this header
-        translator = translator_class(header)
+        translator = translator_class(header, filename=filename)
 
         # Store the translator
         self._translator = translator
+        self.translator_class_name = translator_class.__name__
 
         # Loop over each property and request the translated form
         for t in self._PROPERTIES:
@@ -96,11 +106,17 @@ class ObservationInfo:
                 raise NotImplementedError(f"No translation exists for property '{t}'"
                                           f" using translator {translator.__class__}") from e
             except KeyError as e:
-                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}"
+                if filename:
+                    file_info = f" and file {filename}"
+                else:
+                    file_info = ""
+                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}" \
+                    f"{file_info}"
                 if pedantic:
                     raise KeyError(err_msg) from e
                 else:
-                    log.warning(err_msg)
+                    log.warning(header)
+                    log.warning(f"{err_msg}: {e}")
 
     @property
     def cards_used(self):
@@ -136,7 +152,11 @@ class ObservationInfo:
 
         result = ""
         for p in itertools.chain(priority, properties):
-            result += f"{p}: {getattr(self, p)}\n"
+            value = getattr(self, p)
+            if isinstance(value, astropy.time.Time):
+                value.format = "isot"
+                value = str(value.value)
+            result += f"{p}: {value}\n"
 
         return result
 

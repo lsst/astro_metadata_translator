@@ -49,7 +49,8 @@ class HscTranslator(SuprimeCamTranslator):
                   "boresight_rotation_coord": "sky"}
     """Hard wire HSC even though modern headers call it Hyper Suprime-Cam"""
 
-    _trivial_map = {"detector_name": "T_CCDSN",
+    _trivial_map = {"detector_serial": "T_CCDSN",
+                    "detector_name": "T_CCDSN",  # T_CCDID seems to always be undefined
                     }
     """One-to-one mappings"""
 
@@ -66,7 +67,7 @@ class HscTranslator(SuprimeCamTranslator):
                                 }
 
     @classmethod
-    def can_translate(cls, header):
+    def can_translate(cls, header, filename=None):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -77,7 +78,9 @@ class HscTranslator(SuprimeCamTranslator):
         Parameters
         ----------
         header : `dict`-like
-           Header to convert to standardized form.
+            Header to convert to standardized form.
+        filename : `str`, optional
+            Name of file being translated.
 
         Returns
         -------

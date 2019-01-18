@@ -19,13 +19,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import unittest
 import astropy.units as u
 
-from helper import MetadataAssertHelper
+from astro_metadata_translator.tests import MetadataAssertHelper
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
+    datadir = os.path.join(TESTDIR, "data")
 
     def test_decam_translator(self):
         test_data = (("fitsheader-decam.yaml",
@@ -36,6 +40,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_exposure_id=22938825,
                            detector_name="S1",
                            detector_num=25,
+                           detector_serial="S3-111_107419-8-3",
                            exposure_id=229388,
                            exposure_time=200.0*u.s,
                            object="DES supernova hex SN-S1 tiling 22",
@@ -56,6 +61,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_exposure_id=None,
                            detector_name="S1",
                            detector_num=25,
+                           detector_serial="S3-111_107419-8-3",
                            exposure_id=None,
                            exposure_time=0.0*u.s,
                            object="postflats-BIAS",
@@ -76,6 +82,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_exposure_id=41203701,
                            detector_name="S29",
                            detector_num=1,
+                           detector_serial="S3-06_123195-15-3",
                            exposure_id=412037,
                            exposure_time=86.0*u.s,
                            object="Blind15A_03",
@@ -91,7 +98,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
 
 if __name__ == "__main__":

@@ -19,13 +19,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import unittest
 import astropy.units as u
 
-from helper import MetadataAssertHelper
+from astro_metadata_translator.tests import MetadataAssertHelper
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class HscTestCase(unittest.TestCase, MetadataAssertHelper):
+    datadir = os.path.join(TESTDIR, "data")
 
     def test_hsc_translator(self):
         test_data = (("fitsheader-hsc.yaml",
@@ -36,6 +40,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_exposure_id=180804850,
                            detector_name="120",
                            detector_num=50,
+                           detector_serial="120",
                            exposure_id=904024,
                            exposure_time=30.0*u.s,
                            object="STRIPE82L",
@@ -56,6 +61,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_exposure_id=8180037,
                            detector_name="061",
                            detector_num=37,
+                           detector_serial="061",
                            exposure_id=40900,
                            exposure_time=150.0*u.s,
                            object="SSP-Wide",
@@ -71,7 +77,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
     def test_suprimecam_translator(self):
         # In this case the airmass is average during observation
@@ -84,6 +90,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_exposure_id=535770,
                            detector_name="w67c1",
                            detector_num=0,
+                           detector_serial="w67c1",
                            exposure_id=53577,
                            exposure_time=200.0*u.s,
                            object="Ecliptic Deep Field",
@@ -99,7 +106,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoFromYaml(file, **expected)
+                self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
 
 if __name__ == "__main__":

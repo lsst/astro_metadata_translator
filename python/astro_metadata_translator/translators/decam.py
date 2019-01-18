@@ -25,12 +25,12 @@ __all__ = ("DecamTranslator", )
 
 import re
 
-from astropy.coordinates import EarthLocation, AltAz, Angle
+from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
 from ..translator import cache_translation
 from .fits import FitsTranslator
-from .helpers import altitude_from_zenith_distance, is_non_science, \
+from .helpers import altaz_from_degree_headers, is_non_science, \
     tracking_from_degree_headers
 
 
@@ -45,7 +45,8 @@ class DecamTranslator(FitsTranslator):
     """Supports the DECam instrument."""
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                  "boresight_rotation_coord": "unknown"}
+                  "boresight_rotation_coord": "unknown",
+                  "detector_group": None}
 
     _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
@@ -54,6 +55,7 @@ class DecamTranslator(FitsTranslator):
                     "object": "OBJECT",
                     "science_program": "PROPID",
                     "detector_num": "CCDNUM",
+                    "detector_serial": "DETECTOR",
                     "detector_name": "DETPOS",
                     "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
                     "instrument": ("INSTRUME", dict(default="DECam")),
@@ -67,7 +69,7 @@ class DecamTranslator(FitsTranslator):
                     }
 
     @classmethod
-    def can_translate(cls, header):
+    def can_translate(cls, header, filename=None):
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -76,7 +78,9 @@ class DecamTranslator(FitsTranslator):
         Parameters
         ----------
         header : `dict`-like
-           Header to convert to standardized form.
+            Header to convert to standardized form.
+        filename : `str`, optional
+            Name of file being translated.
 
         Returns
         -------
@@ -87,7 +91,7 @@ class DecamTranslator(FitsTranslator):
         # Use INSTRUME. Because of defaulting behavior only do this
         # if we really have an INSTRUME header
         if "INSTRUME" in header:
-            via_instrume = super().can_translate(header)
+            via_instrume = super().can_translate(header, filename=filename)
             if via_instrume:
                 return via_instrume
         if "FILTER" in header and "DECam" in header["FILTER"]:
@@ -198,23 +202,9 @@ class DecamTranslator(FitsTranslator):
 
     @cache_translation
     def to_altaz_begin(self):
-        """Calculate the azimuth and elevation for the start of the
-        observation.
-
-        Can be `None` for non-science observations.
-
-        Returns
-        -------
-        altaz : `astropy.coordinates.AltAz`
-            The telescope coordinates.
-        """
-        if "AZ" not in self._header or "ZD" not in self._header:
-            return None
-        altaz = AltAz(self._header["AZ"] * u.deg,
-                      altitude_from_zenith_distance(self._header["ZD"] * u.deg),
-                      obstime=self.to_datetime_begin(), location=self.to_location())
-        self._used_these_cards("AZ", "ZD")
-        return altaz
+        # Docstring will be inherited. Property defined in properties.py
+        return altaz_from_degree_headers(self, (("ZD", "AZ"),),
+                                         self.to_datetime_begin(), is_zd=set(["ZD"]))
 
     @cache_translation
     def to_detector_exposure_id(self):

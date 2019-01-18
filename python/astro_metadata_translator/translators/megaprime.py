@@ -23,12 +23,12 @@
 
 __all__ = ("MegaPrimeTranslator", )
 
-from astropy.coordinates import EarthLocation, AltAz, Angle
+from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
 from ..translator import cache_translation
 from .fits import FitsTranslator
-from .helpers import tracking_from_degree_headers
+from .helpers import tracking_from_degree_headers, altaz_from_degree_headers
 
 filters = {'u.MP9301': 'u',
            'u.MP9302': 'u2',
@@ -55,7 +55,8 @@ class MegaPrimeTranslator(FitsTranslator):
     """Supports the MegaPrime instrument."""
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                  "boresight_rotation_coord": "unknown"}
+                  "boresight_rotation_coord": "unknown",
+                  "detector_group": None}
 
     _trivial_map = {"physical_filter": "FILTER",
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
@@ -65,7 +66,8 @@ class MegaPrimeTranslator(FitsTranslator):
                     "science_program": "RUNID",
                     "exposure_id": "EXPNUM",
                     "visit_id": "EXPNUM",
-                    "detector_name": "CCDNAME",
+                    "detector_serial": "CCDNAME",
+                    "detector_name": "CCDNICK",
                     "relative_humidity": ["RELHUMID", "HUMIDITY"],
                     "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
                     "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
@@ -161,34 +163,9 @@ class MegaPrimeTranslator(FitsTranslator):
 
     @cache_translation
     def to_altaz_begin(self):
-        """Calculate the azimuth and elevation for the start of the
-        observation.
-
-        Can be `None` for non-science observations.
-        Two different header schemes are supported.
-        If headers indicate negative values it is assumed that this is
-        an observation where the telescope position was not relevant.
-
-        Returns
-        -------
-        altaz : `astropy.coordinates.AltAz`
-            The telescope coordinates.
-        """
-        for az_key, alt_key in (("TELAZ", "TELALT"), ("BORE-AZ", "BORE-ALT")):
-            if az_key in self._header and alt_key in self._header:
-                az = self._header[az_key]
-                alt = self._header[alt_key]
-                if az < 1.0 or alt < 1.0:
-                    # Calibrations have magic values of -9999 when telescope not
-                    # involved in observation.
-                    return None
-                altaz = AltAz(az * u.deg, alt * u.deg,
-                              obstime=self.to_datetime_begin(), location=self.to_location())
-                self._used_these_cards(az_key, alt_key)
-                return altaz
-        if self.to_observation_type() == "science":
-            raise KeyError("Unable to determine alt/az of science observation")
-        return None
+        # Docstring will be inherited. Property defined in properties.py
+        return altaz_from_degree_headers(self, (("TELALT", "TELAZ"), ("BORE-ALT", "BORE-AZ")),
+                                         self.to_datetime_begin())
 
     @cache_translation
     def to_detector_exposure_id(self):
