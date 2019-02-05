@@ -94,8 +94,10 @@ class MegaPrimeTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-        # Height is not in some MegaPrime files. Use the value from EarthLocation.of_site("CFHT")
-        # Some data uses OBS-LONG, OBS-LAT, other data uses LONGITUD and LATITUDE
+        # Height is not in some MegaPrime files. Use the value from
+        # EarthLocation.of_site("CFHT")
+        # Some data uses OBS-LONG, OBS-LAT, other data uses LONGITUD and
+        # LATITUDE
         for long_key, lat_key in (("LONGITUD", "LATITUDE"), ("OBS-LONG", "OBS-LAT")):
             if long_key in self._header and lat_key in self._header:
                 value = EarthLocation.from_geodetic(self._header[long_key], self._header[lat_key], 4215.0)

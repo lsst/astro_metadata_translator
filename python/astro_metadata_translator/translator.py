@@ -240,14 +240,14 @@ class MetadataTranslator:
 
         The second feature of this method is to convert simple translations
         to full translator methods.  Sometimes a translation is fixed (for
-        example a specific instrument name should be used) and rather than provide
-        a full ``to_property()`` translation method the mapping can be defined
-        in a class variable named ``_constMap``.  Similarly, for one-to-one
-        trivial mappings from a header to a property, ``_trivialMap`` can be
-        defined.  Trivial mappings are a dict mapping a generic property
-        to either a header keyword, or a tuple consisting of the header keyword
-        and a dict containing key value pairs suitable for the
-        `MetadataTranslator.quantity_from_card()` method.
+        example a specific instrument name should be used) and rather than
+        provide a full ``to_property()`` translation method the mapping can be
+        defined in a class variable named ``_constMap``.  Similarly, for
+        one-to-one trivial mappings from a header to a property,
+        ``_trivialMap`` can be defined.  Trivial mappings are a dict mapping a
+        generic property to either a header keyword, or a tuple consisting of
+        the header keyword and a dict containing key value pairs suitable for
+        the `MetadataTranslator.quantity_from_card()` method.
         """
         super().__init_subclass__(**kwargs)
 
