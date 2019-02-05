@@ -21,9 +21,9 @@ from astro_metadata_translator import ObservationInfo
 
 # PropertyList is optional
 try:
-    import lsst.daf.base as dafBase
+    import lsst.daf.base as daf_base
 except ImportError:
-    dafBase = None
+    daf_base = None
 
 
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
@@ -44,7 +44,7 @@ def pl_constructor(loader, node):
             pl[key] = value
 
 
-if dafBase is None:
+if daf_base is None:
     yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
 
 
