@@ -8,7 +8,6 @@ import astro_metadata_translator
 import astro_metadata_translator.version
 
 
-_g = globals()
-_g.update(build_package_configs(
+globals().update(build_package_configs(
     project_name="astro_metadata_translator",
     version=astro_metadata_translator.version.__version__))
