@@ -4,5 +4,18 @@ matrix:
   include:
     - python: '3.6'
       install:
-      - pip install flake8
-      script: flake8
+        - pip install -e .
+        - pip install flake8
+        - pip install -r doc/requirements.txt
+      script:
+        - flake8
+        - "package-docs -d doc build"
+        - 'ltd upload --product "astro-metadata-translator" --travis --dir doc/_build/html'
+addons:
+  apt:
+    packages:
+      - graphviz
+env:
+  global:
+    - secure: "1/wVlIQo/RBxaZ5C+Nqi5dNXSsXObrv/bV94b8zL2Nmv5g5M8JDLFCOD6Noik8qT5PNpvodp0IJZ5g8xm8Dworg4se8Q4nb/ScRCoGU8PQ+C+0l6qVbBlwoyJIDxMOOCdi9v4ZXXg77Qu+7Bgkm7cslOJamIm95LmcYhGCTZXjQYeNtYgsxDOt49BEyLbCK7PPylFkDmmM0DplLcMkq/B5AnHpznvcyDt8PqoaJrPS2+5Rm5OhoOHwtt9mONS+98J7HXJbsoSs65ODAoXv2AKyFvoEeh7FKPITjJHCWvc0OyEWxAQjC2tNVfEqeHMZ6kB8/K2BcajI6naxsfqfsJTrYFE+nhog4BaZivYxEngeo7hfdcl0Xee9zLIMEbVUacohIagznZve1dR6P6beo6sQa52VZmPwWHnmqeobRt9BlPfCzVPgpAmKSrTcQdGpZv9/ZCywmgeYPMl42W+woLosncoJqBBcDc/bDPXFoNhD/WPUxqm4m3X1lbM93TlapF2lfmUJkRql6I6Ruy/RnhZDNkx6XDIONaAtBaqEZzD6sOtjP9+/iegRp6kKsLFu4qJUcF3p3ASTnxStQsvDXnPmkBbVCGNBMwAq3fndrpBPu0OkqAtJF0rmXEumnbJzN/K+rzJpwdBcWp4IQKGOCXxh60l7TqDtzlcd+Un+nc++0="
+    - secure: "CUQt5G8lzhzHsnmKkJgldT1Qsf9vLApTMZPqz57xAXwJs07jBmQBlBaf2u/tftqI0JMItWiW2E3pWn4GG8D90b8LnXl1Tl6IVS9EaHl2NXQVMRBqpaHAsqJvbLB1jM3cYSMvS2N3he27fhspg8OoRwco5XGTxEHRrlCTficFUC9+cuSXlsgph1rqOEw0Snk/L5WdcR2IFS40ntctRT9/Z+5wp31/ZbOah7Vr5FOppyhjMmSxaRHzx/tLxqFvT6A76fn53Lv2C8zUGKzPDK3F/0FCJ4S1rjsNO2UghKPBhy3rUhG39aBohOHLtgMcxh7TDNoHCqgSitXPjuIFjmb11+nPenMNs5m3PVcIij5vAHbw3BTn0NcATKK4RLWxBQfB+PaEy1/u+yyJxTesPoNjKzkiIs2J0vyL0uG4uXp0QkQEBScS8pSQqzkn35Sj6pY+pdTSJYNpAXKHi1VP0mCpq+pp9qbNCE1MWu+YTgJzvt0Q/d5LyI4RPlQjc7wuszJzUmGS9UXCMHKl+3bsv5YwppSKARw/jggTTDprTAkGONPSpYGMAoy9s0FadGn6o9HAuEim7JsHmDranSg2qFiDv1QS5ydiPcsfHJwWM5m/qcljASSpC9PP1Cnms/0cm/uenk/pLLpw/elUsuuT5QumKA5c/HNTjOGPV0lSWGkhyOE="
