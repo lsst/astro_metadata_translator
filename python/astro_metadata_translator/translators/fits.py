@@ -97,7 +97,7 @@ class FitsTranslator(MetadataTranslator):
 
         return Time(date_str, format="isot", scale=scale)
 
-    def _from_fits_date(self, date_key):
+    def _from_fits_date(self, date_key, mjd_key=None):
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
@@ -105,9 +105,13 @@ class FitsTranslator(MetadataTranslator):
 
         Parameters
         ----------
-        dateKey : `str`
+        date_key : `str`
             The key in the header representing a standard FITS
             ISO-style date.
+        mjd_key : `float`, optional
+            The key in the header representing a standard FITS MJD
+            style date.  This key will be tried if ``date_key`` is not
+            found or can not be parsed.
 
         Returns
         -------
@@ -124,6 +128,8 @@ class FitsTranslator(MetadataTranslator):
             date_str = self._header[date_key]
             value = self._from_fits_date_string(date_str, scale=scale)
             self._used_these_cards(*used)
+        elif mjd_key in self._header:
+            value = Time(self._header[mjd_key], scale=scale, format="mjd")
         else:
             value = None
         return value
@@ -132,27 +138,29 @@ class FitsTranslator(MetadataTranslator):
     def to_datetime_begin(self):
         """Calculate start time of observation.
 
-        Uses FITS standard ``DATE-OBS`` and ``TIMESYS`` headers.
+        Uses FITS standard ``MJD-OBS`` or ``DATE-OBS``, in conjunction
+        with the ``TIMESYS`` header.
 
         Returns
         -------
         start_time : `astropy.time.Time`
             Time corresponding to the start of the observation.
         """
-        return self._from_fits_date("DATE-OBS")
+        return self._from_fits_date("DATE-OBS", mjd_key="MJD-OBS")
 
     @cache_translation
     def to_datetime_end(self):
         """Calculate end time of observation.
 
-        Uses FITS standard ``DATE-END`` and ``TIMESYS`` headers.
+        Uses FITS standard ``MJD-END`` or ``DATE-END``, in conjunction
+        with the ``TIMESYS`` header.
 
         Returns
         -------
         start_time : `astropy.time.Time`
             Time corresponding to the end of the observation.
         """
-        return self._from_fits_date("DATE-END")
+        return self._from_fits_date("DATE-END", mjd_key="MJD-END")
 
     @cache_translation
     def to_location(self):
