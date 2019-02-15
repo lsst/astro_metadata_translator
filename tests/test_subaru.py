@@ -13,7 +13,8 @@ import os.path
 import unittest
 import astropy.units as u
 
-from astro_metadata_translator.tests import MetadataAssertHelper
+from astro_metadata_translator import merge_headers
+from astro_metadata_translator.tests import MetadataAssertHelper, read_test_file
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -97,6 +98,18 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
                 self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
+
+    def test_merging_hsc(self):
+        files = ("fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml")
+        headers = [read_test_file(f, dir=self.datadir) for f in files]
+        merged = merge_headers(headers, mode="first", sort=False)
+
+        # The MJD-STR should come from the first file
+        self.assertAlmostEqual(merged["MJD-STR"], 57305.34729859)
+
+        # If we sort then MJD-STR should come from the oldest file
+        merged = merge_headers(headers, mode="first", sort=True)
+        self.assertAlmostEqual(merged["MJD-STR"], 56598.26106374757)
 
 
 if __name__ == "__main__":

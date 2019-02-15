@@ -16,8 +16,11 @@ __all__ = ("merge_headers",)
 import itertools
 import copy
 
+from .translator import MetadataTranslator
+from .translators import FitsTranslator
 
-def merge_headers(headers, mode="overwrite"):
+
+def merge_headers(headers, mode="overwrite", sort=False):
     """Merge multiple headers into a single dict.
 
     Given a list of dict-like data headers, combine them following the
@@ -39,6 +42,11 @@ def merge_headers(headers, mode="overwrite"):
           (`None` if the key was not present). If the value is
           identical in multiple headers but key is missing in
           some, then the single identical header is stored.
+    sort : `bool`
+        If `True`, sort the supplied headers into date order if possible.
+        This affects how the resulting merged output depending on the requested
+        merge mode.  An attempt will be made to extract a date from the
+        headers.
 
     Returns
     -------
@@ -52,6 +60,19 @@ def merge_headers(headers, mode="overwrite"):
     # Force PropertyList to OrderedDict
     # In python 3.7 dicts are guaranteed to retain order
     headers = [h.toOrderedDict() if hasattr(h, "toOrderedDict") else h for h in headers]
+
+    if sort:
+        def key_func(hdr):
+            translator_class = None
+            try:
+                translator_class = MetadataTranslator.determine_translator(hdr)
+            except ValueError:
+                # Try the FITS translator
+                translator_class = FitsTranslator
+            translator = translator_class(hdr)
+            return translator.to_datetime_begin()
+
+        headers = sorted(headers, key=key_func)
 
     if mode == "overwrite":
         merged = copy.deepcopy(headers.pop(0))
