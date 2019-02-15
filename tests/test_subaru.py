@@ -111,6 +111,20 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
         merged = merge_headers(headers, mode="first", sort=True)
         self.assertAlmostEqual(merged["MJD-STR"], 56598.26106374757)
 
+        # Drop headers that differ, MJD-STR should not appear
+        merged = merge_headers(headers, mode="drop", sort=True)
+        self.assertNotIn("MJD-STR", merged)
+
+        # Drop but retain first MJD-STR without sorting
+        merged = merge_headers(headers, mode="drop", sort=False, first=["MJD-STR", "UT-STR"])
+        self.assertAlmostEqual(merged["MJD-STR"], 57305.34729859)
+        self.assertEqual(merged["UT-STR"], "08:20:06.598")
+
+        # Drop but retain first MJD-STR
+        merged = merge_headers(headers, mode="drop", sort=True, first=["MJD-STR", "UT-STR"])
+        self.assertAlmostEqual(merged["MJD-STR"], 56598.26106374757)
+        self.assertEqual(merged["UT-STR"], "06:15:55.908")
+
 
 if __name__ == "__main__":
     unittest.main()

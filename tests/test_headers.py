@@ -53,17 +53,21 @@ class HeadersTestCase(unittest.TestCase):
 
     def test_fail(self):
         with self.assertRaises(ValueError):
-            merge_headers([self.h1], mode="wrong")
+            merge_headers([self.h1, self.h2], mode="wrong")
 
         with self.assertRaises(ValueError):
             merge_headers([])
+
+    def test_one(self):
+        merged = merge_headers([self.h1], mode="drop")
+        self.assertEqual(merged, self.h1)
 
     def test_merging_overwrite(self):
         merged = merge_headers([self.h1, self.h2], mode="overwrite")
 
         expected = {
             "MJD-OBS": self.h2["MJD-OBS"],
-            "ORIGIN": self.h1["ORIGIN"],
+            "ORIGIN": self.h2["ORIGIN"],
             "KEY0": self.h2["KEY0"],
             "KEY1": self.h1["KEY1"],
             "KEY2": self.h2["KEY2"],
@@ -124,6 +128,36 @@ class HeadersTestCase(unittest.TestCase):
         # Sorting the headers should make no difference to drop mode
         merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
                                mode="drop", sort=True)
+        self.assertEqual(merged, expected)
+
+        # Now retain some headers
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
+                               mode="drop", sort=False, first=["ORIGIN"], last=["KEY2", "KEY1"])
+
+        expected = {
+            "KEY2": self.h3["KEY2"],
+            "ORIGIN": self.h1["ORIGIN"],
+            "KEY1": self.h4["KEY1"],
+            "KEY3": self.h1["KEY3"],
+            "KEY4": self.h1["KEY4"],
+            "KEY5": self.h2["KEY5"],
+            "KEY6": self.h4["KEY6"],
+        }
+        self.assertEqual(merged, expected)
+
+        # Now retain some headers with sorting
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
+                               mode="drop", sort=True, first=["ORIGIN"], last=["KEY2", "KEY1"])
+
+        expected = {
+            "KEY2": self.h3["KEY2"],
+            "ORIGIN": self.h2["ORIGIN"],
+            "KEY1": self.h4["KEY1"],
+            "KEY3": self.h1["KEY3"],
+            "KEY4": self.h1["KEY4"],
+            "KEY5": self.h2["KEY5"],
+            "KEY6": self.h4["KEY6"],
+        }
         self.assertEqual(merged, expected)
 
     def test_merging_append(self):

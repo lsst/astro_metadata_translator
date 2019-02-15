@@ -13,14 +13,17 @@
 
 __all__ = ("merge_headers",)
 
+import logging
 import itertools
 import copy
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
 
+log = logging.getLogger(__name__)
 
-def merge_headers(headers, mode="overwrite", sort=False):
+
+def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     """Merge multiple headers into a single dict.
 
     Given a list of dict-like data headers, combine them following the
@@ -47,6 +50,22 @@ def merge_headers(headers, mode="overwrite", sort=False):
         This affects how the resulting merged output depending on the requested
         merge mode.  An attempt will be made to extract a date from the
         headers.
+    first : `list` or `tuple`
+        Keys to retain even if they differ.  The value in the merged header
+        will always be the value first encountered, independently of ``mode``.
+        This is usually to allow time-dependent headers such as ``DATE-OBS``
+        and ``AZSTART`` to be retained to allow the header to indicate the
+        range of values.  Not used if ``mode`` is ``append``.    No exception
+        is raised if a key can not be found in a header since this allows a
+        range of expected headers to be listed covering multiple instruments.
+    last : `list` or `tuple`
+        Keys to retain even if they differ.  The value in the merged header
+        will always be the final value encountered, independently of ``mode``.
+        This is usually to allow time-dependent headers such as ``DATE-END``
+        and ``AZEND`` to be retained to allow the header to indicate the
+        range of values.  Not used if ``mode`` is ``append``.  No exception
+        is raised if a key can not be found in a header since this allows a
+        range of expected headers to be listed covering multiple instruments.
 
     Returns
     -------
@@ -61,6 +80,10 @@ def merge_headers(headers, mode="overwrite", sort=False):
     # In python 3.7 dicts are guaranteed to retain order
     headers = [h.toOrderedDict() if hasattr(h, "toOrderedDict") else h for h in headers]
 
+    # With a single header provided return a copy immediately
+    if len(headers) == 1:
+        return copy.deepcopy(headers[0])
+
     if sort:
         def key_func(hdr):
             translator_class = None
@@ -74,22 +97,27 @@ def merge_headers(headers, mode="overwrite", sort=False):
 
         headers = sorted(headers, key=key_func)
 
+    log.debug("Received %d headers for merging", len(headers))
+
+    # Take copy of first header
+    first_hdr = headers.pop(0)
+
+    # Seed the merged header
+    merged = copy.deepcopy(first_hdr)
+
     if mode == "overwrite":
-        merged = copy.deepcopy(headers.pop(0))
         for h in headers:
             merged.update(h)
 
     elif mode == "first":
         # Reversing the headers and using overwrite mode would result in the
         # header order being inconsistent dependent on mode.
-        merged = copy.deepcopy(headers.pop(0))
         for hdr in headers:
             for key in hdr:
                 if key not in merged:
                     merged[key] = hdr[key]
 
     elif mode == "drop":
-        merged = copy.deepcopy(headers.pop(0))
         drop = set()
         for hdr in headers:
             for key in hdr:
@@ -104,8 +132,6 @@ def merge_headers(headers, mode="overwrite", sort=False):
             del merged[key]
 
     elif mode == "append":
-        first = headers.pop(0)
-        merged = copy.deepcopy(first)
         fill = set()
         for hdr in headers:
             for key in hdr:
@@ -121,9 +147,25 @@ def merge_headers(headers, mode="overwrite", sort=False):
         # Fill the entries that have multiple differing values
         for key in fill:
             merged[key] = [h[key] if key in h else None
-                           for h in itertools.chain([first], headers)]
+                           for h in itertools.chain([first_hdr], headers)]
 
     else:
         raise ValueError(f"Unsupported value of '{mode}' for mode parameter.")
+
+    # Force the first and last values to be inserted
+    #
+    if mode != "append":
+        def retain_value(to_receive, to_retain, sources):
+            if to_retain:
+                for k in to_retain:
+                    # Look for values until we find one
+                    for h in sources:
+                        if k in h:
+                            to_receive[k] = h[k]
+                            break
+
+        all_headers = (first_hdr, *headers)
+        retain_value(merged, first, all_headers)
+        retain_value(merged, last, tuple(reversed(all_headers)))
 
     return merged
