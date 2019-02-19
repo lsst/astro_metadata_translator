@@ -212,6 +212,8 @@ class MetadataTranslator:
                 value = str(value)
             elif return_type == "float" and not isinstance(value, float):
                 value = float(value)
+            elif return_type == "int" and not isinstance(value, int):
+                value = int(value)
             return value
 
         # Docstring inheritance means it is confusing to specify here
