@@ -6,9 +6,12 @@ matrix:
       install:
         - pip install -e .
         - pip install flake8
+        - pip install pytest
+        - pip install pytest-flake8
         - pip install -r doc/requirements.txt
       script:
         - flake8
+        - pytest
         - "package-docs -d doc build"
         - 'ltd upload --product "astro-metadata-translator" --travis --dir doc/_build/html'
 addons:
