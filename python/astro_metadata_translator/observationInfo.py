@@ -105,8 +105,8 @@ class ObservationInfo:
                 if pedantic:
                     raise KeyError(err_msg) from e
                 else:
-                    log.warning(header)
-                    log.warning(f"{err_msg}: {e}")
+                    log.debug("Calculation of property '%s' failed with header: %s", t, header)
+                    log.warning(f"Ignoring {err_msg}: {e}")
 
     @property
     def cards_used(self):
