@@ -27,6 +27,9 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     # Some new mappings, including an override
     _trivial_map = {"foobar": "BAZ",
                     "telescope": "TELCODE",
+                    "exposure_id": "EXPID",
+                    "relative_humidity": "HUMIDITY",
+                    "detector_name": "DETNAME",
                     "observation_id": "OBSID"}
 
     _const_map = {"format": "HDF5"}
@@ -45,6 +48,9 @@ class TranslatorTestCase(unittest.TestCase):
                        "OBSGEO-Y": "-2493000.19137644",
                        "OBSGEO-Z": "2150653.35350771",
                        "OBSID": "20000101_00002",
+                       "EXPID": "22",  # Should cast to a number
+                       "DETNAME": 76,  # Should cast to a string
+                       "HUMIDITY": "55",  # Should cast to a float
                        "BAZ": "bar"}
 
     def test_manual_translation(self):
@@ -76,6 +82,11 @@ class TranslatorTestCase(unittest.TestCase):
             v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator)
         self.assertEqual(v1.instrument, "SCUBA_test")
         self.assertEqual(v1.telescope, "LSST")
+        self.assertEqual(v1.exposure_id, 22)
+        self.assertIsInstance(v1.exposure_id, int)
+        self.assertEqual(v1.detector_name, "76")
+        self.assertEqual(v1.relative_humidity, 55.0)
+        self.assertIsInstance(v1.relative_humidity, float)
 
         # Now automated class
         with self.assertWarns(UserWarning):

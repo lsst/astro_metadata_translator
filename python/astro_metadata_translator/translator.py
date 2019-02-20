@@ -208,10 +208,10 @@ class MetadataTranslator:
             # Sometimes headers represent items as integers which generically
             # we want as strings (eg OBSID).  Sometimes also floats are
             # written as "NaN" strings.
-            if return_type == "str" and not isinstance(value, str):
-                value = str(value)
-            elif return_type == "float" and not isinstance(value, float):
-                value = float(value)
+            casts = {"str": str, "float": float, "int": int}
+            if return_type in casts and not isinstance(value, casts[return_type]):
+                value = casts[return_type](value)
+
             return value
 
         # Docstring inheritance means it is confusing to specify here
