@@ -172,6 +172,12 @@ class ObservationInfo:
 
         return True
 
+    def __lt__(self, other):
+        return self.datetime_begin < other.datetime_begin
+
+    def __gt__(self, other):
+        return self.datetime_begin > other.datetime_begin
+
     def __getstate__(self):
         """Get pickleable state
 
