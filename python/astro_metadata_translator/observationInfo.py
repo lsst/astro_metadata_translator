@@ -49,10 +49,15 @@ class ObservationInfo:
     Raises
     ------
     ValueError
-        The supplied header was not recognized by any of the registered
-        translators.
+        Raised if the supplied header was not recognized by any of the
+        registered translators.
     TypeError
-        The supplied translator class was not a MetadataTranslator.
+        Raised if the supplied translator class was not a MetadataTranslator.
+    KeyError
+        Raised if a translation fails and pedantic mode is enabled.
+    NotImplementedError
+        Raised if the selected translator does not support a required
+        property.
     """
 
     _PROPERTIES = PROPERTIES
