@@ -10,6 +10,7 @@
 # license that can be found in the LICENSE file.
 
 from .observationInfo import *
+from .observationGroup import *
 from .translator import *
 from .translators import *
 from .headers import *
