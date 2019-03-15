@@ -14,6 +14,7 @@ import os.path
 
 from astro_metadata_translator.tests import read_test_file
 from astro_metadata_translator import ObservationGroup
+from astro_metadata_translator.serialize import group_to_fits
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -60,6 +61,22 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         instruments = obs_group.property_values("instrument")
         self.assertEqual(instruments, {"HSC", "DECam"})
+
+    def test_fits_group(self):
+        headers = self._files_to_headers(self.decam_files)
+
+        obs_group = ObservationGroup(headers)
+        cards, comments = group_to_fits(obs_group)
+
+        expected = {'INSTRUME': 'DECam',
+                    'TIMESYS': 'TAI',
+                    'DATE-OBS': '2012-12-11T22:07:07.859',
+                    'MJD-OBS': 56272.92161874134,
+                    'DATE-END': '2015-02-20T00:50:11.000',
+                    'MJD-END': 57073.034849537034,
+                    'DATE-AVG': '2014-01-15T23:28:39.430',
+                    'MJD-AVG': 56672.97823413919}
+        self.assertEqual(cards, expected)
 
 
 if __name__ == "__main__":
