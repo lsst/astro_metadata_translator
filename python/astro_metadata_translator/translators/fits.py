@@ -97,11 +97,13 @@ class FitsTranslator(MetadataTranslator):
 
         return Time(date_str, format="isot", scale=scale)
 
-    def _from_fits_date(self, date_key, mjd_key=None):
+    def _from_fits_date(self, date_key, mjd_key=None, scale=None):
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
-        defaulting to UTC.
+        defaulting to UTC.  Can be overridden since sometimes headers
+        use TIMESYS for DATE- style headers but also have headers using
+        different time scales.
 
         Parameters
         ----------
@@ -112,6 +114,10 @@ class FitsTranslator(MetadataTranslator):
             The key in the header representing a standard FITS MJD
             style date.  This key will be tried if ``date_key`` is not
             found or can not be parsed.
+        scale : `str`, optional
+            Override value to use for the time scale in preference to
+            TIMESYS or the default. Should be a form understood by
+            `~astropy.time.Time`.
 
         Returns
         -------
@@ -119,7 +125,9 @@ class FitsTranslator(MetadataTranslator):
             `~astropy.time.Time` representation of the date.
         """
         used = [date_key, ]
-        if "TIMESYS" in self._header:
+        if scale is not None:
+            pass
+        elif "TIMESYS" in self._header:
             scale = self._header["TIMESYS"].lower()
             used.append("TIMESYS")
         else:
