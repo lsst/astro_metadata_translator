@@ -26,6 +26,13 @@ except ImportError:
     daf_base = None
 
 
+# For YAML >= 5.1 need a different Loader for the constructor
+try:
+    Loader = yaml.FullLoader
+except AttributeError:
+    Loader = yaml.Loader
+
+
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
 # we can use if daf_base is not available.
 def pl_constructor(loader, node):
@@ -45,7 +52,7 @@ def pl_constructor(loader, node):
 
 
 if daf_base is None:
-    yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor)
+    yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor, Loader=Loader)
 
 
 def read_test_file(filename, dir=None):
@@ -67,7 +74,7 @@ def read_test_file(filename, dir=None):
     if dir is not None and not os.path.isabs(filename):
         filename = os.path.join(dir, filename)
     with open(filename) as fd:
-        header = yaml.load(fd)
+        header = yaml.load(fd, Loader=Loader)
     return header
 
 
