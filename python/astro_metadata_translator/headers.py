@@ -45,33 +45,39 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
           (`None` if the key was not present). If the value is
           identical in multiple headers but key is missing in
           some, then the single identical header is stored.
-    sort : `bool`
+    sort : `bool`, optional
         If `True`, sort the supplied headers into date order if possible.
-        This affects how the resulting merged output depending on the requested
+        This affects the resulting merged output depending on the requested
         merge mode.  An attempt will be made to extract a date from the
         headers.
-    first : `list` or `tuple`
-        Keys to retain even if they differ.  The value in the merged header
-        will always be the value first encountered, independently of ``mode``.
-        This is usually to allow time-dependent headers such as ``DATE-OBS``
-        and ``AZSTART`` to be retained to allow the header to indicate the
-        range of values.  Not used if ``mode`` is ``append``.    No exception
-        is raised if a key can not be found in a header since this allows a
-        range of expected headers to be listed covering multiple instruments.
-    last : `list` or `tuple`
-        Keys to retain even if they differ.  The value in the merged header
-        will always be the final value encountered, independently of ``mode``.
-        This is usually to allow time-dependent headers such as ``DATE-END``
-        and ``AZEND`` to be retained to allow the header to indicate the
-        range of values.  Not used if ``mode`` is ``append``.  No exception
-        is raised if a key can not be found in a header since this allows a
-        range of expected headers to be listed covering multiple instruments.
+    first : `list` or `tuple`, optional
+        Keys to retain even if they differ.  For all modes excepting ``append``
+        (where it is ignored) the value in the merged header will always be
+        the value first encountered.  This is usually to allow time-dependent
+        headers such as ``DATE-OBS`` and ``AZSTART`` to be retained to allow
+        the header to indicate the range of values.  No exception is raised if
+        a key can not be found in a header since this allows a range of
+        expected headers to be listed covering multiple instruments.
+    last : `list` or `tuple`, optional
+        Keys to retain even if they differ.  For all modes excepting ``append``
+        (where it is ignored) the value in the merged header will always be
+        the final value encountered.  This is usually to allow time-dependent
+        headers such as ``DATE-END`` and ``AZEND`` to be retained to allow
+        the header to indicate the range of values.  No exception is raised if
+        a key can not be found in a header since this allows a range of
+        expected headers to be listed covering multiple instruments.
 
     Returns
     -------
     merged : `dict`
         Single `dict` combining all the headers using the specified
         combination mode.
+
+    Notes
+    -----
+    If ``first`` and ``last`` are supplied, the keys from ``first`` are
+    handled first, followed by the keys from ``last``.  No check is made to
+    ensure that the keys do not overlap.
     """
     if not headers:
         raise ValueError("No headers supplied.")
@@ -99,10 +105,10 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
 
     log.debug("Received %d headers for merging", len(headers))
 
-    # Take copy of first header
+    # Pull out first header
     first_hdr = headers.pop(0)
 
-    # Seed the merged header
+    # Seed the merged header with a copy
     merged = copy.deepcopy(first_hdr)
 
     if mode == "overwrite":

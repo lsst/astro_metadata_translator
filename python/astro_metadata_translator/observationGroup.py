@@ -89,7 +89,7 @@ class ObservationGroup(MutableSequence):
             not be turned into one.
         """
         if value is None:
-            raise ValueError("An ObservationGroup can only contain ObservationInfo")
+            raise ValueError("An ObservationGroup cannot contain 'None'")
 
         if not isinstance(value, ObservationInfo):
             try:

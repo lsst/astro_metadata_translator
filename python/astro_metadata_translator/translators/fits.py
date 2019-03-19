@@ -110,7 +110,7 @@ class FitsTranslator(MetadataTranslator):
         date_key : `str`
             The key in the header representing a standard FITS
             ISO-style date.
-        mjd_key : `float`, optional
+        mjd_key : `str`, optional
             The key in the header representing a standard FITS MJD
             style date.  This key will be tried if ``date_key`` is not
             found or can not be parsed.
