@@ -14,6 +14,7 @@
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
 from abc import abstractmethod
+import inspect
 import logging
 import warnings
 import math
@@ -86,6 +87,54 @@ class MetadataTranslator:
 
     supported_instrument = None
     """Name of instrument understood by this translation class."""
+
+    @classmethod
+    def defined_in_this_class(cls, name):
+        """Report if the specified class attribute is defined specifically in
+        this class.
+
+        Parameters
+        ----------
+        name : `str`
+            Name of the attribute to test.
+
+        Returns
+        -------
+        in_class : `bool`
+            `True` if there is a attribute of that name defined in this
+            specific subclass.
+            `False` if the method is not defined in this specific subclass
+            but is defined in a parent class.
+            Returns `None` if the attribute is not defined anywhere
+            in the class hierarchy (which can happen if translators have
+            typos in their mapping tables).
+
+        Notes
+        -----
+        Retrieves the attribute associated with the given name.
+        Then looks in all the parent classes to determine whether that
+        attribute comes from a parent class or from the current class.
+        Attributes are compared using `id()`.
+        """
+        # The attribute to compare.
+        if not hasattr(cls, name):
+            return None
+        attr_id = id(getattr(cls, name))
+
+        # Get all the classes in the hierarchy
+        mro = list(inspect.getmro(cls))
+
+        # Remove the first entry from the list since that will be the
+        # current class
+        mro.pop(0)
+
+        for parent in mro:
+            # Some attributes may only exist in subclasses. Skip base classes
+            # that are missing the attribute (such as object).
+            if hasattr(parent, name):
+                if id(getattr(parent, name)) == attr_id:
+                    return False
+        return True
 
     @staticmethod
     def _make_const_mapping(property_key, constant):
@@ -255,9 +304,35 @@ class MetadataTranslator:
         if hasattr(cls, "name") and cls.name is not None:
             MetadataTranslator.translators[cls.name] = cls
 
+        # Check that we have not inherited constant/trivial mappings from
+        # parent class that we have already applied. Empty maps are always
+        # assumed okay
+        const_map = cls._const_map if cls._const_map and cls.defined_in_this_class("_const_map") else {}
+        trivial_map = cls._trivial_map \
+            if cls._trivial_map and cls.defined_in_this_class("_trivial_map") else {}
+
+        # Check for shadowing
+        trivials = set(trivial_map.keys())
+        constants = set(const_map.keys())
+        both = trivials & constants
+        if both:
+            log.warning("%s: defined in both const_map and trivial_map: %s",
+                        cls.__name__, ", ".join(both))
+
+        all = trivials | constants
+        for name in all:
+            if cls.defined_in_this_class(f"to_{name}"):
+                # Must be one of trivial or constant. If in both then constant
+                # overrides trivial.
+                location = "by _trivial_map"
+                if name in constants:
+                    location = "by _const_map"
+                log.warning("%s: %s is defined explicitly but will be replaced %s",
+                            cls.__name__, name, location)
+
         # Go through the trival mappings for this class and create
         # corresponding translator methods
-        for property_key, header_key in cls._trivial_map.items():
+        for property_key, header_key in trivial_map.items():
             kwargs = {}
             if type(header_key) == tuple:
                 kwargs = header_key[1]
@@ -271,7 +346,7 @@ class MetadataTranslator:
 
         # Go through the constant mappings for this class and create
         # corresponding translator methods
-        for property_key, constant in cls._const_map.items():
+        for property_key, constant in const_map.items():
             translator = cls._make_const_mapping(property_key, constant)
             method = f"to_{property_key}"
             translator.__name__ = f"{method}_constant_in_{cls.__name__}"
