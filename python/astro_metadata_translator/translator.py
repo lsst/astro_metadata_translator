@@ -264,7 +264,7 @@ class MetadataTranslator:
                 header_key = header_key[0]
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
             method = f"to_{property_key}"
-            translator.__name__ = f"{method}_trivial"
+            translator.__name__ = f"{method}_trivial_in_{cls.__name__}"
             setattr(cls, method, cache_translation(translator, method=method))
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
@@ -274,7 +274,7 @@ class MetadataTranslator:
         for property_key, constant in cls._const_map.items():
             translator = cls._make_const_mapping(property_key, constant)
             method = f"to_{property_key}"
-            translator.__name__ = f"{method}_constant"
+            translator.__name__ = f"{method}_constant_in_{cls.__name__}"
             setattr(cls, method, translator)
             if property_key not in PROPERTIES:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
