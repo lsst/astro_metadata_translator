@@ -14,7 +14,7 @@ import os.path
 
 from astro_metadata_translator.tests import read_test_file
 from astro_metadata_translator import ObservationGroup
-from astro_metadata_translator.serialize import group_to_fits
+from astro_metadata_translator.serialize import group_to_fits, info_to_fits
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -54,6 +54,11 @@ class ObservationGroupTestCase(unittest.TestCase):
         self.assertEqual(newest, sorted_group[-1])
         self.assertEqual(oldest, sorted_group[0])
 
+        self.assertLess(oldest, newest)
+        self.assertGreater(newest, oldest)
+
+        self.assertNotEqual(oldest, obs_group)
+
         # Add some headers and check that sorting still works
         obs_group.extend(self._files_to_headers(self.hsc_files))
         self.assertEqual(len(obs_group), 5)
@@ -76,6 +81,21 @@ class ObservationGroupTestCase(unittest.TestCase):
                     'MJD-END': 57073.034849537034,
                     'DATE-AVG': '2014-01-15T23:28:39.430',
                     'MJD-AVG': 56672.97823413919}
+        self.assertEqual(cards, expected)
+
+    def test_fits_info(self):
+        header = self._files_to_headers(self.decam_files)[0]
+        obs_group = ObservationGroup([header])
+        cards, comments = info_to_fits(obs_group[0])
+
+        expected = {'INSTRUME': 'DECam',
+                    'TIMESYS': 'TAI',
+                    'MJD-AVG': 56536.25417681625,
+                    'MJD-END': 56536.25591435185,
+                    'MJD-OBS': 56536.25243928065,
+                    'DATE-OBS': '2013-09-01T06:03:30.754',
+                    'DATE-AVG': '2013-09-01T06:06:00.877',
+                    'DATE-END': '2013-09-01T06:08:31.000'}
         self.assertEqual(cards, expected)
 
 

@@ -25,14 +25,16 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     supported_instrument = "SCUBA_test"
 
     # Some new mappings, including an override
-    _trivial_map = {"foobar": "BAZ",
-                    "telescope": "TELCODE",
+    _trivial_map = {"telescope": "TELCODE",
                     "exposure_id": "EXPID",
                     "relative_humidity": "HUMIDITY",
                     "detector_name": "DETNAME",
                     "observation_id": "OBSID"}
 
-    _const_map = {"format": "HDF5"}
+
+class MissingMethodsTranslator(FitsTranslator):
+    """Translator class that does not implement all the methods."""
+    pass
 
 
 class TranslatorTestCase(unittest.TestCase):
@@ -65,8 +67,19 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertEqual(translator.to_datetime_begin(),
                          Time(header["DATE-OBS"], format="isot"))
 
+        # This class will issue warnings
+        with self.assertLogs("astro_metadata_translator") as cm:
+            class InstrumentTestTranslatorExtras(InstrumentTestTranslator):
+                """Version of InstrumentTestTranslator with unexpected
+                fields."""
+                _trivial_map = {"foobar": "BAZ"}
+                _const_map = {"format": "HDF5"}
+
+        self.assertIn("Unexpected trivial", cm.output[0])
+        self.assertIn("Unexpected constant", cm.output[1])
+
         # Use the special test translator instead
-        translator = InstrumentTestTranslator(header)
+        translator = InstrumentTestTranslatorExtras(header)
         self.assertTrue(InstrumentTestTranslator.can_translate(header))
         self.assertEqual(translator.to_telescope(), "LSST")
         self.assertEqual(translator.to_instrument(), "SCUBA_test")
@@ -109,6 +122,38 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertIn("INSTRUME", used)
         self.assertIn("OBSGEO-Y", used)
         self.assertNotIn("TELESCOP", used)
+
+        # Stringification
+        summary = str(v1)
+        self.assertIn("datetime_begin", summary)
+
+    def test_failures(self):
+        header = {}
+
+        with self.assertRaises(TypeError):
+            ObservationInfo(header, translator_class=ObservationInfo)
+
+        with self.assertLogs("astro_metadata_translator"):
+            with self.assertWarns(UserWarning):
+                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False)
+
+        with self.assertRaises(KeyError):
+            with self.assertWarns(UserWarning):
+                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=True)
+
+        with self.assertLogs("astro_metadata_translator"):
+            with self.assertWarns(UserWarning):
+                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False,
+                                filename="testfile1")
+
+        with self.assertRaises(KeyError):
+            with self.assertWarns(UserWarning):
+                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=True,
+                                filename="testfile2")
+
+        with self.assertRaises(NotImplementedError):
+            with self.assertLogs("astro_metadata_translator", level="WARN"):
+                ObservationInfo(header, translator_class=MissingMethodsTranslator)
 
 
 if __name__ == "__main__":
