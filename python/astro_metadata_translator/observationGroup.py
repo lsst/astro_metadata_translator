@@ -119,7 +119,6 @@ class ObservationGroup(MutableSequence):
         Item must be an `ObservationInfo` or something that can be passed
         to an `ObservationInfo` constructor.
         """
-        print("CALLING SET ITEM")
         value = self._coerce_value(value)
         self._members[index] = value
         self._sorted = None
