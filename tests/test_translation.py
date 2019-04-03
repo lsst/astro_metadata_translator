@@ -31,6 +31,10 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
                     "detector_name": "DETNAME",
                     "observation_id": "OBSID"}
 
+    # Add translator method to test joining
+    def to_physical_filter(self):
+        return self._join_keyword_values(["DETNAME", "HUMIDITY"], delim="_")
+
 
 class MissingMethodsTranslator(FitsTranslator):
     """Translator class that does not implement all the methods."""
@@ -100,6 +104,7 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertEqual(v1.detector_name, "76")
         self.assertEqual(v1.relative_humidity, 55.0)
         self.assertIsInstance(v1.relative_humidity, float)
+        self.assertEqual(v1.physical_filter, "76_55")
 
         # Now automated class
         with self.assertWarns(UserWarning):

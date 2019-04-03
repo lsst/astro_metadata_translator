@@ -564,6 +564,36 @@ class MetadataTranslator:
             value = self.validate_value(value, default, maximum=maximum, minimum=minimum)
         return u.Quantity(value, unit=unit)
 
+    def _join_keyword_values(self, keywords, delim="+"):
+        """Join values of all defined keywords with the specified delimiter.
+
+        Parameters
+        ----------
+        keywords : iterable of `str`
+            Keywords to look for in header.
+        delim : `str`, optional
+            Character to use to join the values together.
+
+        Returns
+        -------
+        joined : `str`
+            String formed from all the keywords found in the header with
+            defined values joined by the delimiter. Empty string if no
+            defined keywords found.
+        """
+        values = []
+        for k in keywords:
+            if k in self._header and self._header[k] is not None:
+                values.append(self._header[k])
+                self._used_these_cards(k)
+
+        if values:
+            joined = delim.join(str(v) for v in values)
+        else:
+            joined = ""
+
+        return joined
+
 
 def _make_abstract_translator_method(property, doc, return_type):
     """Create a an abstract translation method for this property.
