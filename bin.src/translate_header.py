@@ -78,6 +78,10 @@ def read_file(file, failed):
     print(f"Analyzing {file}...", file=sys.stderr)
     try:
         md = read_metadata(file, 0)
+        if md is None:
+            print(f"Unable to open file {file}", file=sys.stderr)
+            failed.append(file)
+            return
         if args.hdrnum != 0:
             mdn = read_metadata(file, int(args.hdrnum))
             # Astropy does not allow append mode since it does not
