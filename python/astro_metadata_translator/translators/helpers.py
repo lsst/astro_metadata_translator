@@ -102,7 +102,7 @@ def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
     """
     used = []
     for k in radecsys:
-        if k in self._header:
+        if self.is_key_ok(k):
             frame = self._header[k].strip().lower()
             used.append(k)
             if frame == "gappt":
@@ -113,7 +113,7 @@ def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
     else:
         frame = "icrs"
     for ra_key, dec_key in radecpairs:
-        if ra_key in self._header and dec_key in self._header:
+        if self.are_keys_ok([ra_key, dec_key]):
             radec = SkyCoord(self._header[ra_key], self._header[dec_key],
                              frame=frame, unit=unit, obstime=self.to_datetime_begin(),
                              location=self.to_location())
@@ -157,7 +157,7 @@ def altaz_from_degree_headers(self, altazpairs, obstime, is_zd=None):
         observation.
     """
     for alt_key, az_key in altazpairs:
-        if az_key in self._header and alt_key in self._header:
+        if self.are_keys_ok([az_key, alt_key]):
             az = self._header[az_key]
             alt = self._header[alt_key]
 

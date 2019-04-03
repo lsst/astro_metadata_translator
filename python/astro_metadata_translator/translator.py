@@ -20,6 +20,7 @@ import warnings
 import math
 
 import astropy.units as u
+import astropy.io.fits.card
 from astropy.coordinates import Angle
 
 from .properties import PROPERTIES
@@ -501,6 +502,69 @@ class MetadataTranslator:
                 value = default
         return value
 
+    @staticmethod
+    def is_keyword_defined(header, keyword):
+        """Return `True` if the value associated with the named keyword is
+        present in the supplied header and defined.
+
+        Parameters
+        ----------
+        header : `dict`-lik
+            Header to use as reference.
+        keyword : `str`
+            Keyword to check against header.
+
+        Returns
+        -------
+        is_defined : `bool`
+            `True` if the header is present and not-`None`. `False` otherwise.
+        """
+        if keyword not in header:
+            return False
+
+        if header[keyword] is None:
+            return False
+
+        # Special case Astropy undefined value
+        if isinstance(header[keyword], astropy.io.fits.card.Undefined):
+            return False
+
+        return True
+
+    def is_key_ok(self, keyword):
+        """Return `True` if the value associated with the named keyword is
+        present in this header and defined.
+
+        Parameters
+        ----------
+        keyword : `str`
+            Keyword to check against header.
+
+        Returns
+        -------
+        is_ok : `bool`
+            `True` if the header is present and not-`None`. `False` otherwise.
+        """
+        return self.is_keyword_defined(self._header, keyword)
+
+    def are_keys_ok(self, keywords):
+        """Are the supplied keys all present and defined?
+
+        Parameters
+        ----------
+        keywords : iterable of `str`
+            Keywords to test.
+
+        Returns
+        -------
+        all_ok : `bool`
+            `True` if all supplied keys are present and defined.
+        """
+        for k in keywords:
+            if not self.is_key_ok(k):
+                return False
+        return True
+
     def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None, checker=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
@@ -540,7 +604,7 @@ class MetadataTranslator:
         """
         keywords = keywords if isinstance(keywords, list) else [keywords]
         for k in keywords:
-            if k in self._header:
+            if self.is_key_ok(k):
                 value = self._header[k]
                 keyword = k
                 break
@@ -583,7 +647,7 @@ class MetadataTranslator:
         """
         values = []
         for k in keywords:
-            if k in self._header and self._header[k] is not None:
+            if self.is_key_ok(k):
                 values.append(self._header[k])
                 self._used_these_cards(k)
 

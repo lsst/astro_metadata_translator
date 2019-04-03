@@ -84,7 +84,7 @@ class DecamTranslator(FitsTranslator):
             via_instrume = super().can_translate(header, filename=filename)
             if via_instrume:
                 return via_instrume
-        if "FILTER" in header and "DECam" in header["FILTER"]:
+        if cls.is_keyword_defined(header, "FILTER") and "DECam" in header["FILTER"]:
             return True
         return False
 
@@ -136,11 +136,11 @@ class DecamTranslator(FitsTranslator):
         filter : `str`
             The full filter name.
         """
-        if "FILTER" in self._header:
+        if self.is_key_ok("FILTER"):
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
             return value
-        elif "CALIB_ID" in self._header:
+        elif self.is_key_ok("CALIB_ID"):
             return self._translate_from_calib_id("filter")
         else:
             return None
@@ -155,7 +155,7 @@ class DecamTranslator(FitsTranslator):
             An object representing the location of the telescope.
         """
 
-        if "OBS-LONG" in self._header:
+        if self.is_key_ok("OBS-LONG"):
             # OBS-LONG has west-positive sign so must be flipped
             lon = self._header["OBS-LONG"] * -1.0
             value = EarthLocation.from_geodetic(lon, self._header["OBS-LAT"], self._header["OBS-ELEV"])
@@ -175,7 +175,7 @@ class DecamTranslator(FitsTranslator):
         typ : `str`
             Observation type. Normalized to standard set.
         """
-        if "OBSTYPE" not in self._header:
+        if not self.is_key_ok("OBSTYPE"):
             return "none"
         obstype = self._header["OBSTYPE"].strip().lower()
         self._used_these_cards("OBSTYPE")

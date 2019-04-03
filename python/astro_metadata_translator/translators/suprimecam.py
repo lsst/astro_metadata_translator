@@ -80,7 +80,7 @@ class SuprimeCamTranslator(SubaruTranslator):
             return header["INSTRUME"] == "SuprimeCam"
 
         for k in ("EXP-ID", "FRAMEID"):
-            if k in header:
+            if cls.is_keyword_defined(header, k):
                 if header[k].startswith("SUP"):
                     return True
         return False

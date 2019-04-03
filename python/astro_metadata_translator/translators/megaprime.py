@@ -75,7 +75,7 @@ class MegaPrimeTranslator(FitsTranslator):
     def to_datetime_end(self):
         # Docstring will be inherited. Property defined in properties.py
         # Older files are missing UTCEND
-        if "UTCEND" in self._header:
+        if self.is_key_ok("UTCEND"):
             # We know it is UTC
             value = self._from_fits_date_string(self._header["DATE-OBS"],
                                                 time_str=self._header["UTCEND"], scale="utc")
@@ -99,7 +99,7 @@ class MegaPrimeTranslator(FitsTranslator):
         # Some data uses OBS-LONG, OBS-LAT, other data uses LONGITUD and
         # LATITUDE
         for long_key, lat_key in (("LONGITUD", "LATITUDE"), ("OBS-LONG", "OBS-LAT")):
-            if long_key in self._header and lat_key in self._header:
+            if self.are_keys_ok([long_key, lat_key]):
                 value = EarthLocation.from_geodetic(self._header[long_key], self._header[lat_key], 4215.0)
                 self._used_these_cards(long_key, lat_key)
                 break
@@ -169,7 +169,7 @@ class MegaPrimeTranslator(FitsTranslator):
         # Docstring will be inherited. Property defined in properties.py
         # Can be either AIRPRESS in Pa or PRESSURE in mbar
         for key, unit in (("PRESSURE", u.hPa), ("AIRPRESS", u.Pa)):
-            if key in self._header:
+            if self.is_key_ok(key):
                 return self.quantity_from_card(key, unit)
         else:
             raise KeyError("Could not find pressure keywords in header")
