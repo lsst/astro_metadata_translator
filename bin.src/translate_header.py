@@ -92,7 +92,8 @@ def read_file(file, failed):
                 print(f"HDU {args.hdrnum} was not found. Ignoring request.", file=sys.stderr)
 
         if args.dumphdr:
-            print(yaml.dump(md))
+            # The header should be written out in the insertion order
+            print(yaml.dump(md, sort_keys=False))
             return
         obs_info = ObservationInfo(md, pedantic=True, filename=file)
         if not args.quiet:
