@@ -233,7 +233,7 @@ class MetadataTranslator:
 
             keywords = header_key if isinstance(header_key, list) else [header_key]
             for key in keywords:
-                if key in self._header:
+                if self.is_key_ok(key):
                     value = self._header[key]
                     if default is not None and not isinstance(value, str):
                         value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
@@ -259,7 +259,7 @@ class MetadataTranslator:
             # we want as strings (eg OBSID).  Sometimes also floats are
             # written as "NaN" strings.
             casts = {"str": str, "float": float, "int": int}
-            if return_type in casts and not isinstance(value, casts[return_type]):
+            if return_type in casts and not isinstance(value, casts[return_type]) and value is not None:
                 value = casts[return_type](value)
 
             return value
