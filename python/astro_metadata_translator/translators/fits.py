@@ -127,16 +127,16 @@ class FitsTranslator(MetadataTranslator):
         used = [date_key, ]
         if scale is not None:
             pass
-        elif "TIMESYS" in self._header:
+        elif self.is_key_ok("TIMESYS"):
             scale = self._header["TIMESYS"].lower()
             used.append("TIMESYS")
         else:
             scale = "utc"
-        if date_key in self._header:
+        if self.is_key_ok(date_key):
             date_str = self._header[date_key]
             value = self._from_fits_date_string(date_str, scale=scale)
             self._used_these_cards(*used)
-        elif mjd_key in self._header:
+        elif self.is_key_ok(mjd_key):
             value = Time(self._header[mjd_key], scale=scale, format="mjd")
         else:
             value = None

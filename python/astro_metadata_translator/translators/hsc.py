@@ -82,7 +82,7 @@ class HscTranslator(SuprimeCamTranslator):
             return header["INSTRUME"] == "Hyper Suprime-Cam"
 
         for k in ("EXP-ID", "FRAMEID"):
-            if k in header:
+            if cls.is_keyword_defined(header, k):
                 if header[k].startswith("HSC"):
                     return True
         return False

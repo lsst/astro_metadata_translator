@@ -20,6 +20,7 @@ import warnings
 import math
 
 import astropy.units as u
+import astropy.io.fits.card
 from astropy.coordinates import Angle
 
 from .properties import PROPERTIES
@@ -232,7 +233,7 @@ class MetadataTranslator:
 
             keywords = header_key if isinstance(header_key, list) else [header_key]
             for key in keywords:
-                if key in self._header:
+                if self.is_key_ok(key):
                     value = self._header[key]
                     if default is not None and not isinstance(value, str):
                         value = self.validate_value(value, default, minimum=minimum, maximum=maximum)
@@ -258,7 +259,7 @@ class MetadataTranslator:
             # we want as strings (eg OBSID).  Sometimes also floats are
             # written as "NaN" strings.
             casts = {"str": str, "float": float, "int": int}
-            if return_type in casts and not isinstance(value, casts[return_type]):
+            if return_type in casts and not isinstance(value, casts[return_type]) and value is not None:
                 value = casts[return_type](value)
 
             return value
@@ -501,6 +502,69 @@ class MetadataTranslator:
                 value = default
         return value
 
+    @staticmethod
+    def is_keyword_defined(header, keyword):
+        """Return `True` if the value associated with the named keyword is
+        present in the supplied header and defined.
+
+        Parameters
+        ----------
+        header : `dict`-lik
+            Header to use as reference.
+        keyword : `str`
+            Keyword to check against header.
+
+        Returns
+        -------
+        is_defined : `bool`
+            `True` if the header is present and not-`None`. `False` otherwise.
+        """
+        if keyword not in header:
+            return False
+
+        if header[keyword] is None:
+            return False
+
+        # Special case Astropy undefined value
+        if isinstance(header[keyword], astropy.io.fits.card.Undefined):
+            return False
+
+        return True
+
+    def is_key_ok(self, keyword):
+        """Return `True` if the value associated with the named keyword is
+        present in this header and defined.
+
+        Parameters
+        ----------
+        keyword : `str`
+            Keyword to check against header.
+
+        Returns
+        -------
+        is_ok : `bool`
+            `True` if the header is present and not-`None`. `False` otherwise.
+        """
+        return self.is_keyword_defined(self._header, keyword)
+
+    def are_keys_ok(self, keywords):
+        """Are the supplied keys all present and defined?
+
+        Parameters
+        ----------
+        keywords : iterable of `str`
+            Keywords to test.
+
+        Returns
+        -------
+        all_ok : `bool`
+            `True` if all supplied keys are present and defined.
+        """
+        for k in keywords:
+            if not self.is_key_ok(k):
+                return False
+        return True
+
     def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None, checker=None):
         """Calculate a Astropy Quantity from a header card and a unit.
 
@@ -540,7 +604,7 @@ class MetadataTranslator:
         """
         keywords = keywords if isinstance(keywords, list) else [keywords]
         for k in keywords:
-            if k in self._header:
+            if self.is_key_ok(k):
                 value = self._header[k]
                 keyword = k
                 break
@@ -583,7 +647,7 @@ class MetadataTranslator:
         """
         values = []
         for k in keywords:
-            if k in self._header and self._header[k] is not None:
+            if self.is_key_ok(k):
                 values.append(self._header[k])
                 self._used_these_cards(k)
 

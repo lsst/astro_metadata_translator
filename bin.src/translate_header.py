@@ -78,6 +78,10 @@ def read_file(file, failed):
     print(f"Analyzing {file}...", file=sys.stderr)
     try:
         md = read_metadata(file, 0)
+        if md is None:
+            print(f"Unable to open file {file}", file=sys.stderr)
+            failed.append(file)
+            return
         if args.hdrnum != 0:
             mdn = read_metadata(file, int(args.hdrnum))
             # Astropy does not allow append mode since it does not
@@ -88,7 +92,8 @@ def read_file(file, failed):
                 print(f"HDU {args.hdrnum} was not found. Ignoring request.", file=sys.stderr)
 
         if args.dumphdr:
-            print(yaml.dump(md))
+            # The header should be written out in the insertion order
+            print(yaml.dump(md, sort_keys=False))
             return
         obs_info = ObservationInfo(md, pedantic=True, filename=file)
         if not args.quiet:
