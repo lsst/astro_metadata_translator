@@ -531,6 +531,18 @@ class MetadataTranslator:
 
         return True
 
+    def search_paths(self):
+        """Search paths to use when searching for header fix up correction
+        files.
+
+        Returns
+        -------
+        paths : `list`
+            Directory paths to search. Can be an empty list if no special
+            directories are defined.
+        """
+        return []
+
     def is_key_ok(self, keyword):
         """Return `True` if the value associated with the named keyword is
         present in this header and defined.

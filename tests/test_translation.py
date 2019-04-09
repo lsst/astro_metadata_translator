@@ -9,10 +9,13 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+import os.path
 import unittest
 from astropy.time import Time
 
 from astro_metadata_translator import FitsTranslator, StubTranslator, ObservationInfo
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class InstrumentTestTranslator(FitsTranslator, StubTranslator):
@@ -131,6 +134,27 @@ class TranslatorTestCase(unittest.TestCase):
         # Stringification
         summary = str(v1)
         self.assertIn("datetime_begin", summary)
+
+    def test_corrections(self):
+        """Apply corrections before translation."""
+        header = self.header
+
+        # Specify a translation class
+        with self.assertWarns(UserWarning):
+            # Since the translator is incomplete it should issue warnings
+            v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator,
+                                 search_path=[os.path.join(TESTDIR, "data")])
+
+        # These values should match the expected translation
+        self.assertEqual(v1.instrument, "SCUBA_test")
+        self.assertEqual(v1.detector_name, "76")
+        self.assertEqual(v1.relative_humidity, 55.0)
+        self.assertIsInstance(v1.relative_humidity, float)
+        self.assertEqual(v1.physical_filter, "76_55")
+
+        # These two should be the "corrected" values
+        self.assertEqual(v1.telescope, "AuxTel")
+        self.assertEqual(v1.exposure_id, 42)
 
     def test_failures(self):
         header = {}
