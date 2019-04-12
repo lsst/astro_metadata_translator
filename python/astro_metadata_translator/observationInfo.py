@@ -21,6 +21,7 @@ import astropy.time
 
 from .translator import MetadataTranslator
 from .properties import PROPERTIES
+from .headers import fix_header
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +46,8 @@ class ObservationInfo:
         If True the translation must succeed for all properties.  If False
         individual property translations must all be implemented but can fail
         and a warning will be issued.
+    search_path : iterable, optional
+        Override search paths to use during header fix up.
 
     Raises
     ------
@@ -58,13 +61,18 @@ class ObservationInfo:
     NotImplementedError
         Raised if the selected translator does not support a required
         property.
+
+    Notes
+    -----
+    Headers will be corrected if correction files are located.
     """
 
     _PROPERTIES = PROPERTIES
     """All the properties supported by this class with associated
     documentation."""
 
-    def __init__(self, header, filename=None, translator_class=None, pedantic=False):
+    def __init__(self, header, filename=None, translator_class=None, pedantic=False,
+                 search_path=None):
 
         # Store the supplied header for later stripping
         self._header = header
@@ -81,6 +89,10 @@ class ObservationInfo:
             translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
+
+        # Fix up the header (if required)
+        fix_header(header, translator_class=translator_class, filename=filename,
+                   search_path=search_path)
 
         # Create an instance for this header
         translator = translator_class(header, filename=filename)

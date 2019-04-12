@@ -11,16 +11,21 @@
 
 """Code to support header manipulation operations."""
 
-__all__ = ("merge_headers",)
+__all__ = ("merge_headers", "fix_header")
 
 import logging
 import itertools
 import copy
+import os
+import yaml
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
 
 log = logging.getLogger(__name__)
+
+ENV_VAR_NAME = "METADATA_CORRECTIONS_PATH"
+"""Name of environment variable containing search path for header fix up."""
 
 
 def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
@@ -175,3 +180,115 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
         retain_value(merged, last, tuple(reversed(all_headers)))
 
     return merged
+
+
+def fix_header(header, search_path=None, translator_class=None, filename=None):
+    """Update, in place, the supplied header with known corrections.
+
+    Parameters
+    ----------
+    header : `dict`-like
+        Header to correct.
+    search_path : `list`, optional
+        Explicit directory paths to search for correction files.
+    translator_class : `MetadataTranslator`-class, optional
+        If not `None`, the class to use to translate the supplied headers
+        into standard form. Otherwise each registered translator class will
+        be asked in turn if it knows how to translate the supplied header.
+    filename : `str`, optional
+        Name of the file whose header is being translated.  For some
+        datasets with missing header information this can sometimes
+        allow for some fixups in translations.
+
+    Returns
+    -------
+    fixed : `bool`
+        `True` if the header was updated.
+
+    Raises
+    ------
+    ValueError
+        Raised if the supplied header is not understood by any registered
+        translation classes.
+    TypeError
+        Raised if the supplied translation class is not a `MetadataTranslator`.
+
+    Notes
+    -----
+    In order to determine that a header update is required it is
+    necessary for the header to be handled by the supplied translator
+    class or else support automatic translation class determination.
+    It is also required that the ``observation_id`` and ``instrument``
+    be calculable prior to header fix up.
+
+    Correction files use names of the form ``instrument-obsid.yaml`` (for
+    example ``LATISS-AT_O_20190329_000022.yaml``).
+    The YAML file should have the format of:
+
+    .. code-block:: yaml
+
+        EXPTIME: 30.0
+        IMGTYPE: bias
+
+    where each key/value pair is copied directly into the supplied header,
+    overwriting any previous values.
+
+    This function searches a number of locations for such a correction file.
+    The search order is:
+
+    - Any paths explicitly supplied through ``search_path``.
+    - The contents of the PATH-like environment variable
+      ``$METADATA_CORRECTIONS_PATH``.
+    - Any search paths supplied by the matching translator class.
+
+    The first file located in the search path is used for the correction.
+    """
+
+    # PropertyList is not dict-like so force to a dict here to allow the
+    # translation classes to work. We update the original header though.
+    if hasattr(header, "toOrderedDict"):
+        header_to_translate = header.toOrderedDict()
+    else:
+        header_to_translate = header
+
+    if translator_class is None:
+        translator_class = MetadataTranslator.determine_translator(header_to_translate, filename=filename)
+    elif not issubclass(translator_class, MetadataTranslator):
+        raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
+
+    # Create an instance for this header
+    translator = translator_class(header, filename=filename)
+
+    # To determine the file look up we need the observation_id and instrument
+    try:
+        obsid = translator.to_observation_id()
+        instrument = translator.to_instrument()
+    except Exception:
+        # Return without comment if these translations failed
+        return False
+
+    target_file = f"{instrument}-{obsid}.yaml"
+
+    # Work out the search path
+    paths = []
+    if search_path is not None:
+        paths.extend(search_path)
+    if ENV_VAR_NAME in os.environ and os.environ[ENV_VAR_NAME]:
+        paths.extend(os.environ[ENV_VAR_NAME].split(os.path.pathsep))
+
+    paths.extend(translator.search_paths())
+
+    for p in paths:
+        correction_file = os.path.join(p, target_file)
+        if os.path.exists(correction_file):
+            with open(correction_file) as fh:
+                log.debug("Applying header corrections from file %s", correction_file)
+                corrections = yaml.safe_load(fh)
+
+                # Apply corrections (PropertyList does not yet have update())
+                for k, v in corrections.items():
+                    header[k] = v
+
+                return True
+
+    return False
