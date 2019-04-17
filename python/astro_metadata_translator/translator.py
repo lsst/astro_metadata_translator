@@ -670,6 +670,38 @@ class MetadataTranslator:
 
         return joined
 
+    @cache_translation
+    def to_detector_unique_name(self):
+        """Return a unique name for the detector.
+
+        Base class implementation attempts to combine ``detector_name`` with
+        ``detector_group``.  Group is only used if not `None`.
+
+        Can be over-ridden by specialist translator class.
+
+        Returns
+        -------
+        name : `str`
+            ``detector_group``_``detector_name`` if ``detector_group`` is
+            defined, else the ``detector_name`` is assumed to be unique.
+            If neither return a valid value an exception is raised.
+
+        Raises
+        ------
+        NotImplementedError
+            Raised if neither detector_name nor detector_group is defined.
+        """
+        name = self.to_detector_name()
+        group = self.to_detector_group()
+
+        if group is None and name is None:
+            raise NotImplementedError("Can not determine unique name from detector_group and detector_name")
+
+        if group is not None:
+            return f"{group}_{name}"
+
+        return name
+
 
 def _make_abstract_translator_method(property, doc, return_type):
     """Create a an abstract translation method for this property.
@@ -710,9 +742,17 @@ def _make_abstract_translator_method(property, doc, return_type):
 # poorly with the metaclass automatically generating methods from
 # _trivialMap and _constMap.
 
+# Allow for concrete translator methods to exist in the base class
+# These translator methods can be defined in terms of other properties
+CONCRETE = set()
+
 for name, description in PROPERTIES.items():
-    setattr(MetadataTranslator, f"to_{name}",
-            abstractmethod(_make_abstract_translator_method(name, *description)))
+    method = f"to_{name}"
+    if not MetadataTranslator.defined_in_this_class(method):
+        setattr(MetadataTranslator, f"to_{name}",
+                abstractmethod(_make_abstract_translator_method(name, *description)))
+    else:
+        CONCRETE.add(method)
 
 
 class StubTranslator(MetadataTranslator):
@@ -728,11 +768,15 @@ class StubTranslator(MetadataTranslator):
     pass
 
 
-def _make_stub_translator_method(property, doc, return_type):
-    """Create a an stub translation method for this property.
+def _make_forwarded_stub_translator_method(cls, property, doc, return_type):
+    """Create a stub translation method for this property that calls the
+    base method and catches `NotImplementedError`.
 
     Parameters
     ----------
+    cls : `class`
+        Class to use when referencing `super()`.  This would usually be
+        `StubTranslator`.
     property : `str`
         Name of the translator for property to be created.
     doc : `str`
@@ -745,25 +789,38 @@ def _make_stub_translator_method(property, doc, return_type):
     m : `function`
         Stub translator method for this property.
     """
+    method = f"to_{property}"
+
     def to_stub(self):
+        parent = getattr(super(cls, self), method, None)
+        try:
+            if parent is not None:
+                return parent()
+        except NotImplementedError:
+            pass
+
         warnings.warn(f"Please implement translator for property '{property}' for translator {self}",
                       stacklevel=3)
         return None
 
-    to_stub.__doc__ = f"""Unimplemented translator for {property}.
+    to_stub.__doc__ = f"""Unimplemented forwarding translator for {property}.
 
     {doc}
 
-    Issues a warning reminding the implementer to override this method.
+    Calls the base class translation method and if that fails with
+    `NotImplementedError` issues a warning reminding the implementer to
+    override this method.
 
     Returns
     -------
-    {property} : `None`
+    {property} : `None` or `{return_type}`
         Always returns `None`.
     """
     return to_stub
 
 
-# Create stub translation methods
+# Create stub translation methods for each property.  These stubs warn
+# rather than fail and should be overridden by translators.
 for name, description in PROPERTIES.items():
-    setattr(StubTranslator, f"to_{name}", _make_stub_translator_method(name, *description))
+    setattr(StubTranslator, f"to_{name}", _make_forwarded_stub_translator_method(StubTranslator,
+                                                                                 name, *description))

@@ -46,6 +46,8 @@ may not be.""", "int"),
               "detector_num": ("Unique (for instrument) integer identifier for the sensor.", "int"),
               "detector_name": ("Name of the detector within the instrument (might not be unique).",
                                 "str"),
+              "detector_unique_name": ("Unique name of the detector, generally combining group with name",
+                                       "str"),
               "detector_serial": ("Serial number/string associated with this detector.", "str"),
               "detector_group": ("Collection name of which this detector is a part. "
                                  "Can be None if there are no detector groupings.", "str"),
