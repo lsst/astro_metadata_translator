@@ -44,8 +44,7 @@ class SuprimeCamTranslator(SubaruTranslator):
                     "object": "OBJECT",
                     "science_program": "PROP-ID",
                     "detector_num": "DET-ID",
-                    "detector_name": "DETECTOR",
-                    "detector_serial": "DETECTOR",  # DETNAME seems to be identical to DETECTOR
+                    "detector_serial": "DETECTOR",  # DETECTOR is the "call name"
                     "boresight_airmass": "AIRMASS",
                     "relative_humidity": "OUT-HUM",
                     "temperature": ("OUT-TMP", dict(unit=u.K)),
@@ -202,3 +201,24 @@ class SuprimeCamTranslator(SubaruTranslator):
     def to_detector_exposure_id(self):
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 10 + self.to_detector_num()
+
+    @cache_translation
+    def to_detector_name(self):
+        # Docstring will be inherited. Property defined in properties.py
+        # See https://subarutelescope.org/Observing/Instruments/SCam/ccd.html
+        num = self.to_detector_num()
+
+        names = (
+            "nausicaa",
+            "kiki",
+            "fio",
+            "sophie",
+            "sheeta",
+            "satsuki",
+            "chihiro",
+            "clarisse",
+            "ponyo",
+            "san",
+        )
+
+        return names[num]
