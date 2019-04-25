@@ -40,7 +40,6 @@ class HscTranslator(SuprimeCamTranslator):
     """Hard wire HSC even though modern headers call it Hyper Suprime-Cam"""
 
     _trivial_map = {"detector_serial": "T_CCDSN",
-                    "detector_name": "T_CCDSN",  # T_CCDID seems to always be undefined
                     }
     """One-to-one mappings"""
 
@@ -55,6 +54,121 @@ class HscTranslator(SuprimeCamTranslator):
                                 108: 110,
                                 114: 108,
                                 }
+
+    _DETECTOR_NUM_TO_UNIQUE_NAME = [
+        '1_53',
+        '1_54',
+        '1_55',
+        '1_56',
+        '1_42',
+        '1_43',
+        '1_44',
+        '1_45',
+        '1_46',
+        '1_47',
+        '1_36',
+        '1_37',
+        '1_38',
+        '1_39',
+        '1_40',
+        '1_41',
+        '0_30',
+        '0_29',
+        '0_28',
+        '1_32',
+        '1_33',
+        '1_34',
+        '0_27',
+        '0_26',
+        '0_25',
+        '0_24',
+        '1_00',
+        '1_01',
+        '1_02',
+        '1_03',
+        '0_23',
+        '0_22',
+        '0_21',
+        '0_20',
+        '1_04',
+        '1_05',
+        '1_06',
+        '1_07',
+        '0_19',
+        '0_18',
+        '0_17',
+        '0_16',
+        '1_08',
+        '1_09',
+        '1_10',
+        '1_11',
+        '0_15',
+        '0_14',
+        '0_13',
+        '0_12',
+        '1_12',
+        '1_13',
+        '1_14',
+        '1_15',
+        '0_11',
+        '0_10',
+        '0_09',
+        '0_08',
+        '1_16',
+        '1_17',
+        '1_18',
+        '1_19',
+        '0_07',
+        '0_06',
+        '0_05',
+        '0_04',
+        '1_20',
+        '1_21',
+        '1_22',
+        '1_23',
+        '0_03',
+        '0_02',
+        '0_01',
+        '0_00',
+        '1_24',
+        '1_25',
+        '1_26',
+        '1_27',
+        '0_34',
+        '0_33',
+        '0_32',
+        '1_28',
+        '1_29',
+        '1_30',
+        '0_41',
+        '0_40',
+        '0_39',
+        '0_38',
+        '0_37',
+        '0_36',
+        '0_47',
+        '0_46',
+        '0_45',
+        '0_44',
+        '0_43',
+        '0_42',
+        '0_56',
+        '0_55',
+        '0_54',
+        '0_53',
+        '0_31',
+        '1_35',
+        '0_35',
+        '1_31',
+        '1_48',
+        '1_51',
+        '1_52',
+        '1_57',
+        '0_57',
+        '0_52',
+        '0_51',
+        '0_48',
+    ]
 
     @classmethod
     def can_translate(cls, header, filename=None):
@@ -158,3 +272,25 @@ class HscTranslator(SuprimeCamTranslator):
     def to_detector_exposure_id(self):
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 200 + self.to_detector_num()
+
+    @cache_translation
+    def to_detector_group(self):
+        # Docstring will be inherited. Property defined in properties.py
+        unique = self.to_detector_unique_name()
+        return unique.split("_")[0]
+
+    @cache_translation
+    def to_detector_unique_name(self):
+        # Docstring will be inherited. Property defined in properties.py
+        # Mapping from number to unique name is defined solely in camera
+        # geom files.
+        # There is no header for it.
+        num = self.to_detector_num()
+        return self._DETECTOR_NUM_TO_UNIQUE_NAME[num]
+
+    @cache_translation
+    def to_detector_name(self):
+        # Docstring will be inherited. Property defined in properties.py
+        # Name is defined from unique name
+        unique = self.to_detector_unique_name()
+        return unique.split("_")[1]

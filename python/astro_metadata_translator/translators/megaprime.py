@@ -13,6 +13,7 @@
 
 __all__ = ("MegaPrimeTranslator", )
 
+import re
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
@@ -57,7 +58,6 @@ class MegaPrimeTranslator(FitsTranslator):
                     "exposure_id": "EXPNUM",
                     "visit_id": "EXPNUM",
                     "detector_serial": "CCDNAME",
-                    "detector_name": "CCDNICK",
                     "relative_humidity": ["RELHUMID", "HUMIDITY"],
                     "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
                     "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
@@ -108,16 +108,22 @@ class MegaPrimeTranslator(FitsTranslator):
         return value
 
     @cache_translation
-    def to_detector_num(self):
+    def to_detector_name(self):
         # Docstring will be inherited. Property defined in properties.py
-        try:
-            extname = self._header["EXTNAME"]
-            num = int(extname[3:])  # chop off "ccd"
-            self._used_these_cards("EXTNAME")
-            return num
-        except (KeyError, ValueError):
-            # Dummy value, intended for PHU (need something to get filename)
-            return 99
+        if self.is_key_ok("EXTNAME"):
+            name = self._header["EXTNAME"]
+            # Only valid name has form "ccdNN"
+            if re.match(r"ccd\d+$", name):
+                self._used_these_cards("EXTNAME")
+                return name
+
+        # Dummy value, intended for PHU (need something to get filename)
+        return "ccd99"
+
+    @cache_translation
+    def to_detector_num(self):
+        name = self.to_detector_name()
+        return int(name[3:])
 
     @cache_translation
     def to_observation_type(self):

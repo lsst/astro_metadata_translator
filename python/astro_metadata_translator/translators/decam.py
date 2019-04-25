@@ -36,7 +36,7 @@ class DecamTranslator(FitsTranslator):
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
                   "boresight_rotation_coord": "unknown",
-                  "detector_group": None}
+                  }
 
     _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
                     "dark_time": ("DARKTIME", dict(unit=u.s)),
@@ -46,7 +46,7 @@ class DecamTranslator(FitsTranslator):
                     "science_program": "PROPID",
                     "detector_num": "CCDNUM",
                     "detector_serial": "DETECTOR",
-                    "detector_name": "DETPOS",
+                    "detector_unique_name": "DETPOS",
                     "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
                     "instrument": ("INSTRUME", dict(default="DECam")),
                     # Ensure that reasonable values are always available
@@ -57,6 +57,20 @@ class DecamTranslator(FitsTranslator):
                     "pressure": ("PRESSURE", dict(unit=u.hPa,
                                  default=771.611, minimum=700., maximum=850.)),
                     }
+
+    # Unique detector names are currently not used but are read directly from
+    # header.
+    # The detector_group could be N or S with detector_name corresponding
+    # to the number in that group.
+    detector_names = {
+        1: 'S29', 2: 'S30', 3: 'S31', 4: 'S25', 5: 'S26', 6: 'S27', 7: 'S28', 8: 'S20', 9: 'S21',
+        10: 'S22', 11: 'S23', 12: 'S24', 13: 'S14', 14: 'S15', 15: 'S16', 16: 'S17', 17: 'S18',
+        18: 'S19', 19: 'S8', 20: 'S9', 21: 'S10', 22: 'S11', 23: 'S12', 24: 'S13', 25: 'S1', 26: 'S2',
+        27: 'S3', 28: 'S4', 29: 'S5', 30: 'S6', 31: 'S7', 32: 'N1', 33: 'N2', 34: 'N3', 35: 'N4',
+        36: 'N5', 37: 'N6', 38: 'N7', 39: 'N8', 40: 'N9', 41: 'N10', 42: 'N11', 43: 'N12', 44: 'N13',
+        45: 'N14', 46: 'N15', 47: 'N16', 48: 'N17', 49: 'N18', 50: 'N19', 51: 'N20', 52: 'N21',
+        53: 'N22', 54: 'N23', 55: 'N24', 56: 'N25', 57: 'N26', 58: 'N27', 59: 'N28', 60: 'N29',
+        62: 'N31'}
 
     @classmethod
     def can_translate(cls, header, filename=None):
@@ -203,3 +217,15 @@ class DecamTranslator(FitsTranslator):
         if exposure_id is None:
             return None
         return int("{:07d}{:02d}".format(exposure_id, self.to_detector_num()))
+
+    @cache_translation
+    def to_detector_group(self):
+        # Docstring will be inherited. Property defined in properties.py
+        name = self.to_detector_unique_name()
+        return name[0]
+
+    @cache_translation
+    def to_detector_name(self):
+        # Docstring will be inherited. Property defined in properties.py
+        name = self.to_detector_unique_name()
+        return name[1:]

@@ -44,8 +44,12 @@ may not be.""", "int"),
               "boresight_rotation_coord": ("Coordinate frame of the instrument rotation angle"
                                            " (options: sky, unknown).", "str"),
               "detector_num": ("Unique (for instrument) integer identifier for the sensor.", "int"),
-              "detector_name": ("Name of the detector within the instrument (might not be unique).",
+              "detector_name": ("Name of the detector within the instrument (might not be unique"
+                                " if there are detector groups).",
                                 "str"),
+              "detector_unique_name": ("Unique name of the detector within the focal plane, generally"
+                                       " combining detector_group with detector_name.",
+                                       "str"),
               "detector_serial": ("Serial number/string associated with this detector.", "str"),
               "detector_group": ("Collection name of which this detector is a part. "
                                  "Can be None if there are no detector groupings.", "str"),
