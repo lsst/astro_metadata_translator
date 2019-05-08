@@ -34,6 +34,7 @@ class ObservationInfo:
     ----------
     header : `dict`-like
         Representation of an instrument header accessible as a `dict`.
+        May be updated with header corrections if corrections are found.
     filename : `str`, optional
         Name of the file whose header is being translated.  For some
         datasets with missing header information this can sometimes
@@ -64,7 +65,8 @@ class ObservationInfo:
 
     Notes
     -----
-    Headers will be corrected if correction files are located.
+    Headers will be corrected if correction files are located and this will
+    modify the header provided to the constructor.
     """
 
     _PROPERTIES = PROPERTIES
@@ -73,6 +75,10 @@ class ObservationInfo:
 
     def __init__(self, header, filename=None, translator_class=None, pedantic=False,
                  search_path=None):
+
+        # Fix up the header (if required)
+        fix_header(header, translator_class=translator_class, filename=filename,
+                   search_path=search_path)
 
         # Store the supplied header for later stripping
         self._header = header
@@ -89,10 +95,6 @@ class ObservationInfo:
             translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
-
-        # Fix up the header (if required)
-        fix_header(header, translator_class=translator_class, filename=filename,
-                   search_path=search_path)
 
         # Create an instance for this header
         translator = translator_class(header, filename=filename)
