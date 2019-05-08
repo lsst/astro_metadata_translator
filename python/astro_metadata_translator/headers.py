@@ -268,6 +268,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         return False
 
     target_file = f"{instrument}-{obsid}.yaml"
+    log.debug("Checking for header correction file named %s", target_file)
 
     # Work out the search path
     paths = []
