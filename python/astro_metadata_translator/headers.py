@@ -257,7 +257,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
     # Create an instance for this header
-    translator = translator_class(header, filename=filename)
+    translator = translator_class(header_to_translate, filename=filename)
 
     # To determine the file look up we need the observation_id and instrument
     try:
@@ -268,6 +268,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         return False
 
     target_file = f"{instrument}-{obsid}.yaml"
+    log.debug("Checking for header correction file named %s", target_file)
 
     # Work out the search path
     paths = []
