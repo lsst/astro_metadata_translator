@@ -14,3 +14,5 @@ It does not depend on any LSST software.
 
 Documentation: <https://astro-metadata-translator.lsst.io>
 Source: <https://github.com/lsst/astro_metadata_translator>
+
+The license is BSD 3 clause.
