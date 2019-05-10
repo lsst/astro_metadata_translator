@@ -13,6 +13,7 @@
 
 __all__ = ("HscTranslator", )
 
+import os
 import re
 import logging
 
@@ -294,3 +295,15 @@ class HscTranslator(SuprimeCamTranslator):
         # Name is defined from unique name
         unique = self.to_detector_unique_name()
         return unique.split("_")[1]
+
+    def search_paths(self):
+        # Docstring is inherited from Translator.search_paths.
+        pkg_root = os.path.normpath(
+            os.path.join(
+                os.path.dirname(__file__),
+                os.pardir,  # python/astro_metadata_translator
+                os.pardir,  # python
+                os.pardir,  # <root>
+            )
+        )
+        return [os.path.join(pkg_root, "corrections", "HSC")]
