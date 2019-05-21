@@ -108,8 +108,8 @@ class SuprimeCamTranslator(SubaruTranslator):
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UT"], scale="utc")
-        self._used_these_cards("DATE-OBS", "UT")
+                                            time_str=self._header["UT-STR"], scale="utc")
+        self._used_these_cards("DATE-OBS", "UT-STR")
         return value
 
     @cache_translation
