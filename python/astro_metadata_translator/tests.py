@@ -16,6 +16,7 @@ import os
 import pickle
 import yaml
 from collections import OrderedDict
+from astropy.time import Time
 
 from astro_metadata_translator import ObservationInfo
 
@@ -189,6 +190,28 @@ class MetadataAssertHelper:
                 self.assertAlmostEqual(calculated, expected, msg=msg)
             else:
                 self.assertEqual(calculated, expected, msg=msg)
+
+        # Date comparison error reports will benefit by specifying ISO
+        # format.  Generate a new Time object at fixed precision
+        # to work around the fact that (as of astropy 3.1) adding 0.0 seconds
+        # to a Time results in a new Time object that is a few picoseconds in
+        # the past.
+        def _format_date_for_testing(date):
+            if date is not None:
+                date.format = "isot"
+                date.precision = 9
+                date = Time(str(date), scale=date.scale, format="isot")
+            return date
+
+        datetime_begin = _format_date_for_testing(obsinfo.datetime_begin)
+        datetime_end = _format_date_for_testing(obsinfo.datetime_end)
+
+        # Check that dates are defined and end is the same or after beginning
+        self.assertLessEqual(datetime_begin, datetime_end)
+
+        # Check that exposure time is not outside datetime_end
+        self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time,
+                             obsinfo.datetime_end)
 
         # Check the WCS consistency
         if check_wcs and obsinfo.observation_type == "science":

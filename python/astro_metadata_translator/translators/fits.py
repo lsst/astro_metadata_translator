@@ -109,11 +109,11 @@ class FitsTranslator(MetadataTranslator):
         ----------
         date_key : `str`
             The key in the header representing a standard FITS
-            ISO-style date.
+            ISO-style date. Can be `None` to go straight to MJD key.
         mjd_key : `str`, optional
             The key in the header representing a standard FITS MJD
             style date.  This key will be tried if ``date_key`` is not
-            found or can not be parsed.
+            found, is `None`, or can not be parsed.
         scale : `str`, optional
             Override value to use for the time scale in preference to
             TIMESYS or the default. Should be a form understood by
@@ -124,7 +124,7 @@ class FitsTranslator(MetadataTranslator):
         date : `astropy.time.Time`
             `~astropy.time.Time` representation of the date.
         """
-        used = [date_key, ]
+        used = []
         if scale is not None:
             pass
         elif self.is_key_ok("TIMESYS"):
@@ -132,14 +132,16 @@ class FitsTranslator(MetadataTranslator):
             used.append("TIMESYS")
         else:
             scale = "utc"
-        if self.is_key_ok(date_key):
+        if date_key is not None and self.is_key_ok(date_key):
             date_str = self._header[date_key]
             value = self._from_fits_date_string(date_str, scale=scale)
-            self._used_these_cards(*used)
+            used.append(date_key)
         elif self.is_key_ok(mjd_key):
             value = Time(self._header[mjd_key], scale=scale, format="mjd")
+            used.append(mjd_key)
         else:
             value = None
+        self._used_these_cards(*used)
         return value
 
     @cache_translation

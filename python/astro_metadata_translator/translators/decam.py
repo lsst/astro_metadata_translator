@@ -125,7 +125,11 @@ class DecamTranslator(FitsTranslator):
     @cache_translation
     def to_datetime_end(self):
         # Docstring will be inherited. Property defined in properties.py
-        return self._from_fits_date("DTUTC", scale="utc")
+        # Instcals have no DATE-END or DTUTC
+        datetime_end = self._from_fits_date("DTUTC", scale="utc")
+        if datetime_end is None:
+            datetime_end = self.to_datetime_begin() + self.to_exposure_time()
+        return datetime_end
 
     def _translate_from_calib_id(self, field):
         """Fetch the ID from the CALIB_ID header.
