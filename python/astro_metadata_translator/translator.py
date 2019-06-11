@@ -157,7 +157,7 @@ class MetadataTranslator:
             return constant
 
         if property_key in PROPERTIES:
-            property_doc, return_type = PROPERTIES[property_key]
+            property_doc, return_type, _ = PROPERTIES[property_key]
         else:
             return_type = type(constant).__name__
             property_doc = f"Returns constant value for '{property_key}' property"
@@ -216,7 +216,7 @@ class MetadataTranslator:
             parameters.
         """
         if property_key in PROPERTIES:
-            property_doc, return_type = PROPERTIES[property_key]
+            property_doc, return_type, _ = PROPERTIES[property_key]
         else:
             return_type = "str` or `numbers.Number"
             property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
@@ -703,7 +703,7 @@ class MetadataTranslator:
         return name
 
 
-def _make_abstract_translator_method(property, doc, return_type):
+def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
     """Create a an abstract translation method for this property.
 
     Parameters
@@ -712,8 +712,10 @@ def _make_abstract_translator_method(property, doc, return_type):
         Name of the translator for property to be created.
     doc : `str`
         Description of the property.
-    return_type : `str`
-        Type of this property (used in the doc string).
+    return_typedoc : `str`
+        Type string of this property (used in the doc string).
+    return_type : `class`
+        Type of this property.
 
     Returns
     -------
@@ -729,7 +731,7 @@ def _make_abstract_translator_method(property, doc, return_type):
 
     Returns
     -------
-    {property} : `{return_type}`
+    {property} : `{return_typedoc}`
         The translated property.
     """
     return to_property
@@ -768,7 +770,7 @@ class StubTranslator(MetadataTranslator):
     pass
 
 
-def _make_forwarded_stub_translator_method(cls, property, doc, return_type):
+def _make_forwarded_stub_translator_method(cls, property, doc, return_typedoc, return_type):
     """Create a stub translation method for this property that calls the
     base method and catches `NotImplementedError`.
 
@@ -781,8 +783,10 @@ def _make_forwarded_stub_translator_method(cls, property, doc, return_type):
         Name of the translator for property to be created.
     doc : `str`
         Description of the property.
-    return_type : `str`
-        Type of this property (used in the doc string).
+    return_typedoc : `str`
+        Type string of this property (used in the doc string).
+    return_type : `class`
+        Type of this property.
 
     Returns
     -------
@@ -813,7 +817,7 @@ def _make_forwarded_stub_translator_method(cls, property, doc, return_type):
 
     Returns
     -------
-    {property} : `None` or `{return_type}`
+    {property} : `None` or `{return_typedoc}`
         Always returns `None`.
     """
     return to_stub

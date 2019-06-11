@@ -103,6 +103,12 @@ class ObservationInfo:
         self._translator = translator
         self.translator_class_name = translator_class.__name__
 
+        # Form file information string in case we need an error message
+        if filename:
+            file_info = f" and file {filename}"
+        else:
+            file_info = ""
+
         # Loop over each property and request the translated form
         for t in self._PROPERTIES:
             # prototype code
@@ -110,15 +116,11 @@ class ObservationInfo:
             property = f"_{t}"
 
             try:
-                setattr(self, property, getattr(translator, method)())
+                value = getattr(translator, method)()
             except NotImplementedError as e:
                 raise NotImplementedError(f"No translation exists for property '{t}'"
                                           f" using translator {translator.__class__}") from e
             except KeyError as e:
-                if filename:
-                    file_info = f" and file {filename}"
-                else:
-                    file_info = ""
                 err_msg = f"Error calculating property '{t}' using translator {translator.__class__}" \
                     f"{file_info}"
                 if pedantic:
@@ -126,6 +128,19 @@ class ObservationInfo:
                 else:
                     log.debug("Calculation of property '%s' failed with header: %s", t, header)
                     log.warning(f"Ignoring {err_msg}: {e}")
+                    continue
+
+            if value is not None and not isinstance(value, self._PROPERTIES[t][2]):
+                err_msg = f"Value calculated for property '{t}' is wrong type " \
+                    f"({type(value)} != {self._PROPERTIES[t][1]}) using translator {translator.__class__}" \
+                    f"{file_info}"
+                if pedantic:
+                    raise TypeError(err_msg)
+                else:
+                    log.debug("Calcuation of property '%s' had unexpected type with header: %s", t, header)
+                    log.warning(f"Ignoring {err_msg}")
+
+            setattr(self, property, value)
 
     @property
     def cards_used(self):
@@ -217,7 +232,7 @@ class ObservationInfo:
 
 
 # Method to add the standard properties
-def _make_property(property, doc, return_type):
+def _make_property(property, doc, return_typedoc, return_type):
     """Create a getter method with associated docstring.
 
     Parameters
@@ -226,8 +241,10 @@ def _make_property(property, doc, return_type):
         Name of the property getter to be created.
     doc : `str`
         Description of this property.
-    return_type : `str`
-        Type of this property (used in the doc string).
+    return_typedoc : `str`
+        Type string of this property (used in the doc string).
+    return_type : `class`
+        Type of this property.
 
     Returns
     -------
@@ -241,7 +258,7 @@ def _make_property(property, doc, return_type):
 
     Returns
     -------
-    {property} : `{return_type}`
+    {property} : `{return_typedoc}`
         Access the property.
     """
     return getter
