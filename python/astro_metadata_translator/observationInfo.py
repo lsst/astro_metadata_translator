@@ -241,7 +241,7 @@ class ObservationInfo:
             setattr(self, property, state[p])
 
     @classmethod
-    def makeObservationInfo(cls, **kwargs):
+    def makeObservationInfo(cls, **kwargs):  # noqa: N802
         """Construct an `ObservationInfo` from the supplied parameters.
 
         Notes
@@ -259,7 +259,7 @@ class ObservationInfo:
             of the property.
         """
 
-        obsInfo = cls(None)
+        obsinfo = cls(None)
 
         unused = set(kwargs)
 
@@ -270,13 +270,13 @@ class ObservationInfo:
                 if not isinstance(value, cls._PROPERTIES[p][2]):
                     raise TypeError(f"Supplied value {value} for property {p} "
                                     f"should be of class {cls._PROPERTIES[p][1]} not {value.__class__}")
-                setattr(obsInfo, property, value)
+                setattr(obsinfo, property, value)
                 unused.remove(p)
 
         if unused:
             raise KeyError(f"Unrecognized properties provided: {', '.join(unused)}")
 
-        return obsInfo
+        return obsinfo
 
 
 # Method to add the standard properties
@@ -319,7 +319,7 @@ for name, description in ObservationInfo._PROPERTIES.items():
     setattr(ObservationInfo, name, property(_make_property(name, *description)))
 
 
-def makeObservationInfo(**kwargs):
+def makeObservationInfo(**kwargs):  # noqa: N802
     """Construct an `ObservationInfo` from the supplied parameters.
 
     Notes
