@@ -160,7 +160,7 @@ class ObservationInfo:
             Set of card used.
         """
         if not self._translator:
-            return ()
+            return frozenset()
         return self._translator.cards_used()
 
     def stripped_header(self):

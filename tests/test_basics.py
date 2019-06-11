@@ -27,7 +27,7 @@ class BasicTestCase(unittest.TestCase):
         self.assertIsInstance(obsinfo, ObservationInfo)
         self.assertAlmostEqual(obsinfo.boresight_airmass, 1.5)
         self.assertIsNone(obsinfo.observation_id)
-        self.assertEqual(obsinfo.cards_used, ())
+        self.assertEqual(obsinfo.cards_used, set())
         self.assertEqual(obsinfo.stripped_header(), {})
 
         with self.assertRaises(TypeError):
