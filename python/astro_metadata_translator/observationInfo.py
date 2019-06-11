@@ -11,7 +11,7 @@
 
 """Represent standard metadata from instrument headers"""
 
-__all__ = ("ObservationInfo", )
+__all__ = ("ObservationInfo", "makeObservationInfo")
 
 import itertools
 import logging
@@ -240,6 +240,44 @@ class ObservationInfo:
             property = f"_{p}"
             setattr(self, property, state[p])
 
+    @classmethod
+    def makeObservationInfo(cls, **kwargs):
+        """Construct an `ObservationInfo` from the supplied parameters.
+
+        Notes
+        -----
+        The supplied parameters should use names matching the property.
+        The type of the supplied value will be checked against the property.
+        Any properties not supplied will be assigned a value of `None`.
+
+        Raises
+        ------
+        KeyError
+            Raised if a supplied parameter key is not a known property.
+        TypeError
+            Raised if a supplied value does not match the expected type
+            of the property.
+        """
+
+        obsInfo = cls(None)
+
+        unused = set(kwargs)
+
+        for p in cls._PROPERTIES:
+            if p in kwargs:
+                property = f"_{p}"
+                value = kwargs[p]
+                if not isinstance(value, cls._PROPERTIES[p][2]):
+                    raise TypeError(f"Supplied value {value} for property {p} "
+                                    f"should be of class {cls._PROPERTIES[p][1]} not {value.__class__}")
+                setattr(obsInfo, property, value)
+                unused.remove(p)
+
+        if unused:
+            raise KeyError(f"Unrecognized properties provided: {', '.join(unused)}")
+
+        return obsInfo
+
 
 # Method to add the standard properties
 def _make_property(property, doc, return_typedoc, return_type):
@@ -279,3 +317,23 @@ def _make_property(property, doc, return_typedoc, return_type):
 for name, description in ObservationInfo._PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
     setattr(ObservationInfo, name, property(_make_property(name, *description)))
+
+
+def makeObservationInfo(**kwargs):
+    """Construct an `ObservationInfo` from the supplied parameters.
+
+    Notes
+    -----
+    The supplied parameters should use names matching the property.
+    The type of the supplied value will be checked against the property.
+    Any properties not supplied will be assigned a value of `None`.
+
+    Raises
+    ------
+    KeyError
+        Raised if a supplied parameter key is not a known property.
+    TypeError
+        Raised if a supplied value does not match the expected type
+        of the property.
+    """
+    return ObservationInfo.makeObservationInfo(**kwargs)
