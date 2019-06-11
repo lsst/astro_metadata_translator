@@ -76,15 +76,23 @@ class ObservationInfo:
     def __init__(self, header, filename=None, translator_class=None, pedantic=False,
                  search_path=None):
 
+        # Initialize the empty object
+        self._header = {}
+        self.filename = filename
+        self._translator = None
+        self.translator_class_name = "<None>"
+
+        # To allow makeObservationInfo to work, we special case a None
+        # header
+        if header is None:
+            return
+
         # Fix up the header (if required)
         fix_header(header, translator_class=translator_class, filename=filename,
                    search_path=search_path)
 
         # Store the supplied header for later stripping
         self._header = header
-
-        # Store the filename
-        self.filename = filename
 
         # PropertyList is not dict-like so force to a dict here to simplify
         # the translation code.
@@ -151,6 +159,8 @@ class ObservationInfo:
         used : `frozenset` of `str`
             Set of card used.
         """
+        if not self._translator:
+            return ()
         return self._translator.cards_used()
 
     def stripped_header(self):
@@ -163,7 +173,7 @@ class ObservationInfo:
             headers used to calculate the generic information removed.
         """
         hdr = copy.copy(self._header)
-        used = self._translator.cards_used()
+        used = self.cards_used
         for c in used:
             del hdr[c]
         return hdr
