@@ -18,6 +18,7 @@ import logging
 import copy
 
 import astropy.time
+from astropy.coordinates import SkyCoord, AltAz
 
 from .translator import MetadataTranslator
 from .properties import PROPERTIES
@@ -176,7 +177,15 @@ class ObservationInfo:
         if value is None:
             return True
 
-        if not isinstance(value, cls._PROPERTIES[property][2]):
+        property_type = cls._PROPERTIES[property][2]
+
+        # For AltAz coordinates, they can either arrive as AltAz or
+        # as SkyCoord(frame=AltAz) so try to find the frame inside
+        # the SkyCoord.
+        if issubclass(property_type, AltAz) and isinstance(value, SkyCoord):
+            value = value.frame
+
+        if not isinstance(value, property_type):
             return False
 
         return True
