@@ -23,8 +23,9 @@ class BasicTestCase(unittest.TestCase):
 
     def test_obsinfo(self):
         """Test construction of ObservationInfo without header."""
-        obsinfo = makeObservationInfo(boresight_airmass=1.5)
+        obsinfo = makeObservationInfo(boresight_airmass=1.5, tracking_radec=None)
         self.assertIsInstance(obsinfo, ObservationInfo)
+        self.assertIsNone(obsinfo.tracking_radec)
         self.assertAlmostEqual(obsinfo.boresight_airmass, 1.5)
         self.assertIsNone(obsinfo.observation_id)
         self.assertEqual(obsinfo.cards_used, set())

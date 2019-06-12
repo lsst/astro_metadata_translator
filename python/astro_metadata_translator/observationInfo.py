@@ -138,7 +138,7 @@ class ObservationInfo:
                     log.warning(f"Ignoring {err_msg}: {e}")
                     continue
 
-            if value is not None and not isinstance(value, self._PROPERTIES[t][2]):
+            if not self._is_property_ok(t, value):
                 err_msg = f"Value calculated for property '{t}' is wrong type " \
                     f"({type(value)} != {self._PROPERTIES[t][1]}) using translator {translator.__class__}" \
                     f"{file_info}"
@@ -149,6 +149,37 @@ class ObservationInfo:
                     log.warning(f"Ignoring {err_msg}")
 
             setattr(self, property, value)
+
+    @classmethod
+    def _is_property_ok(cls, property, value):
+        """Compare the supplied value against the expected type as defined
+        for the corresponding property.
+
+        Parameters
+        ----------
+        property : `str`
+            Name of property.
+        value : `object`
+            Value of the property to validate.
+
+        Returns
+        -------
+        is_ok : `bool`
+            `True` if the value is of an appropriate type.
+
+        Notes
+        -----
+        Currently only the type of the property is validated. There is no
+        attempt to check bounds or determine that a Quantity is compatible
+        with the property.
+        """
+        if value is None:
+            return True
+
+        if not isinstance(value, cls._PROPERTIES[property][2]):
+            return False
+
+        return True
 
     @property
     def cards_used(self):
@@ -267,7 +298,7 @@ class ObservationInfo:
             if p in kwargs:
                 property = f"_{p}"
                 value = kwargs[p]
-                if not isinstance(value, cls._PROPERTIES[p][2]):
+                if not cls._is_property_ok(p, value):
                     raise TypeError(f"Supplied value {value} for property {p} "
                                     f"should be of class {cls._PROPERTIES[p][1]} not {value.__class__}")
                 setattr(obsinfo, property, value)
