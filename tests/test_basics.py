@@ -12,6 +12,7 @@
 import unittest
 
 import astro_metadata_translator
+from astro_metadata_translator import ObservationInfo, makeObservationInfo
 
 
 class BasicTestCase(unittest.TestCase):
@@ -19,6 +20,22 @@ class BasicTestCase(unittest.TestCase):
     def test_basic(self):
         version = astro_metadata_translator.__version__
         self.assertIsNotNone(version)
+
+    def test_obsinfo(self):
+        """Test construction of ObservationInfo without header."""
+        obsinfo = makeObservationInfo(boresight_airmass=1.5, tracking_radec=None)
+        self.assertIsInstance(obsinfo, ObservationInfo)
+        self.assertIsNone(obsinfo.tracking_radec)
+        self.assertAlmostEqual(obsinfo.boresight_airmass, 1.5)
+        self.assertIsNone(obsinfo.observation_id)
+        self.assertEqual(obsinfo.cards_used, set())
+        self.assertEqual(obsinfo.stripped_header(), {})
+
+        with self.assertRaises(TypeError):
+            ObservationInfo.makeObservationInfo(boresight_airmass=1.5, observation_id=5)
+
+        with self.assertRaises(KeyError):
+            obsinfo = ObservationInfo.makeObservationInfo(unrecognized=1.5, keys="unknown")
 
 
 if __name__ == "__main__":
