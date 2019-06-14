@@ -14,10 +14,11 @@
 __all__ = ("MegaPrimeTranslator", )
 
 import re
+import os.path
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
-from ..translator import cache_translation
+from ..translator import cache_translation, CORRECTIONS_DIR
 from .fits import FitsTranslator
 from .helpers import tracking_from_degree_headers, altaz_from_degree_headers
 
@@ -44,6 +45,9 @@ class MegaPrimeTranslator(FitsTranslator):
 
     supported_instrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
+
+    default_search_path = os.path.join(CORRECTIONS_DIR, "CFHT")
+    """Default search path to use to locate header correction files."""
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
                   "boresight_rotation_coord": "unknown",

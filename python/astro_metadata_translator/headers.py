@@ -189,8 +189,9 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     ----------
     header : `dict`-like
         Header to correct.
-    search_path : `list`, optional
+    search_path : `list` or `str`, optional
         Explicit directory paths to search for correction files.
+        A single directory path can be given as a string.
     translator_class : `MetadataTranslator`-class, optional
         If not `None`, the class to use to translate the supplied headers
         into standard form. Otherwise each registered translator class will
@@ -273,6 +274,9 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     # Work out the search path
     paths = []
     if search_path is not None:
+        if isinstance(search_path, str):
+            # Allow a single path to be given as a string
+            search_path = [search_path]
         paths.extend(search_path)
     if ENV_VAR_NAME in os.environ and os.environ[ENV_VAR_NAME]:
         paths.extend(os.environ[ENV_VAR_NAME].split(os.path.pathsep))

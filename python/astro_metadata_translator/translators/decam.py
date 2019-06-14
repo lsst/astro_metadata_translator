@@ -14,11 +14,12 @@
 __all__ = ("DecamTranslator", )
 
 import re
+import os.path
 
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
-from ..translator import cache_translation
+from ..translator import cache_translation, CORRECTIONS_DIR
 from .fits import FitsTranslator
 from .helpers import altaz_from_degree_headers, is_non_science, \
     tracking_from_degree_headers
@@ -33,6 +34,9 @@ class DecamTranslator(FitsTranslator):
 
     supported_instrument = "DECam"
     """Supports the DECam instrument."""
+
+    default_search_path = os.path.join(CORRECTIONS_DIR, "DECam")
+    """Default search path to use to locate header correction files."""
 
     _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
                   "boresight_rotation_coord": "unknown",
