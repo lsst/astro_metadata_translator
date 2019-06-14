@@ -208,9 +208,6 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
 
     Raises
     ------
-    ValueError
-        Raised if the supplied header is not understood by any registered
-        translation classes.
     TypeError
         Raised if the supplied translation class is not a `MetadataTranslator`.
 
@@ -220,7 +217,9 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     necessary for the header to be handled by the supplied translator
     class or else support automatic translation class determination.
     It is also required that the ``observation_id`` and ``instrument``
-    be calculable prior to header fix up.
+    be calculable prior to header fix up.  If a translator class can not
+    be found or if there is a problem determining the instrument or
+    observation ID, the function will return without action.
 
     Correction files use names of the form ``instrument-obsid.yaml`` (for
     example ``LATISS-AT_O_20190329_000022.yaml``).
@@ -253,7 +252,13 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         header_to_translate = header
 
     if translator_class is None:
-        translator_class = MetadataTranslator.determine_translator(header_to_translate, filename=filename)
+        try:
+            translator_class = MetadataTranslator.determine_translator(header_to_translate,
+                                                                       filename=filename)
+        except ValueError:
+            # if the header is not recognized, we should not complain
+            # and should not proceed further.
+            return False
     elif not issubclass(translator_class, MetadataTranslator):
         raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 

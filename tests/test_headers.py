@@ -312,6 +312,11 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertTrue(fixed)
         self.assertEqual(header["DETECTOR"], "NEW-ID")
 
+        # Test that fix_header of unknown header is allowed
+        header = {"SOMETHING": "UNKNOWN"}
+        fixed = fix_header(header)
+        self.assertFalse(fixed)
+
     def test_hsc_fix_header(self):
         """Check that one of the known HSC corrections is being applied
         properly."""
