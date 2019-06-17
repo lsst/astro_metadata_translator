@@ -18,6 +18,7 @@ import inspect
 import logging
 import warnings
 import math
+import os.path
 
 import astropy.units as u
 import astropy.io.fits.card
@@ -25,8 +26,17 @@ from astropy.coordinates import Angle
 
 from .properties import PROPERTIES
 
-
 log = logging.getLogger(__name__)
+
+# Location of the default package header corrections directory
+CORRECTIONS_DIR = os.path.normpath(
+    os.path.join(
+        os.path.dirname(__file__),
+        os.pardir,  # python
+        os.pardir,  # <root>
+        "corrections",
+    )
+)
 
 
 def cache_translation(func, method=None):
@@ -75,6 +85,8 @@ class MetadataTranslator:
     """
 
     # These are all deliberately empty in the base class.
+    default_search_path = None
+    """Default search path to use to locate header correction files."""
 
     _trivial_map = {}
     """Dict of one-to-one mappings for header translation from standard
@@ -540,7 +552,13 @@ class MetadataTranslator:
         paths : `list`
             Directory paths to search. Can be an empty list if no special
             directories are defined.
+
+        Notes
+        -----
+        Uses the classes ``default_search_path`` property if defined.
         """
+        if self.default_search_path is not None:
+            return [self.default_search_path]
         return []
 
     def is_key_ok(self, keyword):

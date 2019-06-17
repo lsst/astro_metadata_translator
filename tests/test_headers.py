@@ -10,8 +10,12 @@
 # license that can be found in the LICENSE file.
 
 import unittest
+import os.path
 
-from astro_metadata_translator import merge_headers
+from astro_metadata_translator import merge_headers, fix_header, HscTranslator
+from astro_metadata_translator.tests import read_test_file
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class HeadersTestCase(unittest.TestCase):
@@ -288,6 +292,50 @@ class HeadersTestCase(unittest.TestCase):
         merged = merge_headers([self.h4, self.h3, self.h2, self.h1],
                                mode="append", sort=True)
         self.assertEqual(merged, expected)
+
+
+class FixHeadersTestCase(unittest.TestCase):
+
+    def test_basic_fix_header(self):
+        """Test that a header can be fixed if we specify a local path.
+        """
+
+        header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
+        self.assertEqual(header["DETECTOR"], "S3-111_107419-8-3")
+
+        # First fix header but using no search path (should work as no-op)
+        fixed = fix_header(header)
+        self.assertFalse(fixed)
+
+        # Now using the test corrections directory
+        fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "corrections"))
+        self.assertTrue(fixed)
+        self.assertEqual(header["DETECTOR"], "NEW-ID")
+
+        # Test that fix_header of unknown header is allowed
+        header = {"SOMETHING": "UNKNOWN"}
+        fixed = fix_header(header)
+        self.assertFalse(fixed)
+
+    def test_hsc_fix_header(self):
+        """Check that one of the known HSC corrections is being applied
+        properly."""
+        header = {"EXP-ID": "HSCA00120800",
+                  "INSTRUME": "HSC",
+                  "DATA-TYP": "FLAT"}
+
+        fixed = fix_header(header, translator_class=HscTranslator)
+        self.assertTrue(fixed)
+        self.assertEqual(header["DATA-TYP"], "OBJECT")
+
+        # And that this header won't be corrected
+        header = {"EXP-ID": "HSCA00120800X",
+                  "INSTRUME": "HSC",
+                  "DATA-TYP": "FLAT"}
+
+        fixed = fix_header(header, translator_class=HscTranslator)
+        self.assertFalse(fixed)
+        self.assertEqual(header["DATA-TYP"], "FLAT")
 
 
 if __name__ == "__main__":
