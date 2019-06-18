@@ -49,8 +49,10 @@ class MegaPrimeTranslator(FitsTranslator):
     default_search_path = os.path.join(CORRECTIONS_DIR, "CFHT")
     """Default search path to use to locate header correction files."""
 
-    _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                  "boresight_rotation_coord": "unknown",
+    # CFHT Megacam has no rotator, and the instrument angle on sky is set to
+    # +Y=N, +X=W which we define as a 0 degree rotation.
+    _const_map = {"boresight_rotation_angle": Angle(0*u.deg),
+                  "boresight_rotation_coord": "sky",
                   "detector_group": None}
 
     _trivial_map = {"physical_filter": "FILTER",
