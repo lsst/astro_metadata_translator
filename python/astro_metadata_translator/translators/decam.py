@@ -38,8 +38,10 @@ class DecamTranslator(FitsTranslator):
     default_search_path = os.path.join(CORRECTIONS_DIR, "DECam")
     """Default search path to use to locate header correction files."""
 
-    _const_map = {"boresight_rotation_angle": Angle(float("nan")*u.deg),
-                  "boresight_rotation_coord": "unknown",
+    # DECam has no rotator, and the instrument angle on sky is set to +Y=East,
+    # +X=South which we define as a 90 degree rotation and an X-flip.
+    _const_map = {"boresight_rotation_angle": Angle(90*u.deg),
+                  "boresight_rotation_coord": "sky",
                   }
 
     _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
