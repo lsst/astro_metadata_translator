@@ -143,7 +143,7 @@ class TranslatorTestCase(unittest.TestCase):
         with self.assertWarns(UserWarning):
             # Since the translator is incomplete it should issue warnings
             v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator,
-                                 search_path=[os.path.join(TESTDIR, "data")])
+                                 search_path=[os.path.join(TESTDIR, "data", "corrections")])
 
         # These values should match the expected translation
         self.assertEqual(v1.instrument, "SCUBA_test")

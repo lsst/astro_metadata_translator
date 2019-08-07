@@ -32,8 +32,6 @@ log = logging.getLogger(__name__)
 CORRECTIONS_DIR = os.path.normpath(
     os.path.join(
         os.path.dirname(__file__),
-        os.pardir,  # python
-        os.pardir,  # <root>
         "corrections",
     )
 )
