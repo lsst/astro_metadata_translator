@@ -13,14 +13,14 @@
 
 __all__ = ("HscTranslator", )
 
-import os
 import re
 import logging
+import posixpath
 
 import astropy.units as u
 from astropy.coordinates import Angle
 
-from ..translator import cache_translation, CORRECTIONS_DIR
+from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
 from .suprimecam import SuprimeCamTranslator
 
 log = logging.getLogger(__name__)
@@ -36,8 +36,8 @@ class HscTranslator(SuprimeCamTranslator):
     supported_instrument = "HSC"
     """Supports the HSC instrument."""
 
-    default_search_path = os.path.join(CORRECTIONS_DIR, "HSC")
-    """Default search path to use to locate header correction files."""
+    default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "HSC")
+    """Default resource path root to use to locate header correction files."""
 
     _const_map = {"instrument": "HSC",
                   "boresight_rotation_coord": "sky"}

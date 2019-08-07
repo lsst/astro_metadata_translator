@@ -15,12 +15,12 @@ __all__ = ("SuprimeCamTranslator", )
 
 import re
 import logging
-import os.path
+import posixpath
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 
-from ..translator import cache_translation, CORRECTIONS_DIR
+from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
 from .subaru import SubaruTranslator
 from .helpers import altaz_from_degree_headers
 
@@ -37,8 +37,8 @@ class SuprimeCamTranslator(SubaruTranslator):
     supported_instrument = "SuprimeCam"
     """Supports the SuprimeCam instrument."""
 
-    default_search_path = os.path.join(CORRECTIONS_DIR, "SuprimeCam")
-    """Default search path to use to locate header correction files."""
+    default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "SuprimeCam")
+    """Default resource path root to use to locate header correction files."""
 
     _const_map = {"boresight_rotation_coord": "unknown",
                   "detector_group": None}

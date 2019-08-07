@@ -13,6 +13,8 @@
 
 __all__ = ("merge_headers", "fix_header")
 
+import pkg_resources
+import posixpath
 import logging
 import itertools
 import copy
@@ -288,6 +290,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
 
     paths.extend(translator.search_paths())
 
+    # Prioritize file system overrides
     for p in paths:
         correction_file = os.path.join(p, target_file)
         if os.path.exists(correction_file):
@@ -295,10 +298,21 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
                 log.debug("Applying header corrections from file %s", correction_file)
                 corrections = yaml.safe_load(fh)
 
-                # Apply corrections (PropertyList does not yet have update())
-                for k, v in corrections.items():
-                    header[k] = v
+                # Apply corrections
+                header.update(corrections)
 
                 return True
+
+    # If none of those work, look for package resources
+    package, resource_root = translator.resource_root()
+    if package is not None and resource_root is not None:
+        resource_name = posixpath.join(resource_root, target_file)
+        if pkg_resources.resource_exists(package, resource_name):
+            log.debug("Applying header corrections from package resource %s:%s", package, resource_name)
+            with pkg_resources.resource_stream(package, resource_name) as fh:
+                corrections = yaml.safe_load(fh)
+            header.update(corrections)
+
+            return True
 
     return False

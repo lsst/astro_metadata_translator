@@ -14,11 +14,11 @@
 __all__ = ("MegaPrimeTranslator", )
 
 import re
-import os.path
+import posixpath
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
-from ..translator import cache_translation, CORRECTIONS_DIR
+from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
 from .fits import FitsTranslator
 from .helpers import tracking_from_degree_headers, altaz_from_degree_headers
 
@@ -46,8 +46,8 @@ class MegaPrimeTranslator(FitsTranslator):
     supported_instrument = "MegaPrime"
     """Supports the MegaPrime instrument."""
 
-    default_search_path = os.path.join(CORRECTIONS_DIR, "CFHT")
-    """Default search path to use to locate header correction files."""
+    default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "CFHT")
+    """Default resource path root to use to locate header correction files."""
 
     # CFHT Megacam has no rotator, and the instrument angle on sky is set to
     # +Y=N, +X=W which we define as a 0 degree rotation.
