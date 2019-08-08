@@ -14,7 +14,7 @@
 Read file metadata from the specified files and report the translated content.
 """
 
-__all__ = ("main",)
+__all__ = ("main", "process_files")
 
 import argparse
 
@@ -25,6 +25,7 @@ import traceback
 import importlib
 import yaml
 from astro_metadata_translator import ObservationInfo, merge_headers
+from astro_metadata_translator.tests import read_test_file
 
 # Prefer afw over Astropy
 try:
@@ -86,7 +87,8 @@ def build_argparser():
     return parser
 
 
-def read_file(file, hdrnum, dumphdr, quiet, print_trace):
+def read_file(file, hdrnum, dumphdr, quiet, print_trace,
+              outstream=sys.stdout, errstream=sys.stderr):
     """Read the specified file and process it.
 
     Parameters
@@ -105,6 +107,11 @@ def read_file(file, hdrnum, dumphdr, quiet, print_trace):
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
+    outstream : `io.StringIO`, optional
+        Output stream to use for standard messages. Defaults to `sys.stdout`.
+    errstream : `io.StringIO`, optional
+        Stream to send messages that would normally be sent to standard
+        error. Defaults to `sys.stderr`.
 
     Returns
     -------
@@ -112,11 +119,17 @@ def read_file(file, hdrnum, dumphdr, quiet, print_trace):
         `True` if the file was handled successfully, `False` if the file
         could not be processed.
     """
-    print(f"Analyzing {file}...", file=sys.stderr)
+    print(f"Analyzing {file}...", file=errstream)
     try:
-        md = read_metadata(file, 0)
+        if file.endswith(".yaml"):
+            md = read_test_file(file,)
+            if hdrnum != 0:
+                # YAML can't have HDUs
+                hdrnum = 0
+        else:
+            md = read_metadata(file, 0)
         if md is None:
-            print(f"Unable to open file {file}", file=sys.stderr)
+            print(f"Unable to open file {file}", file=errstream)
             return False
         if hdrnum != 0:
             mdn = read_metadata(file, int(hdrnum))
@@ -125,25 +138,26 @@ def read_file(file, hdrnum, dumphdr, quiet, print_trace):
             if mdn is not None:
                 md = merge_headers([md, mdn], mode="overwrite")
             else:
-                print(f"HDU {hdrnum} was not found. Ignoring request.", file=sys.stderr)
+                print(f"HDU {hdrnum} was not found. Ignoring request.", file=errstream)
 
         if dumphdr:
             # The header should be written out in the insertion order
-            print(yaml.dump(md, sort_keys=False))
+            print(yaml.dump(md, sort_keys=False), file=outstream)
             return True
         obs_info = ObservationInfo(md, pedantic=True, filename=file)
         if not quiet:
-            print(f"{obs_info}")
+            print(f"{obs_info}", file=outstream)
     except Exception as e:
         if print_trace:
-            traceback.print_exc(file=sys.stdout)
+            traceback.print_exc(file=outstream)
         else:
-            print(repr(e))
+            print(repr(e), file=outstream)
         return False
     return True
 
 
-def process_files(files, regex, hdrnum, dumphdr, quiet, print_trace):
+def process_files(files, regex, hdrnum, dumphdr, quiet, print_trace,
+                  outstream=sys.stdout, errstream=sys.stderr):
     """Read and translate metadata from the specified files.
 
     Parameters
@@ -165,6 +179,11 @@ def process_files(files, regex, hdrnum, dumphdr, quiet, print_trace):
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
+    outstream : `io.StringIO`, optional
+        Output stream to use for standard messages. Defaults to `sys.stdout`.
+    errstream : `io.StringIO`, optional
+        Stream to send messages that would normally be sent to standard
+        error. Defaults to `sys.stderr`.
 
     Returns
     -------
@@ -182,13 +201,13 @@ def process_files(files, regex, hdrnum, dumphdr, quiet, print_trace):
                 for name in files:
                     path = os.path.join(root, name)
                     if os.path.isfile(path) and file_regex.search(name):
-                        isok = read_file(path, hdrnum, dumphdr, quiet, print_trace)
+                        isok = read_file(path, hdrnum, dumphdr, quiet, print_trace, outstream, errstream)
                         if isok:
                             okay.append(path)
                         else:
                             failed.append(path)
         else:
-            isok = read_file(file, hdrnum, dumphdr, quiet, print_trace)
+            isok = read_file(file, hdrnum, dumphdr, quiet, print_trace, outstream, errstream)
             if isok:
                 okay.append(file)
             else:
