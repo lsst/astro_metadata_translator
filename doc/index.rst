@@ -52,7 +52,16 @@ Repository
 JIRA component
    https://jira.lsstcorp.org/issues/?jql=component%3Dobs_metadata
 
+Command Line Utilities
+======================
+
+.. autoprogram:: astro_metadata_translator.bin.translateheader:build_argparser()
+   :prog: translate_header.py
+   :groups:
+
 Python API reference
 ====================
 
 .. automodapi:: astro_metadata_translator
+
+.. automodapi:: astro_metadata_translator.bin.translateheader
