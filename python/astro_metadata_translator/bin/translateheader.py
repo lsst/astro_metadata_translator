@@ -143,6 +143,60 @@ def read_file(file, hdrnum, dumphdr, quiet, print_trace):
     return True
 
 
+def process_files(files, regex, hdrnum, dumphdr, quiet, print_trace):
+    """Read and translate metadata from the specified files.
+
+    Parameters
+    ----------
+    files : iterable of `str`
+        The files or directories from which the headers are to be read.
+    regex : `str`
+        Regular expression string used to filter files when a directory is
+        scanned.
+    hdrnum : `int`
+        The HDU number to read. The primary header is always read and
+        merged with the header from this HDU.
+    dumphdr : `bool`
+        If `True` dump the merged header to standard output rather than
+        translating it.
+    quiet : `bool`
+        If `True` do not report the translated values for the file.
+    print_trace : `bool`
+        If there is an error reading the file and this parameter is `True`,
+        a full traceback of the exception will be reported. If `False` prints
+        a one line summary of the error condition.
+
+    Returns
+    -------
+    okay : `list` of `str`
+        All the files that were processed successfully.
+    failed : `list` of `str`
+        All the files that could not be processed.
+    """
+    file_regex = re.compile(regex)
+    failed = []
+    okay = []
+    for file in files:
+        if os.path.isdir(file):
+            for root, dirs, files in os.walk(file):
+                for name in files:
+                    path = os.path.join(root, name)
+                    if os.path.isfile(path) and file_regex.search(name):
+                        isok = read_file(path, hdrnum, dumphdr, quiet, print_trace)
+                        if isok:
+                            okay.append(path)
+                        else:
+                            failed.append(path)
+        else:
+            isok = read_file(file, hdrnum, dumphdr, quiet, print_trace)
+            if isok:
+                okay.append(file)
+            else:
+                failed.append(file)
+
+    return okay, failed
+
+
 def main():
     """Read metadata from the supplied files and translate the content to
     standard form.
@@ -154,21 +208,9 @@ def main():
         for m in args.packages:
             importlib.import_module(m)
 
-    file_regex = re.compile(args.regex)
-    failed = []
-    for file in args.files:
-        if os.path.isdir(file):
-            for root, dirs, files in os.walk(file):
-                for name in files:
-                    path = os.path.join(root, name)
-                    if os.path.isfile(path) and file_regex.search(name):
-                        ok = read_file(path, args.hdrnum, args.dumphdr, args.quiet, args.traceback)
-                        if not ok:
-                            failed.append(path)
-        else:
-            ok = read_file(file, args.hdrnum, args.dumphdr, args.quiet, args.traceback)
-            if not ok:
-                failed.append(file)
+    # Main loop over files
+    _, failed = process_files(args.files, args.regex, args.hdrnum,
+                              args.dumphdr, args.quiet, args.traceback)
 
     if failed:
         print("Files with failed translations:", file=sys.stderr)
