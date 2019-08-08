@@ -219,6 +219,12 @@ def process_files(files, regex, hdrnum, dumphdr, quiet, print_trace,
 def main():
     """Read metadata from the supplied files and translate the content to
     standard form.
+
+    Returns
+    -------
+    status : `int`
+        Exit status to be passed to `sys.exit()`. 0 if any of the files
+        could be translated. 1 otherwise.
     """
     args = build_argparser().parse_args()
 
@@ -228,10 +234,16 @@ def main():
             importlib.import_module(m)
 
     # Main loop over files
-    _, failed = process_files(args.files, args.regex, args.hdrnum,
-                              args.dumphdr, args.quiet, args.traceback)
+    okay, failed = process_files(args.files, args.regex, args.hdrnum,
+                                 args.dumphdr, args.quiet, args.traceback)
 
     if failed:
         print("Files with failed translations:", file=sys.stderr)
         for f in failed:
             print(f"\t{f}", file=sys.stderr)
+
+    if okay:
+        # Good status if anything was returned in okay
+        return 0
+    else:
+        return 1

@@ -11,8 +11,10 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+import sys
+
 from astro_metadata_translator.bin.translateheader import main
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
