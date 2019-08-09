@@ -14,12 +14,12 @@
 __all__ = ("DecamTranslator", )
 
 import re
-import os.path
+import posixpath
 
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
-from ..translator import cache_translation, CORRECTIONS_DIR
+from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
 from .fits import FitsTranslator
 from .helpers import altaz_from_degree_headers, is_non_science, \
     tracking_from_degree_headers
@@ -35,8 +35,8 @@ class DecamTranslator(FitsTranslator):
     supported_instrument = "DECam"
     """Supports the DECam instrument."""
 
-    default_search_path = os.path.join(CORRECTIONS_DIR, "DECam")
-    """Default search path to use to locate header correction files."""
+    default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "DECam")
+    """Default resource path root to use to locate header correction files."""
 
     # DECam has no rotator, and the instrument angle on sky is set to +Y=East,
     # +X=South which we define as a 90 degree rotation and an X-flip.

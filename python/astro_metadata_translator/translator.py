@@ -18,7 +18,6 @@ import inspect
 import logging
 import warnings
 import math
-import os.path
 
 import astropy.units as u
 import astropy.io.fits.card
@@ -28,15 +27,8 @@ from .properties import PROPERTIES
 
 log = logging.getLogger(__name__)
 
-# Location of the default package header corrections directory
-CORRECTIONS_DIR = os.path.normpath(
-    os.path.join(
-        os.path.dirname(__file__),
-        os.pardir,  # python
-        os.pardir,  # <root>
-        "corrections",
-    )
-)
+# Location of the root of the corrections resource files
+CORRECTIONS_RESOURCE_ROOT = "corrections"
 
 
 def cache_translation(func, method=None):
@@ -87,6 +79,13 @@ class MetadataTranslator:
     # These are all deliberately empty in the base class.
     default_search_path = None
     """Default search path to use to locate header correction files."""
+
+    default_resource_package = __name__.split(".")[0]
+    """Module name to use to locate the correction resources."""
+
+    default_resource_root = None
+    """Default package resource path root to use to locate header correction
+    files within the ``default_resource_package`` package."""
 
     _trivial_map = {}
     """Dict of one-to-one mappings for header translation from standard
@@ -542,6 +541,21 @@ class MetadataTranslator:
             return False
 
         return True
+
+    def resource_root(self):
+        """Package resource to use to locate correction resources within an
+        installed package.
+
+        Returns
+        -------
+        resource_package : `str`
+            Package resource name.  `None` if no package resource are to be
+            used.
+        resource_root : `str`
+            The name of the resource root.  `None` if no package resources
+            are to be used.
+        """
+        return (self.default_resource_package, self.default_resource_root)
 
     def search_paths(self):
         """Search paths to use when searching for header fix up correction
