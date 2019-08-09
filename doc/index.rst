@@ -50,7 +50,7 @@ Repository
    https://github.com/lsst/astro_metadata_translator
 
 JIRA component
-   https://jira.lsstcorp.org/issues/?jql=component%3Dobs_metadata
+   https://jira.lsstcorp.org/issues/?jql=component%3Dastro_metadata_translator
 
 Command Line Utilities
 ======================
