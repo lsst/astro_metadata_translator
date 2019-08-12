@@ -1,3 +1,5 @@
 include CHANGES.md
 include LICENSE
-include tests/
+graft tests
+recursive-exclude tests *.pyc
+prune tests/.tests
