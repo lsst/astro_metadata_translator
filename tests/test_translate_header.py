@@ -44,13 +44,12 @@ class TestTranslateHeader(unittest.TestCase):
             with io.StringIO() as err:
                 okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, True, False,
                                              outstream=out, errstream=err)
-
                 self.assertEqual(self._readlines(out), [])
                 lines = self._readlines(err)
-                self.assertEqual(len(lines), 9)
+                self.assertEqual(len(lines), 10)
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assertEqual(len(okay), 9)
+        self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 0)
 
     def test_translate_header_fails(self):
@@ -65,10 +64,10 @@ class TestTranslateHeader(unittest.TestCase):
                 self.assertTrue(lines[0].startswith("ValueError"), f"Line: '{lines[0]}'")
 
                 lines = self._readlines(err)
-                self.assertEqual(len(lines), 11)
+                self.assertEqual(len(lines), 12)
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assertEqual(len(okay), 9)
+        self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 2)
 
     def test_translate_header_traceback(self):
@@ -83,10 +82,10 @@ class TestTranslateHeader(unittest.TestCase):
                 self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
 
                 lines = self._readlines(err)
-                self.assertEqual(len(lines), 11)
+                self.assertEqual(len(lines), 12)
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assertEqual(len(okay), 9)
+        self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 2)
 
     def test_translate_header_dump(self):
