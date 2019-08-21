@@ -16,3 +16,4 @@ from .megaprime import *
 from .subaru import *
 from .hsc import *
 from .suprimecam import *
+from .sdss import *
