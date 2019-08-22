@@ -1,0 +1,359 @@
+!<lsst.daf.base.PropertyList>
+- - SIMPLE
+  - Bool
+  - true
+  - ''
+- - BITPIX
+  - Int
+  - 16
+  - ''
+- - NAXIS
+  - Int
+  - 2
+  - ''
+- - NAXIS1
+  - Int
+  - 2048
+  - ''
+- - NAXIS2
+  - Int
+  - 1489
+  - ''
+- - BZERO
+  - Double
+  - 32768.0
+  - ''
+- - BSCALE
+  - Double
+  - 1.0
+  - ''
+- - TAI
+  - Double
+  - 4665448882.73
+  - 1st row Number of seconds since Nov 17 1858
+- - RA
+  - Double
+  - 352.27586
+  - 1st row RA of telescope boresight (deg)
+- - DEC
+  - Double
+  - 0.0
+  - 1st row Dec of telescope boresight (degrees)
+- - SPA
+  - Double
+  - 90.0
+  - 1st row Cam col position angle wrt N (deg)
+- - IPA
+  - Double
+  - 103.603
+  - 1st row Inst rotator position angle (deg)
+- - IPARATE
+  - Double
+  - 0.0
+  - 1st row Inst rotator anglr velocity (deg/sec)
+- - AZ
+  - Double
+  - 16.235137
+  - 1st row Azimuth (encoder) of tele (0=N?) (deg)
+- - ALT
+  - Double
+  - 56.074786
+  - 1st row Altitude (encoder) of tele (degrees)
+- - FOCUS
+  - Double
+  - -278.6
+  - 1st row - Focus piston (microns?)
+- - DATE-OBS
+  - String
+  - '2006-09-20'
+  - 1st row - TAI date
+- - TAIHMS
+  - String
+  - '06:01:22.73'
+  - 1st row TAI time HH:MM:SS.SS
+- - DATASUM
+  - String
+  - '1962647987'
+  - Data checksum created 2006-09-20T06:01:58
+- - CHECKSUM
+  - String
+  - WL8OZJ6LWJ6LWJ6L
+  - HDU checksum created 2006-09-20T06:01:58
+- - COMMENT
+  - String
+  - - ' TAI,RA,DEC,SPA,IPA,IPARATE,AZ,ALT,FOCUS at reading of col 0, row 0'
+    - ' CCD-specific parameters'
+  - ''
+- - BUNITS
+  - String
+  - ADUs
+  - ''
+- - ORIGIN
+  - String
+  - SDSS
+  - ''
+- - TELESCOP
+  - String
+  - 2.5m
+  - ''
+- - TIMESYS
+  - String
+  - TAI
+  - ''
+- - RUN
+  - Int
+  - 6377
+  - Run number
+- - FRAME
+  - Int
+  - 407
+  - Frame sequence number within the run
+- - CCDLOC
+  - Int
+  - 54
+  - Survey location of CCD (e.g., rowCol)
+- - STRIPE
+  - Int
+  - 82
+  - Stripe index number (23 <--> eta=0)
+- - STRIP
+  - String
+  - S
+  - Strip in the stripe being tracked.
+- - FLAVOR
+  - String
+  - science
+  - Flavor of this run
+- - OBSERVER
+  - String
+  - long
+  - Observer
+- - SYS_SCN
+  - String
+  - mean
+  - System of the scan great circle (e.g., mean)
+- - EQNX_SCN
+  - Double
+  - 2000.0
+  - Equinox of the scan great circle. (years)
+- - NODE
+  - Double
+  - 95.0
+  - RA of the great circle's ascending node (deg)
+- - INCL
+  - Double
+  - 0.0
+  - Great circle's inclination wrt cel. eq. (deg)
+- - XBORE
+  - Double
+  - 22.74
+  - Boresight x offset from the array center (mm)
+- - YBORE
+  - Double
+  - 0.0
+  - Boresight x offset from the array center (mm)
+- - OBJECT
+  - String
+  - 82 S
+  - e.g., 'stripe 50.6 degrees, north strip'
+- - EXPTIME
+  - String
+  - '53.907456'
+  - Exposure time (seconds)
+- - SYSTEM
+  - String
+  - FK5
+  - System of the TCC coordinates (e.g., mean)
+- - CCDMODE
+  - String
+  - DRIFT
+  - '''STARING'' or ''DRIFT'''
+- - C_OBS
+  - Int
+  - 26322
+  - CCD row clock rate (usec/row)
+- - COLBIN
+  - Int
+  - 1
+  - Binning factor perpendicular to the columns
+- - ROWBIN
+  - Int
+  - 1
+  - Binning factor perpendicular to the rows
+- - DAVERS
+  - String
+  - v15_12_1
+  - Version of DA software
+- - SCDMETHD
+  - String
+  - sqrtDynamic
+  - scdMethod
+- - SCDWIDTH
+  - Int
+  - 1280
+  - scdDisplayWidth
+- - SCDDECMF
+  - Int
+  - 1
+  - scdDecimateFactor
+- - SCDOFSET
+  - Int
+  - 410
+  - scdDisplayOffset
+- - SCDDYNTH
+  - Int
+  - -21
+  - scdDynamicThresh
+- - SCDSTTHL
+  - Int
+  - 30
+  - scdStaticThreshL
+- - SCDSTTHR
+  - Int
+  - 30
+  - scdStaticThreshR
+- - SCDREDSZ
+  - Int
+  - 527
+  - scdReduceSize
+- - SCDSKYL
+  - Int
+  - 0
+  - scdSkyLeft
+- - SCDSKYR
+  - Int
+  - 0
+  - scdSkyRight
+- - CAMROW
+  - Int
+  - 5
+  - Row in the imaging camera
+- - BADLINES
+  - Int
+  - 0
+  - Number of bad lines in frame
+- - EQUINOX
+  - Double
+  - 2000.0
+  - ''
+- - SOFTBIAS
+  - Int
+  - 1000
+  - software "bias" added to all DN
+- - FLUX20
+  - Double
+  - 2673.77
+  - Number of DN in 20th mag object
+- - FLUX0
+  - Double
+  - -9999.0
+  - Number of DN in 0th mag object
+- - FCALI_ID
+  - String
+  - None
+  - ''
+- - SKY
+  - Double
+  - 75.4000000000001
+  - Approx. sky level (DN)
+- - BUNIT
+  - String
+  - DNs
+  - ''
+- - FILTER
+  - String
+  - g
+  - filter used
+- - CAMCOL
+  - Int
+  - 4
+  - column in the imaging camera
+- - VERSION
+  - String
+  - v5_4_28b
+  - ''
+- - DERV_VER
+  - String
+  - v8_18
+  - ''
+- - ASTR_VER
+  - String
+  - v5_21
+  - ''
+- - ASTRO_ID
+  - String
+  - 2007-01-29T10:22:33 26272
+  - ''
+- - BIAS_ID
+  - String
+  - PS
+  - ''
+- - FRAME_ID
+  - String
+  - 2007-02-06T23:15:03 11515
+  - ''
+- - KO_VER
+  - String
+  - devel
+  - ''
+- - PS_ID
+  - String
+  - 2007-01-26T09:33:28 14235 camCol 4
+  - ''
+- - ATVSN
+  - String
+  - v5_21
+  - ASTROTOOLS version tag
+- - RADECSYS
+  - String
+  - ICRS
+  - International Celestial Ref. System
+- - CTYPE1
+  - String
+  - RA---TAN
+  - ''
+- - CTYPE2
+  - String
+  - DEC--TAN
+  - ''
+- - CUNIT1
+  - String
+  - deg
+  - ''
+- - CUNIT2
+  - String
+  - deg
+  - ''
+- - CRPIX1
+  - Double
+  - 1024.5
+  - Column Pixel Coordinate of Ref. Pixel
+- - CRPIX2
+  - Double
+  - 744.5
+  - Row Pixel Coordinate of Ref. Pixel
+- - CRVAL1
+  - Double
+  - 351.64468308
+  - RA at Reference Pixel
+- - CRVAL2
+  - Double
+  - 0.10407344
+  - DEC at Reference Pixel
+- - CD1_1
+  - Double
+  - -4.0429620789969e-08
+  - RA  degrees per column pixel
+- - CD1_2
+  - Double
+  - 0.000110022681398723
+  - RA  degrees per row pixel
+- - CD2_1
+  - Double
+  - 0.0001099696875
+  - DEC degrees per column pixel
+- - CD2_2
+  - Double
+  - 7.9435483870939e-09
+  - DEC degrees per row pixel
+
