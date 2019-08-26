@@ -45,7 +45,7 @@ class SdssTranslator(FitsTranslator):
                   "boresight_rotation_coord": "sky",
                   "dark_time": 0.0*u.s,  # Drift scan implies no dark time
                   "instrument": "Imager on SDSS 2.5m",  # We only ever ingest data from the imager
-                  "telescope": "SDSS 2.5m",
+                  "telescope": "SDSS 2.5m",  # Value of TELESCOP in header is ambiguous
                   "relative_humidity": None,
                   "temperature": None,
                   "pressure": None,
@@ -59,7 +59,6 @@ class SdssTranslator(FitsTranslator):
                     "visit_id": "RUN",
                     "science_program": "OBJECT",  # This is the closest I can think of to a useful program
                     "detector_name": "CCDLOC",  # This is a numeric incoding of the "slot", i.e. filter+camcol
-                    "telescope": ("TELESCOP", dict(default="2.5m")),
                     }
 
     #  Need a mapping from unique name to index.  The order is arbitrary.
