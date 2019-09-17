@@ -95,11 +95,6 @@ class ObservationInfo:
         # Store the supplied header for later stripping
         self._header = header
 
-        # PropertyList is not dict-like so force to a dict here to simplify
-        # the translation code.
-        if hasattr(header, "toOrderedDict"):
-            header = header.toOrderedDict()
-
         if translator_class is None:
             translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         elif not issubclass(translator_class, MetadataTranslator):
