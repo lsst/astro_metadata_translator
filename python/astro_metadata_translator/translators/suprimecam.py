@@ -169,9 +169,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         exp : `int`
             Unique visit identifier.
         """
-        if self.to_observation_type() == "science":
-            return self.to_exposure_id()
-        return None
+        return self.to_exposure_id()
 
     @cache_translation
     def to_observation_type(self):
