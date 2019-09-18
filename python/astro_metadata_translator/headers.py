@@ -89,8 +89,9 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     if not headers:
         raise ValueError("No headers supplied.")
 
-    # Copy the input list because we will be reorganizing it
-    headers = list(headers)
+    # Force PropertyList to OrderedDict
+    # In python 3.7 dicts are guaranteed to retain order
+    headers = [h.toOrderedDict() if hasattr(h, "toOrderedDict") else h for h in headers]
 
     # With a single header provided return a copy immediately
     if len(headers) == 1:
