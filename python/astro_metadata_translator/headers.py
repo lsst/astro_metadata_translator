@@ -89,9 +89,8 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     if not headers:
         raise ValueError("No headers supplied.")
 
-    # Force PropertyList to OrderedDict
-    # In python 3.7 dicts are guaranteed to retain order
-    headers = [h.toOrderedDict() if hasattr(h, "toOrderedDict") else h for h in headers]
+    # Copy the input list because we will be reorganizing it
+    headers = list(headers)
 
     # With a single header provided return a copy immediately
     if len(headers) == 1:
@@ -246,16 +245,9 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     The first file located in the search path is used for the correction.
     """
 
-    # PropertyList is not dict-like so force to a dict here to allow the
-    # translation classes to work. We update the original header though.
-    if hasattr(header, "toOrderedDict"):
-        header_to_translate = header.toOrderedDict()
-    else:
-        header_to_translate = header
-
     if translator_class is None:
         try:
-            translator_class = MetadataTranslator.determine_translator(header_to_translate,
+            translator_class = MetadataTranslator.determine_translator(header,
                                                                        filename=filename)
         except ValueError:
             # if the header is not recognized, we should not complain
@@ -265,7 +257,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
     # Create an instance for this header
-    translator = translator_class(header_to_translate, filename=filename)
+    translator = translator_class(header, filename=filename)
 
     # To determine the file look up we need the observation_id and instrument
     try:

@@ -68,6 +68,8 @@ class HeadersTestCase(unittest.TestCase):
 
     def test_merging_overwrite(self):
         merged = merge_headers([self.h1, self.h2], mode="overwrite")
+        # The merged header should be the same type as the first header
+        self.assertIsInstance(merged, type(self.h1))
 
         expected = {
             "MJD-OBS": self.h2["MJD-OBS"],
