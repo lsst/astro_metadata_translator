@@ -314,6 +314,9 @@ class MetadataTranslator:
 
         # Only register classes with declared names
         if hasattr(cls, "name") and cls.name is not None:
+            if cls.name in MetadataTranslator.translators:
+                log.warning("%s: Replacing %s translator with %s",
+                            cls.name, MetadataTranslator.translators[cls.name], cls)
             MetadataTranslator.translators[cls.name] = cls
 
         # Check that we have not inherited constant/trivial mappings from
