@@ -183,6 +183,69 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     return merged
 
 
+def _find_from_file(header, paths, target_file):
+    """Search file system for matching correction files.
+
+    Parameters
+    ----------
+    header : `dict`
+        Header to update.
+    paths : `list`
+        Paths to search.
+    target_file : `str`
+        File to locate in the path.
+
+    Returns
+    -------
+    modified : `bool`
+        `True` if a correction was found. Only the first correction located
+        in a path is used.
+    """
+    for p in paths:
+        correction_file = os.path.join(p, target_file)
+        if os.path.exists(correction_file):
+            with open(correction_file) as fh:
+                log.debug("Applying header corrections from file %s", correction_file)
+                corrections = yaml.safe_load(fh)
+
+                # Apply corrections
+                header.update(corrections)
+
+                return True
+    return False
+
+
+def _find_from_resource(header, package, resource_root, target_file):
+    """Search package resource for correction information.
+
+    Parameters
+    ----------
+    header : `dict`
+        Header to update.
+    package : `str`
+        Package resource to search.
+    resource_root : `str`
+        Resource root.
+    target_file : `str`
+        Resource to locate.
+
+    Returns
+    -------
+    modified : `bool`
+        `True` if a correction was found.
+    """
+    if package is not None and resource_root is not None:
+        resource_name = posixpath.join(resource_root, target_file)
+        if pkg_resources.resource_exists(package, resource_name):
+            log.debug("Applying header corrections from package resource %s:%s", package, resource_name)
+            with pkg_resources.resource_stream(package, resource_name) as fh:
+                corrections = yaml.safe_load(fh)
+            header.update(corrections)
+
+            return True
+    return False
+
+
 def fix_header(header, search_path=None, translator_class=None, filename=None):
     """Update, in place, the supplied header with known corrections.
 
@@ -283,28 +346,11 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     paths.extend(translator.search_paths())
 
     # Prioritize file system overrides
-    for p in paths:
-        correction_file = os.path.join(p, target_file)
-        if os.path.exists(correction_file):
-            with open(correction_file) as fh:
-                log.debug("Applying header corrections from file %s", correction_file)
-                corrections = yaml.safe_load(fh)
+    modified = _find_from_file(header, paths, target_file)
 
-                # Apply corrections
-                header.update(corrections)
+    # Apply updates from resources only if none found in files
+    if not modified:
+        package, resource_root = translator.resource_root()
+        modified = _find_from_resource(header, package, resource_root, target_file)
 
-                return True
-
-    # If none of those work, look for package resources
-    package, resource_root = translator.resource_root()
-    if package is not None and resource_root is not None:
-        resource_name = posixpath.join(resource_root, target_file)
-        if pkg_resources.resource_exists(package, resource_name):
-            log.debug("Applying header corrections from package resource %s:%s", package, resource_name)
-            with pkg_resources.resource_stream(package, resource_name) as fh:
-                corrections = yaml.safe_load(fh)
-            header.update(corrections)
-
-            return True
-
-    return False
+    return modified
