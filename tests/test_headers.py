@@ -14,8 +14,19 @@ import os.path
 
 from astro_metadata_translator import merge_headers, fix_header, HscTranslator
 from astro_metadata_translator.tests import read_test_file
+from astro_metadata_translator import DecamTranslator
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+class NotDecamTranslator(DecamTranslator):
+    """This is a DECam translator with override list of header corrections."""
+    name = None
+
+    @classmethod
+    def fix_header(cls, header):
+        header["DTSITE"] = "hi"
+        return True
 
 
 class HeadersTestCase(unittest.TestCase):
@@ -338,6 +349,16 @@ class FixHeadersTestCase(unittest.TestCase):
         fixed = fix_header(header, translator_class=HscTranslator)
         self.assertFalse(fixed)
         self.assertEqual(header["DATA-TYP"], "FLAT")
+
+    def test_translator_fix_header(self):
+        """Check that translator classes can fix headers."""
+
+        # Read in a known header
+        header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
+        self.assertEqual(header["DTSITE"], "ct")
+        fixed = fix_header(header, translator_class=NotDecamTranslator)
+        self.assertTrue(fixed)
+        self.assertEqual(header["DTSITE"], "hi")
 
 
 if __name__ == "__main__":

@@ -463,6 +463,40 @@ class MetadataTranslator:
             raise ValueError(f"None of the registered translation classes {list(cls.translators.keys())}"
                              " understood this header")
 
+    @classmethod
+    def fix_header(cls, header):
+        """Apply global fixes to a supplied header.
+
+        Parameters
+        ----------
+        header : `dict`
+            The header to correct. Correction is in place.
+
+        Returns
+        -------
+        modified : `bool`
+            `True` if a correction was applied.
+
+        Notes
+        -----
+        This method is intended to support major discrepancies in headers
+        such as:
+
+        * Periods of time where headers are known to be incorrect in some
+          way that can be fixed either by deriving the correct value from
+          the existing value or understanding the that correction is static
+          for the given time.  This requires that the date header is
+          known.
+        * The presence of a certain value is always wrong and should be
+          corrected with a new static value regardless of date.
+
+        It is assumed that one off problems with headers have been applied
+        before this method is called using the per-obsid correction system.
+
+        Usually called from `astro_metadata_translator.fix_header`.
+        """
+        return False
+
     def _used_these_cards(self, *args):
         """Indicate that the supplied cards have been used for translation.
 

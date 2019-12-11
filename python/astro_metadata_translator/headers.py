@@ -353,4 +353,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         package, resource_root = translator.resource_root()
         modified = _find_from_resource(header, package, resource_root, target_file)
 
-    return modified
+    # Allow a translation class to do local fixups
+    translator_modified = translator_class.fix_header(header)
+
+    return modified or translator_modified
