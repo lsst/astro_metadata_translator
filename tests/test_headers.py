@@ -29,6 +29,16 @@ class NotDecamTranslator(DecamTranslator):
         return True
 
 
+class AlsoNotDecamTranslator(DecamTranslator):
+    """This is a DECam translator with override list of header corrections
+    that fails."""
+    name = None
+
+    @classmethod
+    def fix_header(cls, header):
+        raise RuntimeError("Failure to work something out from header")
+
+
 class HeadersTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -359,6 +369,12 @@ class FixHeadersTestCase(unittest.TestCase):
         fixed = fix_header(header, translator_class=NotDecamTranslator)
         self.assertTrue(fixed)
         self.assertEqual(header["DTSITE"], "hi")
+
+        header["DTSITE"] = "reset"
+        with self.assertLogs("astro_metadata_translator", level="FATAL"):
+            fixed = fix_header(header, translator_class=AlsoNotDecamTranslator)
+        self.assertFalse(fixed)
+        self.assertEqual(header["DTSITE"], "reset")
 
 
 if __name__ == "__main__":

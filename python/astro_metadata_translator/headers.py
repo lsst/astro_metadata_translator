@@ -354,6 +354,12 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         modified = _find_from_resource(header, package, resource_root, target_file)
 
     # Allow a translation class to do local fixups
-    translator_modified = translator_class.fix_header(header)
+    # Allow it to fail but log the failure
+    try:
+        translator_modified = translator_class.fix_header(header)
+    except Exception as e:
+        log.fatal("Ignoring translator header fixup of %s %s: %s",
+                  instrument, obsid, e)
+        translator_modified = False
 
     return modified or translator_modified
