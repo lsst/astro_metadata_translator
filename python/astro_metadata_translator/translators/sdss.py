@@ -85,9 +85,9 @@ class SdssTranslator(FitsTranslator):
             `True` if the header is recognized by this class. `False`
             otherwise.
         """
-        if (cls.is_keyword_defined(header, "ORIGIN") and cls.is_keyword_defined(header, "CCDMODE") and
-                cls.is_keyword_defined(header, "TELESCOP") and "2.5m" in header["TELESCOP"] and
-                "SDSS" in header["ORIGIN"] and "DRIFT" in header["CCDMODE"]):
+        if (cls.is_keyword_defined(header, "ORIGIN") and cls.is_keyword_defined(header, "CCDMODE")
+                and cls.is_keyword_defined(header, "TELESCOP") and "2.5m" in header["TELESCOP"]
+                and "SDSS" in header["ORIGIN"] and "DRIFT" in header["CCDMODE"]):
             return True
         return False
 
@@ -210,9 +210,9 @@ class SdssTranslator(FitsTranslator):
                 return None
             raise(e)
         filter_id_map = dict(u=0, g=1, r=2, i=3, z=4)
-        return ((int(run) * 10 +
-                filter_id_map[filt]) * 10 +
-                int(camcol)) * 10000 + int(field)
+        return ((int(run) * 10
+                + filter_id_map[filt]) * 10
+                + int(camcol)) * 10000 + int(field)
 
     @cache_translation
     def to_detector_group(self):
