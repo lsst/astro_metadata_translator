@@ -771,6 +771,24 @@ class MetadataTranslator:
 
         return name
 
+    @cache_translation
+    def to_exposure_group(self):
+        """Return the group label associated with this exposure.
+
+        Base class implementation returns the ``exposure_id`` in string
+        form.  A subclass may do something different.
+
+        Returns
+        -------
+        name : `str`
+            The ``exposure_id`` converted to a string.
+        """
+        exposure_id = self.to_exposure_id()
+        if exposure_id is None:
+            return None
+        else:
+            return str(exposure_id)
+
 
 def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
     """Create a an abstract translation method for this property.

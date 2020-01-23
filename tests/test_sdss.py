@@ -34,6 +34,7 @@ class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
                            detector_num=15,
                            detector_serial="UNKNOWN",
                            exposure_id=6377,
+                           exposure_group="6377",
                            exposure_time=53.907456*u.s,
                            object="82 S",
                            observation_id="6377 4 g 407",

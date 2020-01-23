@@ -81,4 +81,8 @@ may not be.""", "int", int),
                                    "str", str),
               "observation_id": ("Label uniquely identifying this observation "
                                  "(can be related to 'exposure_id').",
-                                 "str", str)}
+                                 "str", str),
+              "exposure_group": ("Label to use to associate this exposure with others "
+                                 "(can be related to 'exposure_id').",
+                                 "str", str),
+              }
