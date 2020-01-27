@@ -43,11 +43,27 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, True, False,
-                                             outstream=out, errstream=err)
+                                             outstream=out, errstream=err, output_mode="verbose")
                 self.assertEqual(self._readlines(out), [])
                 lines = self._readlines(err)
                 self.assertEqual(len(lines), 10)
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
+
+        self.assertEqual(len(okay), 10)
+        self.assertEqual(len(failed), 0)
+
+    def test_translate_header_table(self):
+        """Translate some header files with table output."""
+        with io.StringIO() as out:
+            with io.StringIO() as err:
+                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, False, False,
+                                             outstream=out, errstream=err)
+                output = self._readlines(out)
+                self.assertTrue(output[0].startswith("ObsId"))
+                self.assertTrue(output[1].startswith("-------"))
+                self.assertEqual(len(output), 12)
+                errlines = self._readlines(err)
+                self.assertEqual(len(errlines), 0)
 
         self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 0)
@@ -57,7 +73,7 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, True, False,
-                                             outstream=out, errstream=err)
+                                             outstream=out, errstream=err, output_mode="verbose")
 
                 lines = self._readlines(out)
                 self.assertEqual(len(lines), len(failed))
@@ -75,7 +91,7 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, True, True,
-                                             outstream=out, errstream=err)
+                                             outstream=out, errstream=err, output_mode="verbose")
 
                 lines = self._readlines(out)
                 self.assertEqual(len(lines), 16)
