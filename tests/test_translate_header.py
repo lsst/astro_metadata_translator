@@ -42,8 +42,8 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, True, False,
-                                             outstream=out, errstream=err)
+                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, False,
+                                             outstream=out, errstream=err, output_mode="none")
                 self.assertEqual(self._readlines(out), [])
                 lines = self._readlines(err)
                 self.assertEqual(len(lines), 10)
@@ -52,12 +52,28 @@ class TestTranslateHeader(unittest.TestCase):
         self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 0)
 
+    def test_translate_header_table(self):
+        """Translate some header files with table output."""
+        with io.StringIO() as out:
+            with io.StringIO() as err:
+                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, False,
+                                             outstream=out, errstream=err)
+                output = self._readlines(out)
+                self.assertTrue(output[0].startswith("ObsId"))
+                self.assertTrue(output[1].startswith("-------"))
+                self.assertEqual(len(output), 12)
+                errlines = self._readlines(err)
+                self.assertEqual(len(errlines), 0)
+
+        self.assertEqual(len(okay), 10)
+        self.assertEqual(len(failed), 0)
+
     def test_translate_header_fails(self):
         """Translate some header files that fail."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, True, False,
-                                             outstream=out, errstream=err)
+                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, False,
+                                             outstream=out, errstream=err, output_mode="none")
 
                 lines = self._readlines(out)
                 self.assertEqual(len(lines), len(failed))
@@ -74,8 +90,8 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files that fail and trigger traceback"""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, True, True,
-                                             outstream=out, errstream=err)
+                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, True,
+                                             outstream=out, errstream=err, output_mode="none")
 
                 lines = self._readlines(out)
                 self.assertEqual(len(lines), 16)
@@ -93,7 +109,7 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([os.path.join(TESTDATA, "fitsheader-decam.yaml")],
-                                             r"^fitsheader.*yaml$", 0, True, True, False,
+                                             r"^fitsheader.*yaml$", 0, True, False,
                                              outstream=out, errstream=err)
 
                 lines = self._readlines(out)
@@ -113,8 +129,8 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([os.path.join(TESTDATA, "fitsheader-decam.yaml")],
-                                             r"^fitsheader.*yaml$", 0, False, False, False,
-                                             outstream=out, errstream=err)
+                                             r"^fitsheader.*yaml$", 0, False, False,
+                                             outstream=out, errstream=err, output_mode="verbose")
 
                 lines = self._readlines(out)
                 # Look for the translated DECam header in the output
