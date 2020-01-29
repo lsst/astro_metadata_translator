@@ -42,7 +42,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, False,
+                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False,
                                              outstream=out, errstream=err, output_mode="none")
                 self.assertEqual(self._readlines(out), [])
                 lines = self._readlines(err)
@@ -56,7 +56,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files with table output."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False, False,
+                okay, failed = process_files([TESTDATA], r"^fitsheader.*yaml$", 0, False,
                                              outstream=out, errstream=err)
                 output = self._readlines(out)
                 self.assertTrue(output[0].startswith("ObsId"))
@@ -72,7 +72,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files that fail."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, False,
+                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False,
                                              outstream=out, errstream=err, output_mode="none")
 
                 lines = self._readlines(out)
@@ -90,7 +90,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files that fail and trigger traceback"""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, False, True,
+                okay, failed = process_files([TESTDATA], r"^.*yaml$", 0, True,
                                              outstream=out, errstream=err, output_mode="none")
 
                 lines = self._readlines(out)
@@ -109,8 +109,8 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([os.path.join(TESTDATA, "fitsheader-decam.yaml")],
-                                             r"^fitsheader.*yaml$", 0, True, False,
-                                             outstream=out, errstream=err)
+                                             r"^fitsheader.*yaml$", 0, False,
+                                             outstream=out, errstream=err, output_mode="yaml")
 
                 lines = self._readlines(out)
                 # Look for a DECam header in the output
@@ -129,7 +129,7 @@ class TestTranslateHeader(unittest.TestCase):
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files([os.path.join(TESTDATA, "fitsheader-decam.yaml")],
-                                             r"^fitsheader.*yaml$", 0, False, False,
+                                             r"^fitsheader.*yaml$", 0, False,
                                              outstream=out, errstream=err, output_mode="verbose")
 
                 lines = self._readlines(out)

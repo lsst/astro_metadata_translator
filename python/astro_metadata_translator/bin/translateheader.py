@@ -24,7 +24,7 @@ import sys
 import traceback
 import importlib
 import yaml
-from astro_metadata_translator import ObservationInfo, merge_headers
+from astro_metadata_translator import ObservationInfo, merge_headers, fix_header
 from astro_metadata_translator.tests import read_test_file
 
 # Prefer afw over Astropy
@@ -51,7 +51,7 @@ except ImportError:
 
 
 # Output mode choices
-OUTPUT_MODES = ("auto", "verbose", "table", "none")
+OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlcompact", "fixedcompact", "none")
 
 # Definitions for table columns
 TABLE_COLUMNS = ({
@@ -101,7 +101,8 @@ def build_argparser():
                         help="Do not report the translation content from each header. This forces "
                              "output mode 'none'.")
     parser.add_argument("-d", "--dumphdr", action="store_true",
-                        help="Dump the header in YAML format to standard output rather than translating it")
+                        help="Dump the header in YAML format to standard output rather than translating it."
+                             " This is the same as using mode=yaml")
     parser.add_argument("--traceback", action="store_true",
                         help="Give detailed trace back when any errors encountered")
     parser.add_argument("-n", "--hdrnum", default=1,
@@ -111,6 +112,8 @@ def build_argparser():
     parser.add_argument("-m", "--mode", default="auto", choices=OUTPUT_MODES,
                         help="Display mode for translated parameters. 'verbose' displays all the information"
                              " available. 'table' displays important information in tabular form."
+                             " 'yaml' dumps the header in YAML format (this is equivalent to -d option)."
+                             " 'fixed' dumps the header in YAML after it has had corrections applied."
                              " 'none' displays no translated header information and is an alias for the "
                              " '--quiet' option."
                              " 'auto' mode is 'verbose' for a single file and 'table' for multiple files.")
@@ -126,7 +129,7 @@ def build_argparser():
     return parser
 
 
-def read_file(file, hdrnum, dumphdr, print_trace,
+def read_file(file, hdrnum, print_trace,
               outstream=sys.stdout, errstream=sys.stderr, output_mode="verbose",
               write_heading=False):
     """Read the specified file and process it.
@@ -138,9 +141,6 @@ def read_file(file, hdrnum, dumphdr, print_trace,
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
         merged with the header from this HDU.
-    dumphdr : `bool`
-        If `True` dump the merged header to standard output rather than
-        translating it.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
@@ -151,9 +151,11 @@ def read_file(file, hdrnum, dumphdr, print_trace,
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.
     output_mode : `str`, optional
-        Output mode to use. Must be one of "verbose", "none", or "table".
-        "auto" is not allowed by this point. Output mode is not used if
-        ``dumphdr`` is True.
+        Output mode to use. Must be one of "verbose", "none", "table",
+        "yaml", or "fixed".  "yaml" and "fixed" can be modified with a
+        "compact" suffix to indicate that the output should be in compact
+        key/value YAML form and not reflect the native header data type.
+        "auto" is not allowed by this point.
     write_heading: `bool`, optional
         If `True` and in table mode, write a table heading out before writing
         the content.
@@ -193,7 +195,16 @@ def read_file(file, hdrnum, dumphdr, print_trace,
             else:
                 print(f"HDU {hdrnum} was not found. Ignoring request.", file=errstream)
 
-        if dumphdr:
+        if output_mode.endswith("compact"):
+            # Rewrite md as simple dict for output
+            md = {k: v for k, v in md.items()}
+            output_mode = output_mode[:-len("compact")]
+
+        if output_mode in ("yaml", "fixed"):
+
+            if output_mode == "fixed":
+                fix_header(md)
+
             # The header should be written out in the insertion order
             print(yaml.dump(md, sort_keys=False), file=outstream)
             return True
@@ -233,7 +244,7 @@ def read_file(file, hdrnum, dumphdr, print_trace,
     return True
 
 
-def process_files(files, regex, hdrnum, dumphdr, print_trace,
+def process_files(files, regex, hdrnum, print_trace,
                   outstream=sys.stdout, errstream=sys.stderr,
                   output_mode="auto"):
     """Read and translate metadata from the specified files.
@@ -248,9 +259,6 @@ def process_files(files, regex, hdrnum, dumphdr, print_trace,
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
         merged with the header from this HDU.
-    dumphdr : `bool`
-        If `True` dump the merged header to standard output rather than
-        translating it.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
@@ -297,7 +305,7 @@ def process_files(files, regex, hdrnum, dumphdr, print_trace,
     okay = []
     heading = True
     for path in sorted(found_files):
-        isok = read_file(path, hdrnum, dumphdr, print_trace, outstream, errstream, output_mode,
+        isok = read_file(path, hdrnum, print_trace, outstream, errstream, output_mode,
                          heading)
         heading = False
         if isok:
@@ -328,10 +336,12 @@ def main():
     output_mode = args.mode
     if args.quiet:
         output_mode = "none"
+    elif args.dumphdr:
+        output_mode = "yamlcompact"
 
     # Main loop over files
     okay, failed = process_files(args.files, args.regex, args.hdrnum,
-                                 args.dumphdr, args.traceback,
+                                 args.traceback,
                                  output_mode=output_mode)
 
     if failed:
