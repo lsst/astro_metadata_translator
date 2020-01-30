@@ -51,7 +51,7 @@ except ImportError:
 
 
 # Output mode choices
-OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlcompact", "fixedcompact", "none")
+OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlnative", "fixednative", "none")
 
 # Definitions for table columns
 TABLE_COLUMNS = ({
@@ -114,6 +114,7 @@ def build_argparser():
                              " available. 'table' displays important information in tabular form."
                              " 'yaml' dumps the header in YAML format (this is equivalent to -d option)."
                              " 'fixed' dumps the header in YAML after it has had corrections applied."
+                             " Add 'native' suffix to dump YAML in PropertyList or Astropy native form."
                              " 'none' displays no translated header information and is an alias for the "
                              " '--quiet' option."
                              " 'auto' mode is 'verbose' for a single file and 'table' for multiple files.")
@@ -153,8 +154,10 @@ def read_file(file, hdrnum, print_trace,
     output_mode : `str`, optional
         Output mode to use. Must be one of "verbose", "none", "table",
         "yaml", or "fixed".  "yaml" and "fixed" can be modified with a
-        "compact" suffix to indicate that the output should be in compact
-        key/value YAML form and not reflect the native header data type.
+        "native" suffix to indicate that the output should be a representation
+        of the native object type representing the header (which can be
+        PropertyList or an Astropy header).  Without this modify headers
+        will be dumped as simple `dict` form.
         "auto" is not allowed by this point.
     write_heading: `bool`, optional
         If `True` and in table mode, write a table heading out before writing
@@ -195,10 +198,12 @@ def read_file(file, hdrnum, print_trace,
             else:
                 print(f"HDU {hdrnum} was not found. Ignoring request.", file=errstream)
 
-        if output_mode.endswith("compact"):
+        if output_mode.endswith("native"):
+            # Strip native and don't change type of md
+            output_mode = output_mode[:-len("native")]
+        else:
             # Rewrite md as simple dict for output
             md = {k: v for k, v in md.items()}
-            output_mode = output_mode[:-len("compact")]
 
         if output_mode in ("yaml", "fixed"):
 
@@ -337,7 +342,7 @@ def main():
     if args.quiet:
         output_mode = "none"
     elif args.dumphdr:
-        output_mode = "yamlcompact"
+        output_mode = "yaml"
 
     # Main loop over files
     okay, failed = process_files(args.files, args.regex, args.hdrnum,
