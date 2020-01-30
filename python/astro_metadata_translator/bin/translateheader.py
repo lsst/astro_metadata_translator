@@ -71,7 +71,7 @@ TABLE_COLUMNS = ({
                  "label": "Object",
                  },
                  {
-                 "format": "8.8s",
+                 "format": "16.16s",
                  "attr": "physical_filter",
                  "label": "Filter",
                  },
