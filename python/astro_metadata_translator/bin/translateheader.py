@@ -17,6 +17,7 @@ Read file metadata from the specified files and report the translated content.
 __all__ = ("main", "process_files")
 
 import argparse
+import logging
 
 import os
 import re
@@ -118,6 +119,8 @@ def build_argparser():
                              " 'none' displays no translated header information and is an alias for the "
                              " '--quiet' option."
                              " 'auto' mode is 'verbose' for a single file and 'table' for multiple files.")
+    parser.add_argument("-l", "--log", default="warn",
+                        help="Python logging level to use.")
 
     re_default = r"\.fit[s]?\b"
     parser.add_argument("-r", "--regex", default=re_default,
@@ -343,6 +346,13 @@ def main():
         output_mode = "none"
     elif args.dumphdr:
         output_mode = "yaml"
+
+    # Set the log level. Convert to upper case to allow the user to
+    # specify --log=DEBUG or --log=debug
+    numeric_level = getattr(logging, args.log.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError(f"Invalid log level: {args.log}")
+    logging.basicConfig(level=numeric_level)
 
     # Main loop over files
     okay, failed = process_files(args.files, args.regex, args.hdrnum,
