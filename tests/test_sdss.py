@@ -39,6 +39,7 @@ class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
                            object="82 S",
                            observation_id="6377 4 g 407",
                            observation_type="science",
+                           observation_reason="science",
                            physical_filter="g",
                            pressure=None,
                            relative_humidity=None,
