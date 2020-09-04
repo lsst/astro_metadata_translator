@@ -82,6 +82,9 @@ may not be.""", "int", int),
               "observation_id": ("Label uniquely identifying this observation "
                                  "(can be related to 'exposure_id').",
                                  "str", str),
+              "observation_reason": ("Reason this observation was taken, or its purpose ('science' and "
+                                     "'calibration' are common values)",
+                                     "str", str),
               "exposure_group": ("Label to use to associate this exposure with others "
                                  "(can be related to 'exposure_id').",
                                  "str", str),

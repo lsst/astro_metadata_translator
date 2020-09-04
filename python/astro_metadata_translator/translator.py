@@ -789,6 +789,24 @@ class MetadataTranslator:
         else:
             return str(exposure_id)
 
+    @cache_translation
+    def to_observation_reason(self):
+        """Return the reason this observation was taken.
+
+        Base class implementation returns the ``science`` if the
+        ``observation_type`` is science, else ``unknown``.
+        A subclass may do something different.
+
+        Returns
+        -------
+        name : `str`
+            The reason for this observation.
+        """
+        obstype = self.to_observation_type()
+        if obstype == "science":
+            return "science"
+        return "unknown"
+
 
 def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
     """Create a an abstract translation method for this property.
