@@ -172,3 +172,14 @@ class MegaPrimeTranslator(FitsTranslator):
                 return self.quantity_from_card(key, unit)
         else:
             raise KeyError("Could not find pressure keywords in header")
+
+    @cache_translation
+    def to_observation_counter(self):
+        """Return the lifetime exposure number.
+
+        Returns
+        -------
+        sequence : `int`
+            The observation counter.
+        """
+        return self.to_exposure_id()

@@ -122,6 +122,17 @@ class DecamTranslator(FitsTranslator):
         return value
 
     @cache_translation
+    def to_observation_counter(self):
+        """Return the lifetime exposure number.
+
+        Returns
+        -------
+        sequence : `int`
+            The observation counter.
+        """
+        return self.to_exposure_id()
+
+    @cache_translation
     def to_visit_id(self):
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id()
