@@ -1,0 +1,46 @@
+name: build_and_test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build_and_test:
+    # runs-on: ubuntu-latest
+    # Need >= 20.04 for modern sqlite. Can switch to latest when
+    # github change
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Install packages
+        run: sudo apt-get install graphviz
+
+      # We have two cores so we can speed up the testing with xdist
+      - name: Install xdist and openfiles
+        run: pip install pytest-xdist pytest-openfiles pytest-flake8
+
+      - name: Build and install
+        run: pip install -v .
+
+      - name: Run tests
+        run: pytest -r a -v -n 3 --open-files
+
+      - name: Install documenteer
+        run: pip install -r doc/requirements.txt
+
+      - name: Build documentation
+        run: package-docs build
+
+      - name: Landing page upload
+        if: ${{ github.event_name == 'push' }}
+        env:
+          LTD_PASSWORD: ${{ secrets.LTD_PASSWORD }}
+          LTD_USERNAME: ${{ secrets.LTD_USERNAME }}
+        run: |
+          ltd upload --gh --product "astro-metadata-translator" --dir doc/_build/html
