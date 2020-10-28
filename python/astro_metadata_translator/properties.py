@@ -88,4 +88,9 @@ may not be.""", "int", int),
               "exposure_group": ("Label to use to associate this exposure with others "
                                  "(can be related to 'exposure_id').",
                                  "str", str),
+              "observing_day": ("Integer in YYYYMMDD format corresponding to the day of observation.",
+                                "int", int),
+              "observation_counter": ("Counter of this observation. Can be counter within observing_day "
+                                      " or a global counter. Likely to be observatory specific.",
+                                      "int", int),
               }

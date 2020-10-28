@@ -807,6 +807,44 @@ class MetadataTranslator:
             return "science"
         return "unknown"
 
+    @cache_translation
+    def to_observing_day(self):
+        """Return the YYYYMMDD integer corresponding to the observing day.
+
+        Base class implementation uses the TAI date of the start of the
+        observation.
+
+        Returns
+        -------
+        day : `int`
+            The observing day as an integer of form YYYYMMDD. If the header
+            is broken and is unable to obtain a date of observation, ``0``
+            is returned and the assumption is made that the problem will
+            be caught elsewhere.
+        """
+        datetime_begin = self.to_datetime_begin()
+        if datetime_begin is None:
+            return 0
+        return int(datetime_begin.tai.strftime("%Y%m%d"))
+
+    @cache_translation
+    def to_observation_counter(self):
+        """Return an integer corresponding to how this observation relates
+        to other observations.
+
+        Base class implementation returns ``0`` to indicate that it is not
+        known how an observatory will define a counter. Some observatories
+        may not use the concept, others may use a counter that increases
+        for every observation taken for that instrument, and others may
+        define it to be a counter within an observing day.
+
+        Returns
+        -------
+        sequence : `int`
+            The observation counter. Always ``0`` for this implementation.
+        """
+        return 0
+
 
 def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
     """Create a an abstract translation method for this property.

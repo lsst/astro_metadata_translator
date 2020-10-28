@@ -35,3 +35,14 @@ class SubaruTranslator(FitsTranslator):
             An object representing the location of the telescope.
         """
         return EarthLocation.from_geodetic(-155.476667, 19.825556, 4139.0)
+
+    @cache_translation
+    def to_observation_counter(self):
+        """Return the lifetime exposure number.
+
+        Returns
+        -------
+        sequence : `int`
+            The observation counter.
+        """
+        return self.to_exposure_id()

@@ -22,19 +22,6 @@ from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
 from .fits import FitsTranslator
 from .helpers import tracking_from_degree_headers, altaz_from_degree_headers
 
-filters = {'u.MP9301': 'u',
-           'u.MP9302': 'u2',
-           'g.MP9401': 'g',
-           'g.MP9402': 'g2',
-           'r.MP9601': 'r',
-           'r.MP9602': 'r2',
-           'i.MP9701': 'i',
-           'i.MP9702': 'i2',
-           'i.MP9703': 'i3',
-           'z.MP9801': 'z',
-           'z.MP9901': 'z2',
-           }
-
 
 class MegaPrimeTranslator(FitsTranslator):
     """Metadata translator for CFHT MegaPrime standard headers.
@@ -185,3 +172,14 @@ class MegaPrimeTranslator(FitsTranslator):
                 return self.quantity_from_card(key, unit)
         else:
             raise KeyError("Could not find pressure keywords in header")
+
+    @cache_translation
+    def to_observation_counter(self):
+        """Return the lifetime exposure number.
+
+        Returns
+        -------
+        sequence : `int`
+            The observation counter.
+        """
+        return self.to_exposure_id()

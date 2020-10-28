@@ -110,18 +110,27 @@ class DecamTranslator(FitsTranslator):
 
     @cache_translation
     def to_exposure_id(self):
-        """Calculate exposure ID solely for science observations.
+        """Calculate exposure ID.
 
         Returns
         -------
         id : `int`
             ID of exposure.
         """
-        if self.to_observation_type() != "science":
-            return None
         value = self._header["EXPNUM"]
         self._used_these_cards("EXPNUM")
         return value
+
+    @cache_translation
+    def to_observation_counter(self):
+        """Return the lifetime exposure number.
+
+        Returns
+        -------
+        sequence : `int`
+            The observation counter.
+        """
+        return self.to_exposure_id()
 
     @cache_translation
     def to_visit_id(self):
