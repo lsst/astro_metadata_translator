@@ -15,6 +15,7 @@ __all__ = ("DecamTranslator", )
 
 import re
 import posixpath
+import logging
 
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
@@ -23,6 +24,8 @@ from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
 from .fits import FitsTranslator
 from .helpers import altaz_from_degree_headers, is_non_science, \
     tracking_from_degree_headers
+
+log = logging.getLogger(__name__)
 
 
 class DecamTranslator(FitsTranslator):
@@ -248,3 +251,46 @@ class DecamTranslator(FitsTranslator):
         # Docstring will be inherited. Property defined in properties.py
         name = self.to_detector_unique_name()
         return name[1:]
+
+    @classmethod
+    def fix_header(cls, header, obsid, filename=None):
+        """Fix DECam headers.
+
+        Parameters
+        ----------
+        header : `dict`
+            The header to update.  Updates are in place.
+        obsid : `str`
+            Unique observation identifier associated with this header.
+            Will always be provided.
+        filename : `str`, optional
+            Filename associated with this header. May not be set since headers
+            can be fixed independently of any filename being known.
+
+        Returns
+        -------
+        modified = `bool`
+            Returns `True` if the header was updated.
+
+        Notes
+        -----
+        Fixes the following issues:
+        * If OBSTYPE contains "zero" or "bias",
+          update the FILTER keyword to "solid plate 0.0 0.0".
+
+        Corrections are reported as debug level log messages.
+        """
+        modified = False
+
+        # Calculate the standard label to use for log messages
+        log_label = cls._construct_log_prefix(obsid, filename)
+
+        obstype = header.get("OBSTYPE", "unknown")
+
+        if "bias" in obstype.lower() or "zero" in obstype.lower():
+            header["FILTER"] = "solid plate 0.0 0.0"
+            modified = True
+            log.debug("%s: Set FILTER to %s because OBSTYPE is %s",
+                      log_label, header["FILTER"], obstype)
+
+        return modified
