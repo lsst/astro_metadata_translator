@@ -211,7 +211,7 @@ def read_file(file, hdrnum, print_trace,
         if output_mode in ("yaml", "fixed"):
 
             if output_mode == "fixed":
-                fix_header(md)
+                fix_header(md, filename=file)
 
             # The header should be written out in the insertion order
             print(yaml.dump(md, sort_keys=False), file=outstream)
