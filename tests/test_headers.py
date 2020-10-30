@@ -335,6 +335,11 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertTrue(fixed)
         self.assertEqual(header["DETECTOR"], "NEW-ID")
 
+        # Now with a corrections directory that has bad YAML in it
+        with self.assertLogs(level="WARN"):
+            fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "bad_corrections"))
+        self.assertFalse(fixed)
+
         # Test that fix_header of unknown header is allowed
         header = {"SOMETHING": "UNKNOWN"}
         fixed = fix_header(header)

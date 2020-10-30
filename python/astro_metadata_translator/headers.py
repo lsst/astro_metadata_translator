@@ -20,6 +20,7 @@ import itertools
 import copy
 import os
 import yaml
+from collections.abc import Mapping
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
@@ -183,6 +184,37 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     return merged
 
 
+def _read_yaml(fh, msg):
+    """Read YAML from file descriptor.
+
+    Parameters
+    ----------
+    fh : `io.IOBase`
+        Open file handle containing the YAML stream
+    msg : `str`
+        Text to include in log file when referring to this stream. Examples
+        could be "file something.yaml" or "resource module:resource".
+
+    Returns
+    -------
+    parsed : `dict` or `None`
+        The contents of the YAML file if it was a `dict`, else `None` if
+        the contents could not be parsed or the contents were YAML but
+        not a mapping.
+    """
+    try:
+        content = yaml.safe_load(fh)
+    except Exception as e:
+        log.warning("Error parsing YAML header corrections from %s: %s", msg, str(e))
+        return None
+
+    if not isinstance(content, Mapping):
+        log.warning("YAML Mapping not found in %s. Ignoring contents.", msg)
+        return None
+
+    return content
+
+
 def _find_from_file(header, paths, target_file):
     """Search file system for matching correction files.
 
@@ -206,12 +238,15 @@ def _find_from_file(header, paths, target_file):
         if os.path.exists(correction_file):
             with open(correction_file) as fh:
                 log.debug("Applying header corrections from file %s", correction_file)
-                corrections = yaml.safe_load(fh)
+                corrections = _read_yaml(fh, f"file {correction_file}")
 
-                # Apply corrections
-                header.update(corrections)
+            if corrections is None:
+                continue
 
-                return True
+            # Apply corrections
+            header.update(corrections)
+
+            return True
     return False
 
 
@@ -239,7 +274,11 @@ def _find_from_resource(header, package, resource_root, target_file):
         if pkg_resources.resource_exists(package, resource_name):
             log.debug("Applying header corrections from package resource %s:%s", package, resource_name)
             with pkg_resources.resource_stream(package, resource_name) as fh:
-                corrections = yaml.safe_load(fh)
+                corrections = _read_yaml(fh, f"package resource {package}:{resource_name}")
+
+            if corrections is None:
+                return False
+
             header.update(corrections)
 
             return True
