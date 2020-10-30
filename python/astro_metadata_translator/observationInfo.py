@@ -50,16 +50,29 @@ class ObservationInfo:
         and a warning will be issued.
     search_path : iterable, optional
         Override search paths to use during header fix up.
+    required : `set`, optional
+        This parameter can be used to confirm that all properties contained
+        in the set must translate correctly and also be non-None.  For the case
+        where ``pedantic`` is `True` this will still check that the resulting
+        value is not `None`.
+    subset : `set`, optional
+        If not `None`, controls the translations that will be performed
+        during construction. This can be useful if the caller is only
+        interested in a subset of the properties and knows that some of
+        the others might be slow to compute (for example the airmass if it
+        has to be derived).
 
     Raises
     ------
     ValueError
         Raised if the supplied header was not recognized by any of the
-        registered translators.
+        registered translators. Also raised if the request property subset
+        is not a subset of the known properties.
     TypeError
         Raised if the supplied translator class was not a MetadataTranslator.
     KeyError
-        Raised if a translation fails and pedantic mode is enabled.
+        Raised if a required property cannot be calculated, or if pedantic
+        mode is enabled and any translations fails.
     NotImplementedError
         Raised if the selected translator does not support a required
         property.
@@ -75,7 +88,7 @@ class ObservationInfo:
     documentation."""
 
     def __init__(self, header, filename=None, translator_class=None, pedantic=False,
-                 search_path=None):
+                 search_path=None, required=None, subset=None):
 
         # Initialize the empty object
         self._header = {}
@@ -113,8 +126,27 @@ class ObservationInfo:
         else:
             file_info = ""
 
+        # Determine the properties of interest
+        all_properties = set(self._PROPERTIES)
+        if subset is not None:
+            if not subset:
+                raise ValueError("Cannot request no properties be calculated.")
+            if not subset.issubset(all_properties):
+                raise ValueError("Requested subset is not a subset of known properties. "
+                                 f"Got extra: {subset - all_properties}")
+            properties = subset
+        else:
+            properties = all_properties
+
+        if required is None:
+            required = set()
+        else:
+            if not required.issubset(all_properties):
+                raise ValueError("Requested required properties include unknowns: "
+                                 f"{required - all_properties}")
+
         # Loop over each property and request the translated form
-        for t in self._PROPERTIES:
+        for t in properties:
             # prototype code
             method = f"to_{t}"
             property = f"_{t}"
@@ -127,7 +159,7 @@ class ObservationInfo:
             except KeyError as e:
                 err_msg = f"Error calculating property '{t}' using translator {translator.__class__}" \
                     f"{file_info}"
-                if pedantic:
+                if pedantic or t in required:
                     raise KeyError(err_msg) from e
                 else:
                     log.debug("Calculation of property '%s' failed with header: %s", t, header)
@@ -138,11 +170,14 @@ class ObservationInfo:
                 err_msg = f"Value calculated for property '{t}' is wrong type " \
                     f"({type(value)} != {self._PROPERTIES[t][1]}) using translator {translator.__class__}" \
                     f"{file_info}"
-                if pedantic:
+                if pedantic or t in required:
                     raise TypeError(err_msg)
                 else:
                     log.debug("Calcuation of property '%s' had unexpected type with header: %s", t, header)
                     log.warning(f"Ignoring {err_msg}")
+
+            if value is None and t in required:
+                raise KeyError(f"Calculation of required property {t} resulted in a value of None")
 
             setattr(self, property, value)
 

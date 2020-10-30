@@ -136,6 +136,16 @@ class TranslatorTestCase(unittest.TestCase):
         summary = str(v1)
         self.assertIn("datetime_begin", summary)
 
+        # Create with a subset of properties
+        v2 = ObservationInfo(header, translator_class=InstrumentTestTranslator,
+                             subset={"telescope", "datetime_begin", "exposure_group"})
+
+        self.assertEqual(v2.telescope, v1.telescope)
+        self.assertEqual(v2.datetime_begin, v2.datetime_begin)
+        self.assertIsNone(v2.datetime_end)
+        self.assertIsNone(v2.location)
+        self.assertIsNone(v2.observation_id)
+
     def test_corrections(self):
         """Apply corrections before translation."""
         header = self.header
@@ -163,6 +173,14 @@ class TranslatorTestCase(unittest.TestCase):
         with self.assertRaises(TypeError):
             ObservationInfo(header, translator_class=ObservationInfo)
 
+        with self.assertRaises(ValueError):
+            ObservationInfo(header, translator_class=InstrumentTestTranslator,
+                            subset={"definitely_not_known"})
+
+        with self.assertRaises(ValueError):
+            ObservationInfo(header, translator_class=InstrumentTestTranslator,
+                            required={"definitely_not_known"})
+
         with self.assertLogs("astro_metadata_translator"):
             with self.assertWarns(UserWarning):
                 ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False)
@@ -184,6 +202,12 @@ class TranslatorTestCase(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             with self.assertLogs("astro_metadata_translator", level="WARN"):
                 ObservationInfo(header, translator_class=MissingMethodsTranslator)
+
+        with self.assertRaises(KeyError):
+            with self.assertWarns(UserWarning):
+                with self.assertLogs("astro_metadata_translator", level="WARN"):
+                    ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False,
+                                    required={"boresight_airmass"})
 
 
 if __name__ == "__main__":
