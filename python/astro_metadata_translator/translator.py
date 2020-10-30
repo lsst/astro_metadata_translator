@@ -464,13 +464,21 @@ class MetadataTranslator:
                              " understood this header")
 
     @classmethod
-    def fix_header(cls, header):
+    def fix_header(cls, header, instrument, obsid, filename=None):
         """Apply global fixes to a supplied header.
 
         Parameters
         ----------
         header : `dict`
             The header to correct. Correction is in place.
+        instrument : `str`
+            The name of the instrument.
+        obsid : `str`
+            Unique observation identifier associated with this header.
+            Will always be provided.
+        filename : `str`, optional
+            Filename associated with this header. May not be set since headers
+            can be fixed independently of any filename being known.
 
         Returns
         -------
@@ -494,6 +502,10 @@ class MetadataTranslator:
         before this method is called using the per-obsid correction system.
 
         Usually called from `astro_metadata_translator.fix_header`.
+
+        For log messages, do not assume that the filename will be present.
+        Always write log messages to fall back on using the ``obsid`` if
+        ``filename`` is `None`.
         """
         return False
 

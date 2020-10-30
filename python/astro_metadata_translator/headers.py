@@ -395,7 +395,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     # Allow a translation class to do local fixups
     # Allow it to fail but log the failure
     try:
-        translator_modified = translator_class.fix_header(header)
+        translator_modified = translator_class.fix_header(header, instrument, obsid, filename=filename)
     except Exception as e:
         log.fatal("Ignoring translator header fixup of %s %s: %s",
                   instrument, obsid, e)

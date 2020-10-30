@@ -24,7 +24,7 @@ class NotDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header):
+    def fix_header(cls, header, instrument, obsid, filename=None):
         header["DTSITE"] = "hi"
         return True
 
@@ -35,7 +35,7 @@ class AlsoNotDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header):
+    def fix_header(cls, header, instrument, obsid, filename=None):
         raise RuntimeError("Failure to work something out from header")
 
 
