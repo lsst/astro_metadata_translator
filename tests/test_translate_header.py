@@ -80,11 +80,11 @@ class TestTranslateHeader(unittest.TestCase):
                 self.assertTrue(lines[0].startswith("ValueError"), f"Line: '{lines[0]}'")
 
                 lines = self._readlines(err)
-                self.assertEqual(len(lines), 12)
+                self.assertEqual(len(lines), 13)
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
         self.assertEqual(len(okay), 10)
-        self.assertEqual(len(failed), 2)
+        self.assertEqual(len(failed), 3)
 
     def test_translate_header_traceback(self):
         """Translate some header files that fail and trigger traceback"""
@@ -94,15 +94,15 @@ class TestTranslateHeader(unittest.TestCase):
                                              outstream=out, errstream=err, output_mode="none")
 
                 lines = self._readlines(out)
-                self.assertEqual(len(lines), 16)
+                self.assertEqual(len(lines), 22)
                 self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
 
                 lines = self._readlines(err)
-                self.assertEqual(len(lines), 12)
+                self.assertEqual(len(lines), 13)
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
         self.assertEqual(len(okay), 10)
-        self.assertEqual(len(failed), 2)
+        self.assertEqual(len(failed), 3)
 
     def test_translate_header_dump(self):
         """Check that a header is dumped"""
