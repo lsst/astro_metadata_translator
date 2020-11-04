@@ -374,6 +374,9 @@ class MetadataTranslator:
         self.filename = filename
         self._used_cards = set()
 
+        # Prefix to use for warnings about failed translations
+        self._log_prefix_cache = None
+
         # Cache assumes header is read-only once stored in object
         self._translation_cache = {}
 
@@ -508,6 +511,46 @@ class MetadataTranslator:
         ``filename`` is `None`.
         """
         return False
+
+    @staticmethod
+    def _construct_log_prefix(obsid, filename=None):
+        """Construct a log prefix string from the obsid and filename.
+
+        Parameters
+        ----------
+        obsid : `str`
+            The observation identifier.
+        filename : `str`, optional
+            The filename associated with the header being translated.
+            Can be `None`.
+        """
+        if filename:
+            return f"{filename}({obsid})"
+        return obsid
+
+    @property
+    def _log_prefix(self):
+        """Standard prefix that can be used for log messages to report
+        useful context.
+
+        Will be either the filename and obsid, or just the obsid depending
+        on whether a filename is known.
+
+        Returns
+        -------
+        prefix : `str`
+            The prefix to use.
+        """
+        if self._log_prefix_cache is None:
+            # Protect against the unfortunate event of the obsid failing to
+            # be calculated. This should be rare but should not prevent a log
+            # message from appearing.
+            try:
+                obsid = self.to_observation_id()
+            except Exception:
+                obsid = "unknown_obsid"
+            self._log_prefix_cache = self._construct_log_prefix(obsid, self.filename)
+        return self._log_prefix_cache
 
     def _used_these_cards(self, *args):
         """Indicate that the supplied cards have been used for translation.
