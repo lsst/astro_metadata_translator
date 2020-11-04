@@ -146,14 +146,14 @@ class SuprimeCamTranslator(SubaruTranslator):
         exp_id = self._header["EXP-ID"].strip()
         m = re.search(r"^SUP[A-Z](\d{7})0$", exp_id)
         if not m:
-            raise RuntimeError("Unable to interpret EXP-ID: %s" % exp_id)
+            raise RuntimeError(f"{self._log_prefix}: Unable to interpret EXP-ID: {exp_id}")
         exposure = int(m.group(1))
         if int(exposure) == 0:
             # Don't believe it
             frame_id = self._header["FRAMEID"].strip()
             m = re.search(r"^SUP[A-Z](\d{7})\d{1}$", frame_id)
             if not m:
-                raise RuntimeError("Unable to interpret FRAMEID: %s" % frame_id)
+                raise RuntimeError(f"{self._log_prefix}: Unable to interpret FRAMEID: {frame_id}")
             exposure = int(m.group(1))
         self._used_these_cards("EXP-ID", "FRAMEID")
         return exposure

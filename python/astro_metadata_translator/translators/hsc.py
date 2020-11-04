@@ -223,7 +223,7 @@ class HscTranslator(SuprimeCamTranslator):
         # Fallback to old scheme
         m = re.search(r"^HSC([A-Z])(\d{6})00$", exp_id)
         if not m:
-            raise RuntimeError(f"Unable to interpret EXP-ID: {exp_id}")
+            raise RuntimeError(f"{self._log_prefix}: Unable to interpret EXP-ID: {exp_id}")
         letter, visit = m.groups()
         visit = int(visit)
         if visit == 0:
@@ -231,7 +231,7 @@ class HscTranslator(SuprimeCamTranslator):
             frame_id = self._header["FRAMEID"].strip()
             m = re.search(r"^HSC([A-Z])(\d{6})\d{2}$", frame_id)
             if not m:
-                raise RuntimeError(f"Unable to interpret FRAMEID: {frame_id}")
+                raise RuntimeError(f"{self._log_prefix}: Unable to interpret FRAMEID: {frame_id}")
             letter, visit = m.groups()
             visit = int(visit)
             if visit % 2:  # Odd?

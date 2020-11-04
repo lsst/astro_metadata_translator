@@ -97,7 +97,7 @@ class SdssTranslator(FitsTranslator):
         if self.is_key_ok("CAMCOL"):
             return self.to_physical_filter()+str(self._header["CAMCOL"])
         else:
-            raise ValueError("CAMCOL key is not definded")
+            raise ValueError(f"{self._log_prefix}: CAMCOL key is not definded")
 
     @cache_translation
     def to_detector_num(self):
@@ -220,4 +220,4 @@ class SdssTranslator(FitsTranslator):
         if self.is_key_ok("CAMCOL"):
             return str(self._header["CAMCOL"])
         else:
-            raise ValueError("CAMCOL key is not definded")
+            raise ValueError(f"{self._log_prefix}: CAMCOL key is not definded")

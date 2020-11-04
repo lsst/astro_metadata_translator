@@ -171,7 +171,7 @@ class MegaPrimeTranslator(FitsTranslator):
             if self.is_key_ok(key):
                 return self.quantity_from_card(key, unit)
         else:
-            raise KeyError("Could not find pressure keywords in header")
+            raise KeyError(f"{self._log_prefix}: Could not find pressure keywords in header")
 
     @cache_translation
     def to_observation_counter(self):
