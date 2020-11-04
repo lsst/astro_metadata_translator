@@ -76,6 +76,9 @@ def read_test_file(filename, dir=None):
         filename = os.path.join(dir, filename)
     with open(filename) as fd:
         header = yaml.load(fd, Loader=Loader)
+    # Cannot directly check for Mapping because PropertyList is not one
+    if not hasattr(header, "items"):
+        raise ValueError(f"Contents of YAML file are not a mapping, they are {type(header)}")
     return header
 
 
@@ -141,15 +144,19 @@ class MetadataAssertHelper:
             inconsistent.
         """
         header = read_test_file(file, dir=dir)
-        self.assertObservationInfo(header, check_wcs=check_wcs, wcs_params=wcs_params, **kwargs)
+        self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
+                                   wcs_params=wcs_params, **kwargs)
 
-    def assertObservationInfo(self, header, check_wcs=True, wcs_params=None, **kwargs):  # noqa: N802
+    def assertObservationInfo(self, header, filename=None, check_wcs=True,  # noqa: N802
+                              wcs_params=None, **kwargs):
         """Check contents of an ObservationInfo.
 
         Parameters
         ----------
         header : `dict`-like
             Header to be checked.
+        filename : `str`, optional
+            Name of the filename associated with this header if known.
         check_wcs : `bool`, optional
             Check the consistency of the RA/Dec and AltAz values.  Checks
             are automatically disabled if the translated header does
@@ -168,7 +175,7 @@ class MetadataAssertHelper:
         """
         # For testing we force pedantic mode since we are in charge
         # of all the translations
-        obsinfo = ObservationInfo(header, pedantic=True)
+        obsinfo = ObservationInfo(header, pedantic=True, filename=filename)
         translator = obsinfo.translator_class_name
 
         # Check that we can pickle and get back the same properties

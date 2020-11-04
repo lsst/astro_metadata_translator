@@ -54,7 +54,7 @@ def is_non_science(self):
         Is a science observation.
     """
     if self.to_observation_type() == "science":
-        raise KeyError("Header represents science observation and can not default")
+        raise KeyError(f"{self._log_prefix}: Header represents science observation and can not default")
     return
 
 
@@ -120,7 +120,7 @@ def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
             self._used_these_cards(ra_key, dec_key, *used)
             return radec
     if self.to_observation_type() == "science":
-        raise KeyError("Unable to determine tracking RA/Dec of science observation")
+        raise KeyError(f"{self._log_prefix}: Unable to determine tracking RA/Dec of science observation")
     return None
 
 
@@ -170,7 +170,7 @@ def altaz_from_degree_headers(self, altazpairs, obstime, is_zd=None):
                 # they are bad.
                 break
             if alt > 90.0:
-                log.warning("Clipping altitude (%f) at 90 degrees", alt)
+                log.warning("%s: Clipping altitude (%f) at 90 degrees", self._log_prefix, alt)
                 alt = 90.0
 
             altaz = AltAz(az * u.deg, alt * u.deg,
@@ -178,5 +178,5 @@ def altaz_from_degree_headers(self, altazpairs, obstime, is_zd=None):
             self._used_these_cards(az_key, alt_key)
             return altaz
     if self.to_observation_type() == "science":
-        raise KeyError("Unable to determine AltAz of science observation")
+        raise KeyError(f"{self._log_prefix}: Unable to determine AltAz of science observation")
     return None

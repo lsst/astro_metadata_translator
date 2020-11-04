@@ -24,7 +24,7 @@ class NotDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header):
+    def fix_header(cls, header, instrument, obsid, filename=None):
         header["DTSITE"] = "hi"
         return True
 
@@ -35,7 +35,7 @@ class AlsoNotDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header):
+    def fix_header(cls, header, instrument, obsid, filename=None):
         raise RuntimeError("Failure to work something out from header")
 
 
@@ -334,6 +334,11 @@ class FixHeadersTestCase(unittest.TestCase):
         fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "corrections"))
         self.assertTrue(fixed)
         self.assertEqual(header["DETECTOR"], "NEW-ID")
+
+        # Now with a corrections directory that has bad YAML in it
+        with self.assertLogs(level="WARN"):
+            fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "bad_corrections"))
+        self.assertFalse(fixed)
 
         # Test that fix_header of unknown header is allowed
         header = {"SOMETHING": "UNKNOWN"}

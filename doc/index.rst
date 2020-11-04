@@ -34,6 +34,7 @@ is determined by asking each registered translator whether it knows how to
 translate it.  If an explicit translation class should be used it can be
 specified explicitly.
 
+For details on the format of header correction files see `~astro_metadata_translator.fix_header`.
 
 .. warning::
   The existing set of property names in
