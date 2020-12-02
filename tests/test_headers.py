@@ -39,6 +39,15 @@ class AlsoNotDecamTranslator(DecamTranslator):
         raise RuntimeError("Failure to work something out from header")
 
 
+class NullDecamTranslator(DecamTranslator):
+    """This is a DECam translator that doesn't do any fixes."""
+    name = None
+
+    @classmethod
+    def fix_header(cls, header, instrument, obsid, filename=None):
+        return False
+
+
 class HeadersTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -327,22 +336,24 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertEqual(header["DETECTOR"], "S3-111_107419-8-3")
 
         # First fix header but using no search path (should work as no-op)
-        fixed = fix_header(header)
+        fixed = fix_header(header, translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
         # Now using the test corrections directory
-        fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "corrections"))
+        fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "corrections"),
+                           translator_class=NullDecamTranslator)
         self.assertTrue(fixed)
         self.assertEqual(header["DETECTOR"], "NEW-ID")
 
         # Now with a corrections directory that has bad YAML in it
         with self.assertLogs(level="WARN"):
-            fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "bad_corrections"))
+            fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "bad_corrections"),
+                               translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
         # Test that fix_header of unknown header is allowed
         header = {"SOMETHING": "UNKNOWN"}
-        fixed = fix_header(header)
+        fixed = fix_header(header, translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
     def test_hsc_fix_header(self):
@@ -364,6 +375,16 @@ class FixHeadersTestCase(unittest.TestCase):
         fixed = fix_header(header, translator_class=HscTranslator)
         self.assertFalse(fixed)
         self.assertEqual(header["DATA-TYP"], "FLAT")
+
+    def test_decam_fix_header(self):
+        """Check that one of the known DECam corrections is being applied
+        properly."""
+
+        # This header is a bias (zero) with an erroneous Y filter
+        header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
+        fixed = fix_header(header, translator_class=DecamTranslator)
+        self.assertTrue(fixed)
+        self.assertEqual(header["FILTER"], "solid plate 0.0 0.0")
 
     def test_translator_fix_header(self):
         """Check that translator classes can fix headers."""
