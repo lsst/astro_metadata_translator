@@ -70,7 +70,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                            observation_type="zero",
                            observation_reason="unknown",
                            observing_day=20121211,
-                           physical_filter="Y DECam c0005 10095.0 1130.0",
+                           physical_filter="solid plate 0.0 0.0",  # corrected value
                            pressure=777.0*u.hPa,
                            relative_humidity=38.0,
                            science_program="2012B-0416",

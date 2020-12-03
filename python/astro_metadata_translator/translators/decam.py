@@ -253,13 +253,15 @@ class DecamTranslator(FitsTranslator):
         return name[1:]
 
     @classmethod
-    def fix_header(cls, header, obsid, filename=None):
+    def fix_header(cls, header, instrument, obsid, filename=None):
         """Fix DECam headers.
 
         Parameters
         ----------
         header : `dict`
             The header to update.  Updates are in place.
+        instrument : `str`
+            The name of the instrument.
         obsid : `str`
             Unique observation identifier associated with this header.
             Will always be provided.
