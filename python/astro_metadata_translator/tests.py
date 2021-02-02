@@ -17,6 +17,8 @@ import pickle
 import yaml
 from collections import OrderedDict
 from astropy.time import Time
+import astropy.utils.exceptions
+import warnings
 
 from astro_metadata_translator import ObservationInfo
 
@@ -116,7 +118,10 @@ class MetadataAssertHelper:
         self.assertAlmostEqual(obsinfo.altaz_begin.secz.to_value(), obsinfo.boresight_airmass, delta=amdelta)
 
         # Is AltAz from headers close to AltAz from RA/Dec headers?
-        sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
+        # Can trigger warnings from Astropy if date is in future
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=astropy.utils.exceptions.AstropyWarning)
+            sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
     def assertObservationInfoFromYaml(self, file, dir=None, check_wcs=True,  # noqa: N802
