@@ -105,6 +105,11 @@ class SuprimeCamTranslator(SubaruTranslator):
         # Docstring will be inherited. Property defined in properties.py
         value = self._header["FILTER01"].strip().upper()
         self._used_these_cards("FILTER01")
+        # Map potential "unknown" values to standard form
+        if value in {"UNRECOGNIZED", "UNRECOGNISED", "NOTSET", "UNKNOWN"}:
+            value = "unknown"
+        elif value == "NONE":
+            value = "empty"
         return value
 
     @cache_translation
