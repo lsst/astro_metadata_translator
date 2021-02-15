@@ -58,6 +58,7 @@ class ObservationGroupTestCase(unittest.TestCase):
         self.assertGreater(newest, oldest)
 
         self.assertNotEqual(oldest, obs_group)
+        self.assertNotEqual(obs_group, oldest)
 
         # Add some headers and check that sorting still works
         obs_group.extend(self._files_to_headers(self.hsc_files))

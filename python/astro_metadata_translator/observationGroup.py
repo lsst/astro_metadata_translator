@@ -108,6 +108,9 @@ class ObservationGroup(MutableSequence):
     def __eq__(self, other):
         """Compares equal if all the members are equal in the same order.
         """
+        if not isinstance(other, ObservationGroup):
+            return NotImplemented
+
         for info1, info2 in zip(self, other):
             if info1 != info2:
                 return False
