@@ -344,7 +344,8 @@ class ObservationInfo:
                 unused.remove(p)
 
         if unused:
-            raise KeyError(f"Unrecognized properties provided: {', '.join(unused)}")
+            n = len(unused)
+            raise KeyError(f"Unrecognized propert{'y' if n == 1 else 'ies'} provided: {', '.join(unused)}")
 
         return obsinfo
 
