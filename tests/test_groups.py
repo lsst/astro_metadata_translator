@@ -71,6 +71,9 @@ class ObservationGroupTestCase(unittest.TestCase):
         instruments = obs_group.property_values("instrument")
         self.assertEqual(instruments, {"HSC", "DECam"})
 
+        # Check that simplified form round trips
+        self.assertEqual(ObservationGroup.from_simple(obs_group.to_simple()), obs_group)
+
     def test_fits_group(self):
         headers = self._files_to_headers(self.decam_files)
 
