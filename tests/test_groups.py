@@ -37,6 +37,9 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         obs_group = ObservationGroup(headers)
         self.assertEqual(len(obs_group), 3)
+        self.assertEqual(str(obs_group),
+                         "[(DECam, 2013-09-01T06:02:55.754), (DECam, 2012-12-11T22:06:32.859),"
+                         " (DECam, 2015-02-20T00:47:21.127)]")
 
         sorted_group = ObservationGroup(sorted(obs_group))
         self.assertIsInstance(sorted_group, ObservationGroup)
