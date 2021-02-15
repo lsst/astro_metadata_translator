@@ -56,6 +56,9 @@ class BasicTestCase(unittest.TestCase):
         newinfo = ObservationInfo.from_simple(simple)
         self.assertEqual(obsinfo, newinfo)
 
+        via_json = ObservationInfo.from_json(newinfo.to_json())
+        self.assertEqual(via_json, obsinfo)
+
 
 if __name__ == "__main__":
     unittest.main()

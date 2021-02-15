@@ -16,6 +16,7 @@ __all__ = ("ObservationInfo", "makeObservationInfo")
 import itertools
 import logging
 import copy
+import json
 
 import astropy.time
 from astropy.coordinates import SkyCoord, AltAz
@@ -338,6 +339,16 @@ class ObservationInfo:
 
         return simple
 
+    def to_json(self):
+        """Serialize the object to JSON string.
+
+        Returns
+        -------
+        j : `str`
+            The properties of the ObservationInfo in JSON string form.
+        """
+        return json.dumps(self.to_simple())
+
     @classmethod
     def from_simple(cls, simple):
         """Convert the entity returned by `to_simple` back into an
@@ -368,6 +379,23 @@ class ObservationInfo:
             processed[k] = v
 
         return cls.makeObservationInfo(**processed)
+
+    @classmethod
+    def from_json(cls, json_str):
+        """Create `ObservationInfo` from JSON string.
+
+        Parameters
+        ----------
+        json_str : `str`
+            The JSON representation.
+
+        Returns
+        -------
+        obsinfo : `ObservationInfo`
+            Reconstructed object.
+        """
+        simple = json.loads(json_str)
+        return cls.from_simple(simple)
 
     @classmethod
     def makeObservationInfo(cls, **kwargs):  # noqa: N802
