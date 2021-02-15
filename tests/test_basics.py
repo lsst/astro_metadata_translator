@@ -10,6 +10,8 @@
 # license that can be found in the LICENSE file.
 
 import unittest
+import astropy.units as u
+import astropy.time
 
 import astro_metadata_translator
 from astro_metadata_translator import ObservationInfo, makeObservationInfo
@@ -36,6 +38,23 @@ class BasicTestCase(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             obsinfo = ObservationInfo.makeObservationInfo(unrecognized=1.5, keys="unknown")
+
+    def test_simple(self):
+        """Test that we can simplify an ObservationInfo."""
+
+        reference = dict(
+            boresight_airmass=1.5,
+            temperature=15*u.deg_C,
+            observation_type="bias",
+            exposure_time=5*u.ks,
+            detector_num=32,
+            datetime_begin=astropy.time.Time("2021-02-15T12:00:00", format="isot", scale="utc")
+        )
+
+        obsinfo = makeObservationInfo(**reference)
+        simple = obsinfo.to_simple()
+        newinfo = ObservationInfo.from_simple(simple)
+        self.assertEqual(obsinfo, newinfo)
 
 
 if __name__ == "__main__":

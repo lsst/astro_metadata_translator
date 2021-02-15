@@ -267,19 +267,11 @@ class ObservationInfo:
     def __eq__(self, other):
         """Compares equal if standard properties are equal
         """
-        if type(self) != type(other):
-            return False
+        if not isinstance(other, ObservationInfo):
+            return NotImplemented
 
-        for p in self._PROPERTIES:
-            # Use string comparison since SkyCoord.__eq__ seems unreliable
-            # otherwise.  Should have per-type code so that floats and
-            # quantities can be compared properly.
-            v1 = f"{getattr(self, p)}"
-            v2 = f"{getattr(other, p)}"
-            if v1 != v2:
-                return False
-
-        return True
+        # Compare the simplified forms
+        return self.to_simple() == other.to_simple()
 
     def __lt__(self, other):
         return self.datetime_begin < other.datetime_begin
@@ -309,6 +301,73 @@ class ObservationInfo:
         for p in self._PROPERTIES:
             property = f"_{p}"
             setattr(self, property, state[p])
+
+    def to_simple(self):
+        """Convert the contents of this object to simple dict form.
+
+        The keys of the dict are the standard properties but the values
+        can be simplified to support JSON serialization. For example a
+        SkyCoord might be represented as an ICRS RA/Dec tuple rather than
+        a full SkyCoord representation.
+
+        Any properties with `None` value will be skipped.
+
+        Can be converted back to an `ObservationInfo` using `from_simple()`.
+
+        Returns
+        -------
+        simple : `dict` of [`str`, `Any`]
+            Simple dict of all properties.
+        """
+        simple = {}
+
+        for p in self._PROPERTIES:
+            property = f"_{p}"
+            value = getattr(self, property)
+            if value is None:
+                continue
+
+            # Access the function to simplify the property
+            simplifier = self._PROPERTIES[p][3]
+
+            if simplifier is None:
+                simple[p] = value
+                continue
+
+            simple[p] = simplifier(value)
+
+        return simple
+
+    @classmethod
+    def from_simple(cls, simple):
+        """Convert the entity returned by `to_simple` back into an
+        `ObservationInfo`.
+
+        Parameters
+        ----------
+        simple : `dict` [`str`, `Any`]
+            The dict returned by `to_simple()`
+
+        Returns
+        -------
+        obsinfo : `ObservationInfo`
+            New object constructed from the dict.
+        """
+        processed = {}
+        for k, v in simple.items():
+
+            if v is None:
+                continue
+
+            # Access the function to convert from simple form
+            complexifier = cls._PROPERTIES[k][4]
+
+            if complexifier is not None:
+                v = complexifier(v, **processed)
+
+            processed[k] = v
+
+        return cls.makeObservationInfo(**processed)
 
     @classmethod
     def makeObservationInfo(cls, **kwargs):  # noqa: N802
@@ -387,7 +446,7 @@ def _make_property(property, doc, return_typedoc, return_type):
 # getter methods.
 for name, description in ObservationInfo._PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_make_property(name, *description)))
+    setattr(ObservationInfo, name, property(_make_property(name, *description[:3])))
 
 
 def makeObservationInfo(**kwargs):  # noqa: N802
