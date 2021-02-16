@@ -17,6 +17,7 @@ import itertools
 import logging
 import copy
 import json
+import math
 
 import astropy.time
 from astropy.coordinates import SkyCoord, AltAz
@@ -271,8 +272,20 @@ class ObservationInfo:
         if not isinstance(other, ObservationInfo):
             return NotImplemented
 
-        # Compare the simplified forms
-        return self.to_simple() == other.to_simple()
+        # Compare simplified forms.
+        # Cannot compare directly because nan will not equate as equal
+        # whereas they should be equal for our purposes
+        self_simple = self.to_simple()
+        other_simple = other.to_simple()
+
+        for k, self_value in self_simple.items():
+            other_value = other_simple[k]
+            if self_value != other_value:
+                if math.isnan(self_value) and math.isnan(other_value):
+                    # If both are nan this is fine
+                    continue
+                return False
+        return True
 
     def __lt__(self, other):
         return self.datetime_begin < other.datetime_begin
