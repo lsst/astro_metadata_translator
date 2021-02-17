@@ -17,6 +17,7 @@ import click
 
 from ..bin.translateheader import process_files as translate_header
 from ..bin.writesidecar import write_sidecar_files
+from ..bin.writeindex import write_index_files
 
 # Default regex for finding data files
 re_default = r"\.fit[s]?\b"
@@ -128,6 +129,30 @@ def dump(ctx, files, hdrnum, mode, regex):
 @click.pass_context
 def write_sidecar(ctx, files, hdrnum, regex):
     okay, failed = write_sidecar_files(files, regex, hdrnum, ctx.obj["TRACEBACK"])
+
+    if failed:
+        click.echo("Files with failed header extraction:", err=True)
+        for f in failed:
+            click.echo(f"\t{f}", err=True)
+
+    if not okay:
+        # Good status if anything was returned in okay
+        raise click.exceptions.Exit(1)
+
+
+@main.command(help="Write JSON index file for entire directory.")
+@click.argument("files", nargs=-1)
+@click.option("-n", "--hdrnum", default=1,
+              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
+              " is attempted using the primary header. The primary header is always read and merged with"
+              " this header.")
+@click.option("-r", "--regex",
+              default=re_default,
+              help="When looking in a directory, regular expression to use to determine whether"
+              f" a file should be examined. Default: '{re_default}'")
+@click.pass_context
+def write_index(ctx, files, hdrnum, regex):
+    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"])
 
     if failed:
         click.echo("Files with failed header extraction:", err=True)
