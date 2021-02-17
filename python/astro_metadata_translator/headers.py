@@ -21,6 +21,7 @@ import copy
 import os
 import yaml
 from collections.abc import Mapping
+from collections import Counter
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
@@ -47,7 +48,14 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
         but different value. Options are:
 
         - ``'overwrite'`` : Value in later header overwrites earlier value.
-        - ``'drop'`` : Entire key is dropped.
+        - ``'drop'`` : Entire key is dropped. If a key only appears in a
+          subset of the headers it will be retained.
+        - ``'diff'`` : As for ``drop`` but the dropped values are stored in a
+          `list` of `dict` in the returned merged header in key
+          ``__DIFF__``.  The order used matches the supplied order or
+          the sorted order if specified.  This allows a simple header diff
+          to be performed and associated with the original headers. Only
+          keys that appear in all headers will be retained in the merged one.
         - ``'first'`` : Retain first value encountered.
         - ``'append'`` : Convert value to list with a value for each header
           (`None` if the key was not present). If the value is
@@ -142,6 +150,46 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
                     drop.add(key)
 
         for key in drop:
+            del merged[key]
+
+    elif mode == "diff":
+        dropped_keys = set()
+
+        # Only want to keep keys in the merged header that are in all the
+        # input headers and identical. Seed with the first header
+        counter = Counter(merged.keys())
+
+        for hdr in headers:
+            counter.update(hdr.keys())
+            for key in hdr:
+                if key not in merged:
+                    merged[key] = hdr[key]
+                elif merged[key] != hdr[key]:
+                    # Key should be dropped later (not in loop since removing
+                    # the key now might add it back for the next header).
+                    dropped_keys.add(key)
+
+        # Add to the list of dropped keys all the keys that
+        # have a count less than number of input headers (incl first one)
+        n = len(headers) + 1
+        for key in counter:
+            if counter[key] != n:
+                dropped_keys.add(key)
+
+        # For each dropped key, create a distinct diff header
+        # We must include the first header in this
+        diffs = []
+        for hdr in itertools.chain([first_hdr], headers):
+            # Get a list of all the dropped keys that are in this header
+            # Sometimes a key will only be in some headers. For now
+            # do not include it in the diff at all.
+            diff_keys = dropped_keys & set(hdr)
+
+            diffs.append({k: hdr[k] for k in diff_keys})
+
+        merged["__DIFF__"] = diffs
+
+        for key in dropped_keys:
             del merged[key]
 
     elif mode == "append":
