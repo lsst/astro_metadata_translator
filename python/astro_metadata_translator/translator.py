@@ -168,7 +168,7 @@ class MetadataTranslator:
             return constant
 
         if property_key in PROPERTIES:
-            property_doc, return_type, _ = PROPERTIES[property_key]
+            property_doc, return_type = PROPERTIES[property_key][:2]
         else:
             return_type = type(constant).__name__
             property_doc = f"Returns constant value for '{property_key}' property"
@@ -227,7 +227,7 @@ class MetadataTranslator:
             parameters.
         """
         if property_key in PROPERTIES:
-            property_doc, return_type, _ = PROPERTIES[property_key]
+            property_doc, return_type = PROPERTIES[property_key][:2]
         else:
             return_type = "str` or `numbers.Number"
             property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
@@ -950,7 +950,7 @@ for name, description in PROPERTIES.items():
     method = f"to_{name}"
     if not MetadataTranslator.defined_in_this_class(method):
         setattr(MetadataTranslator, f"to_{name}",
-                abstractmethod(_make_abstract_translator_method(name, *description)))
+                abstractmethod(_make_abstract_translator_method(name, *description[:3])))
     else:
         CONCRETE.add(method)
 
@@ -1025,4 +1025,4 @@ def _make_forwarded_stub_translator_method(cls, property, doc, return_typedoc, r
 # rather than fail and should be overridden by translators.
 for name, description in PROPERTIES.items():
     setattr(StubTranslator, f"to_{name}", _make_forwarded_stub_translator_method(StubTranslator,
-                                                                                 name, *description))
+                                                                                 name, *description[:3]))

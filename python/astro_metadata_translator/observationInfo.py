@@ -16,6 +16,8 @@ __all__ = ("ObservationInfo", "makeObservationInfo")
 import itertools
 import logging
 import copy
+import json
+import math
 
 import astropy.time
 from astropy.coordinates import SkyCoord, AltAz
@@ -267,18 +269,22 @@ class ObservationInfo:
     def __eq__(self, other):
         """Compares equal if standard properties are equal
         """
-        if type(self) != type(other):
-            return False
+        if not isinstance(other, ObservationInfo):
+            return NotImplemented
 
-        for p in self._PROPERTIES:
-            # Use string comparison since SkyCoord.__eq__ seems unreliable
-            # otherwise.  Should have per-type code so that floats and
-            # quantities can be compared properly.
-            v1 = f"{getattr(self, p)}"
-            v2 = f"{getattr(other, p)}"
-            if v1 != v2:
+        # Compare simplified forms.
+        # Cannot compare directly because nan will not equate as equal
+        # whereas they should be equal for our purposes
+        self_simple = self.to_simple()
+        other_simple = other.to_simple()
+
+        for k, self_value in self_simple.items():
+            other_value = other_simple[k]
+            if self_value != other_value:
+                if math.isnan(self_value) and math.isnan(other_value):
+                    # If both are nan this is fine
+                    continue
                 return False
-
         return True
 
     def __lt__(self, other):
@@ -309,6 +315,100 @@ class ObservationInfo:
         for p in self._PROPERTIES:
             property = f"_{p}"
             setattr(self, property, state[p])
+
+    def to_simple(self):
+        """Convert the contents of this object to simple dict form.
+
+        The keys of the dict are the standard properties but the values
+        can be simplified to support JSON serialization. For example a
+        SkyCoord might be represented as an ICRS RA/Dec tuple rather than
+        a full SkyCoord representation.
+
+        Any properties with `None` value will be skipped.
+
+        Can be converted back to an `ObservationInfo` using `from_simple()`.
+
+        Returns
+        -------
+        simple : `dict` of [`str`, `Any`]
+            Simple dict of all properties.
+        """
+        simple = {}
+
+        for p in self._PROPERTIES:
+            property = f"_{p}"
+            value = getattr(self, property)
+            if value is None:
+                continue
+
+            # Access the function to simplify the property
+            simplifier = self._PROPERTIES[p][3]
+
+            if simplifier is None:
+                simple[p] = value
+                continue
+
+            simple[p] = simplifier(value)
+
+        return simple
+
+    def to_json(self):
+        """Serialize the object to JSON string.
+
+        Returns
+        -------
+        j : `str`
+            The properties of the ObservationInfo in JSON string form.
+        """
+        return json.dumps(self.to_simple())
+
+    @classmethod
+    def from_simple(cls, simple):
+        """Convert the entity returned by `to_simple` back into an
+        `ObservationInfo`.
+
+        Parameters
+        ----------
+        simple : `dict` [`str`, `Any`]
+            The dict returned by `to_simple()`
+
+        Returns
+        -------
+        obsinfo : `ObservationInfo`
+            New object constructed from the dict.
+        """
+        processed = {}
+        for k, v in simple.items():
+
+            if v is None:
+                continue
+
+            # Access the function to convert from simple form
+            complexifier = cls._PROPERTIES[k][4]
+
+            if complexifier is not None:
+                v = complexifier(v, **processed)
+
+            processed[k] = v
+
+        return cls.makeObservationInfo(**processed)
+
+    @classmethod
+    def from_json(cls, json_str):
+        """Create `ObservationInfo` from JSON string.
+
+        Parameters
+        ----------
+        json_str : `str`
+            The JSON representation.
+
+        Returns
+        -------
+        obsinfo : `ObservationInfo`
+            Reconstructed object.
+        """
+        simple = json.loads(json_str)
+        return cls.from_simple(simple)
 
     @classmethod
     def makeObservationInfo(cls, **kwargs):  # noqa: N802
@@ -344,7 +444,8 @@ class ObservationInfo:
                 unused.remove(p)
 
         if unused:
-            raise KeyError(f"Unrecognized properties provided: {', '.join(unused)}")
+            n = len(unused)
+            raise KeyError(f"Unrecognized propert{'y' if n == 1 else 'ies'} provided: {', '.join(unused)}")
 
         return obsinfo
 
@@ -386,7 +487,7 @@ def _make_property(property, doc, return_typedoc, return_type):
 # getter methods.
 for name, description in ObservationInfo._PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_make_property(name, *description)))
+    setattr(ObservationInfo, name, property(_make_property(name, *description[:3])))
 
 
 def makeObservationInfo(**kwargs):  # noqa: N802

@@ -37,6 +37,9 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         obs_group = ObservationGroup(headers)
         self.assertEqual(len(obs_group), 3)
+        self.assertEqual(str(obs_group),
+                         "[(DECam, 2013-09-01T06:02:55.754), (DECam, 2012-12-11T22:06:32.859),"
+                         " (DECam, 2015-02-20T00:47:21.127)]")
 
         sorted_group = ObservationGroup(sorted(obs_group))
         self.assertIsInstance(sorted_group, ObservationGroup)
@@ -58,6 +61,7 @@ class ObservationGroupTestCase(unittest.TestCase):
         self.assertGreater(newest, oldest)
 
         self.assertNotEqual(oldest, obs_group)
+        self.assertNotEqual(obs_group, oldest)
 
         # Add some headers and check that sorting still works
         obs_group.extend(self._files_to_headers(self.hsc_files))
@@ -66,6 +70,9 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         instruments = obs_group.property_values("instrument")
         self.assertEqual(instruments, {"HSC", "DECam"})
+
+        # Check that simplified form round trips
+        self.assertEqual(ObservationGroup.from_simple(obs_group.to_simple()), obs_group)
 
     def test_fits_group(self):
         headers = self._files_to_headers(self.decam_files)

@@ -108,6 +108,9 @@ class ObservationGroup(MutableSequence):
     def __eq__(self, other):
         """Compares equal if all the members are equal in the same order.
         """
+        if not isinstance(other, ObservationGroup):
+            return NotImplemented
+
         for info1, info2 in zip(self, other):
             if info1 != info2:
                 return False
@@ -188,3 +191,30 @@ class ObservationGroup(MutableSequence):
             All the distinct values for that property within this group.
         """
         return {getattr(obs_info, property) for obs_info in self}
+
+    def to_simple(self):
+        """Convert the group to simplified form.
+
+        Returns
+        -------
+        simple : `list` of `dict`
+            Simple form is a list containing the simplified dict form of
+            each `ObservationInfo`.
+        """
+        return [obsinfo.to_simple() for obsinfo in self]
+
+    @classmethod
+    def from_simple(cls, simple):
+        """Convert simplified form back to `ObservationGroup`
+
+        Parameters
+        ----------
+        simple : `list` of `dict`
+            Object returned by `to_simple`.
+
+        Returns
+        -------
+        group : `ObservationGroup`
+            Reconstructed group.
+        """
+        return cls((ObservationInfo.from_simple(o) for o in simple))
