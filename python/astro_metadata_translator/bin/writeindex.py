@@ -139,7 +139,7 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in by_directory.items():
         by_file = {}
-        for file in files_in_dir:
+        for file in sorted(files_in_dir):
             path = os.path.join(directory, file)
             simple = read_file(path, hdrnum, print_trace, read_mode, outstream, errstream)
             if simple is None:
@@ -154,15 +154,27 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
         # Merge all the information into a primary plus diff
         merged = merge_headers(by_file.values(), mode="diff")
 
-        # Convert the diff into a dict indexed by file name
-        diff_dict = {}
-        for file, diff in zip(by_file, merged["__DIFF__"]):
-            diff_dict[file] = diff
-        merged["__DIFF__"] = diff_dict
+        # The structure to write to file is intended to look like (in YAML):
+        # __COMMON__:
+        #   KEY1: value1
+        #   KEY2: value2
+        # FILE1:
+        #   KEY3: value3a
+        # FILE2:
+        #   KEY3: value3b
+
+        # if there was only one file there will not be a diff but we
+        # want it to look like there was.
+        diff_dict = merged.pop("__DIFF__", [dict()])
+
+        # Put the common headers first in the output.
+        output = {"__COMMON__": merged}
+        for file, diff in zip(by_file, diff_dict):
+            output[file] = diff
 
         # Write the index file
         with open(outfile := os.path.join(directory, f"{mode}_index.json"), "w") as fd:
-            print(json.dumps(merged), file=fd)
+            print(json.dumps(output), file=fd)
             log.info("Wrote index file to %s", outfile)
 
     return okay, failed
