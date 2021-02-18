@@ -90,6 +90,6 @@ def read_metadata_from_file(file, hdrnum, errstream=sys.stderr):
         if mdn is not None:
             md = merge_headers([md, mdn], mode="overwrite")
         else:
-            print(f"HDU {hdrnum} was not found. Ignoring request.", file=errstream)
+            print(f"HDU {hdrnum} was not found in file {file}. Ignoring request.", file=errstream)
 
     return md

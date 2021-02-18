@@ -399,9 +399,11 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
         try:
             translator_class = MetadataTranslator.determine_translator(header,
                                                                        filename=filename)
-        except ValueError:
+        except ValueError as e:
             # if the header is not recognized, we should not complain
             # and should not proceed further.
+            log.debug("Unable to determine translator class %s -- not fixing header: %e",
+                      f"for {filename}" if filename is not None else "", e)
             return False
     elif not issubclass(translator_class, MetadataTranslator):
         raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
