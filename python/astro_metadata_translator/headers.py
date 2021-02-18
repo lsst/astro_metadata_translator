@@ -187,7 +187,13 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
 
             diffs.append({k: hdr[k] for k in diff_keys})
 
-        merged["__DIFF__"] = diffs
+        # PropertyList does not let us attach a dict to it
+        # so if we encounter this we have to force a type change to dict
+        try:
+            merged["__DIFF__"] = diffs
+        except TypeError:
+            merged = dict(merged)
+            merged["__DIFF__"] = diffs
 
         for key in dropped_keys:
             del merged[key]
