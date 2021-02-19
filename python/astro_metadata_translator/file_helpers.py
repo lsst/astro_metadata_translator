@@ -18,7 +18,7 @@ import os
 import sys
 import traceback
 
-from astro_metadata_translator import merge_headers, fix_header, ObservationInfo
+from astro_metadata_translator import merge_headers, ObservationInfo
 from .tests import read_test_file
 
 
@@ -186,7 +186,7 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
         ``simple`` returns the simplified form of an ObservationInfo (default);
         ``obsInfo`` returns an ObsrvationInfo;
         ``json`` returns a JSON string of the ObservationInfo;
-        ``metadata`` returns the metadata (will be fixed form).
+        ``metadata`` returns the metadata (will be unfixed form);.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
@@ -210,7 +210,7 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
         if md is None:
             return None
         if mode == "metadata":
-            fix_header(md)
+            # Do not fix the header
             return md
         obs_info = ObservationInfo(md, pedantic=True, filename=file)
         if mode == "obsInfo":
