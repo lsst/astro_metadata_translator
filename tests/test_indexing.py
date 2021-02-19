@@ -10,11 +10,12 @@
 # license that can be found in the LICENSE file.
 
 import io
+import json
 import os
 import unittest
 
 from astro_metadata_translator import ObservationInfo, ObservationGroup
-from astro_metadata_translator.indexing import index_files, process_index_data
+from astro_metadata_translator.indexing import index_files, process_index_data, process_sidecar_data
 from astro_metadata_translator.file_helpers import read_file_info
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
@@ -84,9 +85,26 @@ class IndexingTestCase(unittest.TestCase):
         self.assertIsInstance(info, dict)
         self.assertEqual(info["instrument"], "HSC")
 
-        info = read_file_info(file, 1, None, "json")
-        self.assertIsInstance(info, str)
-        self.assertIn("HSC", info)
+        json_str = read_file_info(file, 1, None, "json")
+        self.assertIsInstance(json_str, str)
+        info = json.loads(json_str)
+        self.assertEqual(info["instrument"], "HSC")
+
+        processed = process_sidecar_data(info)
+        self.assertIsInstance(processed, ObservationInfo)
+        self.assertEqual(processed.instrument, "HSC")
+
+        processed = process_sidecar_data(info, force_metadata=True)
+        self.assertIsInstance(processed, dict)
+        self.assertEqual(processed["instrument"], "HSC")
+
+        json_str = read_file_info(file, 1, None, "jsonmetadata")
+        self.assertIsInstance(json_str, str)
+        info = json.loads(json_str)
+        self.assertEqual(info["PROP-ID"], "o15426")
+
+        processed = process_sidecar_data(info)
+        self.assertEqual(processed["PROP-ID"], info["PROP-ID"])
 
         # Read a small fits file
         fits_file = os.path.join(TESTDATA, "small.fits")

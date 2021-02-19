@@ -13,6 +13,7 @@
 
 __all__ = ("read_fits_metadata", "find_files", "read_basic_metadata_from_file", "read_file_info")
 
+import json
 import re
 import os
 import sys
@@ -186,7 +187,8 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
         ``simple`` returns the simplified form of an ObservationInfo (default);
         ``obsInfo`` returns an ObsrvationInfo;
         ``json`` returns a JSON string of the ObservationInfo;
-        ``metadata`` returns the metadata (will be unfixed form);.
+        ``metadata`` returns the metadata (will be unfixed form);
+        ``jsonmetadata`` returns the unfixed metadata in JSON string.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
@@ -200,7 +202,7 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
         if there was a problem and `print_trace` is not `None`.
     """
 
-    if mode not in ("metadata", "obsInfo", "simple", "json"):
+    if mode not in ("metadata", "obsInfo", "simple", "json", "jsonmetadata"):
         raise ValueError(f"Unrecognized mode {mode}")
 
     try:
@@ -209,16 +211,28 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
                                            can_raise=True if print_trace is None else False)
         if md is None:
             return None
-        if mode == "metadata":
+        if "metadata" in mode:
             # Do not fix the header
+            if mode == "jsonmetadata":
+                # Add a key to tell the reader whether this is md or obsInfo
+                md["__MODE__"] = "metadata"
+                try:
+                    json_str = json.dumps(md)
+                except TypeError:
+                    # Cast to dict and try again -- PropertyList is a problem
+                    json_str = json.dumps(dict(md))
+                return json_str
             return md
         obs_info = ObservationInfo(md, pedantic=True, filename=file)
         if mode == "obsInfo":
             return obs_info
+        simple = obs_info.to_simple()
         if mode == "simple":
-            return obs_info.to_simple()
+            return simple
         if mode == "json":
-            return obs_info.to_json()
+            # Add a key to tell the reader whether this is md or obsInfo
+            simple["__MODE__"] = "obsInfo"
+            return json.dumps(simple)
         raise RuntimeError(f"Logic error. Unrecognized mode for reading file: {mode}")
     except Exception as e:
         if print_trace is None:

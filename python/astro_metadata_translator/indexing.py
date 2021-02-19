@@ -231,3 +231,79 @@ def process_index_data(content, force_metadata=False):
         obs_infos.append(info)
 
     return ObservationGroup(obs_infos)
+
+
+def read_sidecar(path):
+    """Read a metadata sidecar file.
+
+    Parameters
+    ----------
+    path : `str`
+        Path to the sidecar file.
+
+    Returns
+    -------
+    info : `ObservationInfo` or `dict` of [`str`, `dict`]
+        If the sidecar file referred to `ObservationInfo` this will return
+        an `ObservationInfo`, otherwise a `dict` will be returned.
+    """
+    if not path.endswith(".json"):
+        raise ValueError(f"Sidecar files must be in .json format; got {path}")
+
+    with open(path, "r") as fd:
+        content = json.loads(fd.read())
+
+    return process_sidecar_data(content)
+
+
+def process_sidecar_data(content, force_metadata=False):
+    """Process the content read from a JSON sidecar file.
+
+    Parameters
+    ----------
+    content : `dict`
+        Data structure stored in JSON sidecar file converted to simple python
+        form.
+    force_metadata : `bool`, optional
+        By default the content returned will match the original form that
+        was used for the sidecar. If this parameter is `True` a sidecar of
+        `ObservationInfo` will be returned as if it was simple dict content.
+
+    Returns
+    -------
+    info : `ObservationInfo` or `dict` of [`str`, `dict`]
+        If the sidecar file referred to `ObservationInfo` this will return
+        an `ObservationGroup`, otherwise a `dict` will be returned. This
+        can be overridden using the ``force_metadata`` parameter.
+    """
+
+    # Copy the input structure so we can update in place
+    content = deepcopy(content)
+
+    guessing = False
+    mode = content.pop(MODE_KEY, None)
+    if force_metadata:
+        mode = "metadata"
+    elif mode is None:
+        # All ObservationInfo objects will have observation_id and instrument
+        # so if they are there we can guess
+        guessing = True
+        if "observation_id" in content and "instrument" in content:
+            mode = "obsInfo"
+        else:
+            mode = "metadata"
+        log.warning("No '%s' key in data structure, assuming '%s'", MODE_KEY, mode)
+
+    if mode == "metadata":
+        # nothing more to be done
+        return content
+
+    try:
+        info = ObservationInfo.from_simple(content)
+    except Exception as e:
+        if guessing:
+            # We were guessing so seems like this is not ObservationInfo
+            return content
+        raise e
+
+    return info
