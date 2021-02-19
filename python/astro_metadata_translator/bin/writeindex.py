@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
-                      outstream=sys.stdout, errstream=sys.stderr):
+                      outpath=None, outstream=sys.stdout, errstream=sys.stderr):
     """Process each file and create JSON index file.
 
     The index file will have common information in the toplevel.
@@ -47,7 +47,12 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
         Form of data to write in index file. Options are:
         ``obsInfo`` (default) to write ObservationInfo to the index;
         ``metadata`` to write native metadata headers to the index.
-        The index file is called ``{mode}_index.json``
+        The index file is called ``_index.json``
+    outpath : `str`, optional
+        If specified a single index file will be written to this location
+        combining all the information from all files. If `None`, the default,
+        and index file will be written to each directory in which files
+        are found.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
@@ -64,16 +69,24 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
     if mode not in ("obsInfo", "metadata"):
         raise ValueError("Unrecognized mode {mode}")
 
+    if outpath is not None:
+        _, ext = os.path.splitext(outpath)
+        if ext != ".json":
+            raise ValueError(f"Override output file must end in .json but given {outpath}")
+
     found_files = find_files(files, regex)
 
     failed = []
     okay = []
     by_directory = {}
 
-    # Group each file by directory
-    for path in found_files:
-        head, tail = os.path.split(path)
-        by_directory.setdefault(head, []).append(tail)
+    # Group each file by directory if no explicit output path
+    if outpath is None:
+        for path in found_files:
+            head, tail = os.path.split(path)
+            by_directory.setdefault(head, []).append(tail)
+    else:
+        by_directory["."] = list(found_files)
 
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in by_directory.items():
@@ -84,8 +97,12 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
         okay.extend(this_okay)
 
         # Write the index file
-        with open(outfile := os.path.join(directory, f"{mode}_index.json"), "w") as fd:
+        if outpath is None:
+            index_file = os.path.join(directory, "_index.json")
+        else:
+            index_file = outpath
+        with open(index_file, "w") as fd:
             print(json.dumps(output), file=fd)
-            log.info("Wrote index file to %s", outfile)
+            log.info("Wrote index file to %s", index_file)
 
     return okay, failed

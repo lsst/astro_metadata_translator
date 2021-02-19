@@ -174,9 +174,13 @@ def write_metadata_sidecar(ctx, files, hdrnum, regex):
               default=re_default,
               help="When looking in a directory, regular expression to use to determine whether"
               f" a file should be examined. Default: '{re_default}'")
+@click.option("-o", "--outpath", type=str, default=None,
+              help="If given, write a single index with all information in specified location."
+              " Default is to write one index per directory where files are located.")
 @click.pass_context
-def write_index(ctx, files, hdrnum, regex):
-    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], mode="obsInfo")
+def write_index(ctx, files, hdrnum, regex, outpath):
+    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], mode="obsInfo",
+                                     outpath=outpath)
 
     if failed:
         click.echo("Files with failed header extraction:", err=True)
@@ -198,9 +202,13 @@ def write_index(ctx, files, hdrnum, regex):
               default=re_default,
               help="When looking in a directory, regular expression to use to determine whether"
               f" a file should be examined. Default: '{re_default}'")
+@click.option("-o", "--outpath", type=str, default=None,
+              help="If given, write a single index with all information in specified location."
+              " Default is to write one index per directory where files are located.")
 @click.pass_context
-def write_metadata_index(ctx, files, hdrnum, regex):
-    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], mode="metadata")
+def write_metadata_index(ctx, files, hdrnum, regex, outpath):
+    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], mode="metadata",
+                                     outpath=outpath)
 
     if failed:
         click.echo("Files with failed header extraction:", err=True)
