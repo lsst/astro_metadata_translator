@@ -31,7 +31,7 @@ MODE_KEY = "__MODE__"
 
 
 def index_files(files, root, hdrnum, print_trace, mode, outstream=sys.stdout, errstream=sys.stderr):
-    """Create an idex from the supplied files.
+    """Create an index from the supplied files.
 
     No file is written. The Python structure returned is suitable
     for writing.
