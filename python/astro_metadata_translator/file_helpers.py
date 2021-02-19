@@ -81,13 +81,17 @@ except ImportError:
             The requested header. `None` if it could not be read and
             ``can_raise`` is `False`.
         """
-        fits_file = fits.open(file)
+        header = None
         try:
-            header = fits_file[hdu].header
-        except IndexError as e:
+            with fits.open(file) as fits_file:
+                try:
+                    header = fits_file[hdu].header
+                except IndexError as e:
+                    if can_raise:
+                        raise e
+        except Exception as e:
             if can_raise:
                 raise e
-            header = None
         return header
 
 
