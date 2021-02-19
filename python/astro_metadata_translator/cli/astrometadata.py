@@ -14,6 +14,7 @@ __all__ = ("main",)
 import importlib
 import logging
 import click
+import os
 
 from ..bin.translateheader import process_files as translate_header
 from ..bin.writesidecar import write_sidecar_files
@@ -21,6 +22,8 @@ from ..bin.writeindex import write_index_files
 
 # Default regex for finding data files
 re_default = r"\.fit[s]?\b"
+
+PACKAGES_VAR = "METADATA_TRANSLATORS"
 
 
 @click.group(name="astrometadata", context_settings=dict(help_option_names=["-h", "--help"]))
@@ -31,7 +34,9 @@ re_default = r"\.fit[s]?\b"
 @click.option("--traceback/--no-traceback", default=False,
               help="Give detailed trace back when any errors encountered.")
 @click.option("-p", "--packages", multiple=True,
-              help="Python packages to import to register additional translators")
+              help="Python packages to import to register additional translators. This is in addition"
+              f" to any packages specified in the {PACKAGES_VAR} environment variable (colon-separated"
+              " python module names).")
 @click.pass_context
 def main(ctx, log_level, traceback, packages):
     ctx.ensure_object(dict)
@@ -40,6 +45,11 @@ def main(ctx, log_level, traceback, packages):
 
     # Traceback needs to be known to subcommands
     ctx.obj["TRACEBACK"] = traceback
+
+    packages = set(packages)
+    if PACKAGES_VAR in os.environ:
+        new_packages = os.environ[PACKAGES_VAR].split(":")
+        packages.update(new_packages)
 
     # Process import requests
     for m in packages:
