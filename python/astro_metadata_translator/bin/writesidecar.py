@@ -15,9 +15,7 @@ import os
 import sys
 import traceback
 
-from astro_metadata_translator import ObservationInfo
-
-from .helper import find_files, read_metadata_from_file
+from ..file_helpers import find_files, read_file_info
 
 
 def write_sidecar_json(file, hdrnum, print_trace, outstream=sys.stdout, errstream=sys.stderr):
@@ -33,7 +31,8 @@ def write_sidecar_json(file, hdrnum, print_trace, outstream=sys.stdout, errstrea
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
-        a one line summary of the error condition.
+        a one line summary of the error condition. If `None` the exception
+        will be allowed.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
@@ -49,11 +48,10 @@ def write_sidecar_json(file, hdrnum, print_trace, outstream=sys.stdout, errstrea
 
     try:
         # Calculate the JSON from the file
-        md = read_metadata_from_file(file, hdrnum, errstream=errstream)
-        if md is None:
+        json_str = read_file_info(file, hdrnum, mode="json", print_trace=print_trace,
+                                  outstream=outstream, errstream=errstream)
+        if json_str is None:
             return False
-        obs_info = ObservationInfo(md, pedantic=True, filename=file)
-        json_str = obs_info.to_json()
 
         # Calculate file name derived on this file
         root, ext = os.path.splitext(file)
@@ -62,6 +60,8 @@ def write_sidecar_json(file, hdrnum, print_trace, outstream=sys.stdout, errstrea
             print(json_str, file=fd)
 
     except Exception as e:
+        if print_trace is None:
+            raise e
         if print_trace:
             traceback.print_exc(file=outstream)
         else:

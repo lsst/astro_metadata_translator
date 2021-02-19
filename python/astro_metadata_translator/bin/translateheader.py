@@ -25,7 +25,7 @@ import importlib
 import yaml
 from astro_metadata_translator import ObservationInfo, fix_header
 
-from .helper import find_files, read_metadata_from_file
+from ..file_helpers import find_files, read_basic_metadata_from_file
 
 
 # Output mode choices
@@ -159,7 +159,7 @@ def read_file(file, hdrnum, print_trace,
         print(f"Analyzing {file}...", file=errstream)
 
     try:
-        md = read_metadata_from_file(file, hdrnum, errstream=errstream)
+        md = read_basic_metadata_from_file(file, hdrnum, errstream=errstream)
 
         if output_mode.endswith("native"):
             # Strip native and don't change type of md
