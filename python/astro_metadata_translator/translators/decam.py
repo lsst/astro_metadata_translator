@@ -277,6 +277,7 @@ class DecamTranslator(FitsTranslator):
         Notes
         -----
         Fixes the following issues:
+
         * If OBSTYPE contains "zero" or "bias",
           update the FILTER keyword to "solid plate 0.0 0.0".
 
