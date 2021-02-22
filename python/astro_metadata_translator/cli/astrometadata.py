@@ -53,7 +53,10 @@ def main(ctx, log_level, traceback, packages):
 
     # Process import requests
     for m in packages:
-        importlib.import_module(m)
+        try:
+            importlib.import_module(m)
+        except (ImportError, ModuleNotFoundError):
+            logging.warn("Failed to import translator module: %s", m)
 
 
 @main.command(help="Translate metadata in supplied files and report.")
