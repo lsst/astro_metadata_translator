@@ -153,21 +153,27 @@ def calculate_index(headers, mode):
     return output
 
 
-def read_index(path):
+def read_index(path, force_dict=False):
     """Read an index file.
 
     Parameters
     ----------
     path : `str`
         Path to the index file.
+    force_dict : `bool`, optional
+        If `True` the structure returned will always be a dict keyed
+        by filename.
 
     Returns
     -------
-    index_ : `ObservationGroup` or `dict` of [`str`, `dict`]
+    index_ : `ObservationGroup` or `dict[str, Union[dict, ObservaitonInfo]]`
        If the index file referred to `ObservationInfo` this will return
        an `ObservationGroup`, otherwise a `dict` will be returned with the
        keys being paths to files and the values being the keys and values
-       stored in the index (with common information merged in).
+       stored in the index (with common information merged in). If
+       ``force_dict`` is `True` a `dict` will be returned with filename
+       keys even if the index file refers to `ObservationInfo` (the values
+       will be `ObservationInfo`).
     """
     if not path.endswith(".json"):
         raise ValueError(f"Index files must be in .json format; got {path}")
@@ -175,10 +181,10 @@ def read_index(path):
     with open(path, "r") as fd:
         content = json.loads(fd.read())
 
-    return process_index_data(content)
+    return process_index_data(content, force_dict=force_dict)
 
 
-def process_index_data(content, force_metadata=False):
+def process_index_data(content, force_metadata=False, force_dict=False):
     """Process the content read from a JSON index file.
 
     Parameters
@@ -190,15 +196,21 @@ def process_index_data(content, force_metadata=False):
         By default the content returned will match the original form that
         was used for the index. If this parameter is `True` an index of
         `ObservationInfo` will be returned as if it was simple dict content.
+    force_dict : `bool`, optional
+        If `True` the structure returned will always be a dict keyed
+        by filename.
 
     Returns
     -------
-    index_ : `ObservationGroup` or `dict` of [`str`, `dict`]
+    index : `ObservationGroup` or `dict` of [`str`, `dict`]
        If the index file referred to `ObservationInfo` this will return
        an `ObservationGroup`, otherwise a `dict` will be returned with the
        keys being paths to files and the values being the keys and values
        stored in the index (with common information merged in). This
-       can be overridden using the ``force_metadata`` parameter.
+       can be overridden using the ``force_metadata`` parameter. If
+       ``force_dict`` is `True` a `dict` will be returned with filename
+       keys even if the index file refers to `ObservationInfo` (the values
+       will be `ObservationInfo` unless ``force_metadata`` is `True`).
     """
 
     if COMMON_KEY not in content:
@@ -225,11 +237,15 @@ def process_index_data(content, force_metadata=False):
         return unpacked
 
     obs_infos = []
+    by_file = {}
     for file, hdr in unpacked.items():
         info = ObservationInfo.from_simple(hdr)
         info.filename = file
         obs_infos.append(info)
+        by_file[file] = info
 
+    if force_dict:
+        return by_file
     return ObservationGroup(obs_infos)
 
 
