@@ -211,6 +211,10 @@ def process_index_data(content, force_metadata=False, force_dict=False):
        ``force_dict`` is `True` a `dict` will be returned with filename
        keys even if the index file refers to `ObservationInfo` (the values
        will be `ObservationInfo` unless ``force_metadata`` is `True`).
+
+    Notes
+    -----
+    File keys will be relative to the location of the index file.
     """
 
     if COMMON_KEY not in content:
