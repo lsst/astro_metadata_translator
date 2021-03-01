@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-__all__ = ("write_sidecar_files", "write_sidecar_json")
+__all__ = ("write_sidecar_files", "write_sidecar_file")
 
 import os
 import sys
@@ -18,7 +18,7 @@ import traceback
 from ..file_helpers import find_files, read_file_info
 
 
-def write_sidecar_json(file, hdrnum, content, print_trace, outstream=sys.stdout, errstream=sys.stderr):
+def write_sidecar_file(file, hdrnum, content, print_trace, outstream=sys.stdout, errstream=sys.stderr):
     """Write JSON summary to sidecar file.
 
     Parameters
@@ -117,7 +117,7 @@ def write_sidecar_files(files, regex, hdrnum, content, print_trace,
     failed = []
     okay = []
     for path in sorted(found_files):
-        isok = write_sidecar_json(path, hdrnum, content, print_trace, outstream, errstream)
+        isok = write_sidecar_file(path, hdrnum, content, print_trace, outstream, errstream)
         if isok:
             okay.append(path)
         else:
