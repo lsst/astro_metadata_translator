@@ -11,7 +11,7 @@
 
 """Support functions for script implementations."""
 
-__all__ = ("read_fits_metadata", "find_files", "read_basic_metadata_from_file", "read_file_info")
+__all__ = ("find_files", "read_basic_metadata_from_file", "read_file_info")
 
 import json
 import re
@@ -28,7 +28,7 @@ try:
     from lsst.afw.fits import readMetadata
     import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
 
-    def read_fits_metadata(file, hdu, can_raise=False):
+    def _read_fits_metadata(file, hdu, can_raise=False):
         """Read a FITS header using afw.
 
         Parameters
@@ -61,26 +61,10 @@ try:
 except ImportError:
     from astropy.io import fits
 
-    def read_fits_metadata(file, hdu, can_raise=False):
-        """Read a FITS header using astropy.
+    def _read_fits_metadata(file, hdu, can_raise=False):
+        """Read a FITS header using astropy."""
 
-        Parameters
-        ----------
-        file : `str`
-            The file to read.
-        hdu : `int`
-            The header number to read.
-        can_raise : `bool`, optional
-            Indicate whether the function can raise and exception (default)
-            or should return `None` on error. Can still raise if an unexpected
-            error is encountered.
-
-        Returns
-        -------
-        md : `dict`
-            The requested header. `None` if it could not be read and
-            ``can_raise`` is `False`.
-        """
+        # For detailed docstrings see the afw implementation above
         header = None
         try:
             with fits.open(file) as fits_file:
@@ -154,12 +138,12 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
             # YAML can't have HDUs
             hdrnum = 0
     else:
-        md = read_fits_metadata(file, 0, can_raise=can_raise)
+        md = _read_fits_metadata(file, 0, can_raise=can_raise)
     if md is None:
         print(f"Unable to open file {file}", file=errstream)
         return None
     if hdrnum != 0:
-        mdn = read_fits_metadata(file, int(hdrnum), can_raise=can_raise)
+        mdn = _read_fits_metadata(file, int(hdrnum), can_raise=can_raise)
         # Astropy does not allow append mode since it does not
         # convert lists to multiple cards. Overwrite for now
         if mdn is not None:
