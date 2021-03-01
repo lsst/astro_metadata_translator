@@ -159,7 +159,9 @@ def read_file(file, hdrnum, print_trace,
         print(f"Analyzing {file}...", file=errstream)
 
     try:
-        md = read_basic_metadata_from_file(file, hdrnum, errstream=errstream)
+        md = read_basic_metadata_from_file(file, hdrnum, errstream=errstream, can_raise=True)
+        if md is None:
+            raise RuntimeError(f"Failed to read file {file} HDU={hdrnum}")
 
         if output_mode.endswith("native"):
             # Strip native and don't change type of md
@@ -207,7 +209,7 @@ def read_file(file, hdrnum, print_trace,
         if print_trace:
             traceback.print_exc(file=outstream)
         else:
-            print(repr(e), file=outstream)
+            print(f"Failure processing {file}: {e}", file=outstream)
         return False
     return True
 
