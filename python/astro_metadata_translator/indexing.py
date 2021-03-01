@@ -27,10 +27,10 @@ from .file_helpers import read_file_info
 log = logging.getLogger(__name__)
 
 COMMON_KEY = "__COMMON__"
-MODE_KEY = "__MODE__"
+CONTENT_KEY = "__CONTENT__"
 
 
-def index_files(files, root, hdrnum, print_trace, mode, outstream=sys.stdout, errstream=sys.stderr):
+def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout, errstream=sys.stderr):
     """Create an index from the supplied files.
 
     No file is written. The Python structure returned is suitable
@@ -52,9 +52,9 @@ def index_files(files, root, hdrnum, print_trace, mode, outstream=sys.stdout, er
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition. If `None` the exception
         will be allowed.
-    mode : `str`
+    content : `str`
         Form of data to write in index file. Options are:
-        ``obsInfo`` (default) to write ObservationInfo to the index;
+        ``translated`` (default) to write ObservationInfo to the index;
         ``metadata`` to write native metadata headers to the index.
         The index file is called ``{mode}_index.json``
     outstream : `io.StringIO`, optional
@@ -67,24 +67,25 @@ def index_files(files, root, hdrnum, print_trace, mode, outstream=sys.stdout, er
     -------
     file_index : `dict` of [`str`, `dict`]
         The headers in form suitable for writing to an index. The keys will
-        be ``__COMMON__`` for shared content, ``__MODE__`` to record the
-        mode used to construct the index, and paths to the files. The paths
-        will be the supplied paths and will not include any supplied ``root``.
+        be ``__COMMON__`` for shared content, ``__CONTENT_`` to record the
+        content mode used to construct the index, and paths to the files. The
+        paths will be the supplied paths and will not include any supplied
+        ``root``.
     okay : `list` of `str`
         All the files that were processed successfully.
     failed : `list` of `str`
         All the files that could not be processed. Will be empty if
         ``print_trace`` is not `None`.
     """
-    if mode not in ("obsInfo", "metadata"):
+    if content not in ("translated", "metadata"):
         raise ValueError("Unrecognized mode {mode}")
 
     failed = []
     okay = []
 
     # We want the reader to return simple dict to us here
-    read_mode = mode
-    if read_mode == "obsInfo":
+    read_mode = content
+    if read_mode == "translated":
         read_mode = "simple"
 
     by_file = {}  # Mapping of path to file content
@@ -103,19 +104,19 @@ def index_files(files, root, hdrnum, print_trace, mode, outstream=sys.stdout, er
         # Store the information indexed by the filename within dir
         by_file[file] = simple
 
-    output = calculate_index(by_file, mode)
+    output = calculate_index(by_file, content)
 
     return output, okay, failed
 
 
-def calculate_index(headers, mode):
+def calculate_index(headers, content):
     """Calculate an index data structure from the supplied headers.
 
     Parameters
     ----------
     headers : `dict` of [`str`, `dict`]
         The headers indexed by filename.
-    mode : `str`
+    content : `str`
         The mode associated with these headers. Not used other than to
         store the information in the data structure for later use on
         deserialization.
@@ -125,8 +126,8 @@ def calculate_index(headers, mode):
     index_ : `dict` of [`str`, `dict`]
         The headers in form suitable for writing to an index.
     """
-    if mode not in ("metadata", "obsInfo"):
-        raise ValueError(f"Unrecognized mode for index creation: {mode}")
+    if content not in ("metadata", "translated"):
+        raise ValueError(f"Unrecognized mode for index creation: {content}")
 
     # Merge all the information into a primary plus diff
     merged = merge_headers(headers.values(), mode="diff")
@@ -146,7 +147,7 @@ def calculate_index(headers, mode):
 
     # Put the common headers first in the output.
     # Store the mode so that we can work out how to read the file in
-    output = {MODE_KEY: mode, COMMON_KEY: merged}
+    output = {CONTENT_KEY: content, COMMON_KEY: merged}
     for file, diff in zip(headers, diff_dict):
         output[file] = diff
 
@@ -223,12 +224,12 @@ def process_index_data(content, force_metadata=False, force_dict=False):
     # Copy the input structure so we can update in place
     unpacked = deepcopy(content)
 
-    mode = unpacked.pop(MODE_KEY, None)
+    content = unpacked.pop(CONTENT_KEY, None)
     if force_metadata:
-        mode = "metadata"
-    elif mode is None:
-        log.warning("No '%s' key in data structure, assuming 'metadata'", MODE_KEY)
-        mode = "metadata"
+        content = "metadata"
+    elif content is None:
+        log.warning("No '%s' key in data structure, assuming 'metadata'", CONTENT_KEY)
+        content = "metadata"
 
     # The common headers will be copied into each header
     common = unpacked.pop(COMMON_KEY)
@@ -236,7 +237,7 @@ def process_index_data(content, force_metadata=False, force_dict=False):
     for file in unpacked:
         unpacked[file].update(common)
 
-    if mode == "metadata":
+    if content == "metadata":
         # nothing more to be done
         return unpacked
 
@@ -297,24 +298,27 @@ def process_sidecar_data(content, force_metadata=False):
         can be overridden using the ``force_metadata`` parameter.
     """
 
+    if not isinstance(content, dict):
+        raise TypeError(f"Content of sidecar must be a dict, not {type(content)}")
+
     # Copy the input structure so we can update in place
     content = deepcopy(content)
 
     guessing = False
-    mode = content.pop(MODE_KEY, None)
+    content_mode = content.pop(CONTENT_KEY, None)
     if force_metadata:
-        mode = "metadata"
-    elif mode is None:
+        content_mode = "metadata"
+    elif content is None:
         # All ObservationInfo objects will have observation_id and instrument
         # so if they are there we can guess
         guessing = True
-        if "observation_id" in content and "instrument" in content:
-            mode = "obsInfo"
+        if "observation_id" in content and "instrument" in content_mode:
+            content_mode = "translated"
         else:
-            mode = "metadata"
-        log.warning("No '%s' key in data structure, assuming '%s'", MODE_KEY, mode)
+            content_mode = "metadata"
+        log.warning("No '%s' key in data structure, assuming '%s'", CONTENT_KEY, content_mode)
 
-    if mode == "metadata":
+    if content_mode == "metadata":
         # nothing more to be done
         return content
 

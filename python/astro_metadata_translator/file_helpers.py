@@ -189,7 +189,7 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
     mode : `str`
         Type of content to return. Options are:
         ``simple`` returns the simplified form of an ObservationInfo (default);
-        ``obsInfo`` returns an ObsrvationInfo;
+        ``obsInfo`` returns an ObservationInfo;
         ``json`` returns a JSON string of the ObservationInfo;
         ``metadata`` returns the metadata (will be unfixed form);
         ``jsonmetadata`` returns the unfixed metadata in JSON string.
@@ -219,7 +219,7 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
             # Do not fix the header
             if mode == "jsonmetadata":
                 # Add a key to tell the reader whether this is md or obsInfo
-                md["__MODE__"] = "metadata"
+                md["__CONTENT__"] = "metadata"
                 try:
                     json_str = json.dumps(md)
                 except TypeError:
@@ -234,8 +234,8 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
         if mode == "simple":
             return simple
         if mode == "json":
-            # Add a key to tell the reader whether this is md or obsInfo
-            simple["__MODE__"] = "obsInfo"
+            # Add a key to tell the reader if this is metadata or translated
+            simple["__CONTENT__"] = "translated"
             return json.dumps(simple)
         raise RuntimeError(f"Logic error. Unrecognized mode for reading file: {mode}")
     except Exception as e:

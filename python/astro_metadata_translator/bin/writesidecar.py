@@ -18,7 +18,7 @@ import traceback
 from ..file_helpers import find_files, read_file_info
 
 
-def write_sidecar_json(file, hdrnum, mode, print_trace, outstream=sys.stdout, errstream=sys.stderr):
+def write_sidecar_json(file, hdrnum, content, print_trace, outstream=sys.stdout, errstream=sys.stderr):
     """Write JSON summary to sidecar file.
 
     Parameters
@@ -28,10 +28,10 @@ def write_sidecar_json(file, hdrnum, mode, print_trace, outstream=sys.stdout, er
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
         merged with the header from this HDU.
-    mode : `str`
+    content : `str`
         Content mode to use when writing JSON to sidecar. Options are:
         ``metadata`` to write the unmodified header;
-        ``obsInfo`` to write the translated ObservationInfo.
+        ``translated`` to write the translated ObservationInfo.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
@@ -50,9 +50,10 @@ def write_sidecar_json(file, hdrnum, mode, print_trace, outstream=sys.stdout, er
         could not be processed.
     """
 
-    if mode not in ("metadata", "obsInfo"):
-        raise ValueError(f"Specified mode '{mode}' is not understood.")
+    if content not in ("metadata", "translated"):
+        raise ValueError(f"Specified content mode '{content}' is not understood.")
 
+    mode = content
     if mode == "metadata":
         mode = "jsonmetadata"
     else:
@@ -82,7 +83,7 @@ def write_sidecar_json(file, hdrnum, mode, print_trace, outstream=sys.stdout, er
     return True
 
 
-def write_sidecar_files(files, regex, hdrnum, mode, print_trace,
+def write_sidecar_files(files, regex, hdrnum, content, print_trace,
                         outstream=sys.stdout, errstream=sys.stderr):
     """Process each file and create sidecar file.
 
@@ -95,10 +96,10 @@ def write_sidecar_files(files, regex, hdrnum, mode, print_trace,
         scanned.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
-    mode : `str`
+    content : `str`
         Content mode to use when writing JSON to sidecar. Options are:
         ``metadata`` to write the unmodified header;
-        ``obsInfo`` to write the translated ObservationInfo.
+        ``translated`` to write the translated ObservationInfo.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
@@ -122,7 +123,7 @@ def write_sidecar_files(files, regex, hdrnum, mode, print_trace,
     failed = []
     okay = []
     for path in sorted(found_files):
-        isok = write_sidecar_json(path, hdrnum, mode, print_trace, outstream, errstream)
+        isok = write_sidecar_json(path, hdrnum, content, print_trace, outstream, errstream)
         if isok:
             okay.append(path)
         else:

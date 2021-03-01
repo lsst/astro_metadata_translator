@@ -30,7 +30,7 @@ class IndexingTestCase(unittest.TestCase):
         files = [os.path.join(TESTDATA, f) for f in files]
 
         # Index the translated metadata
-        index, okay, failed = index_files(files, None, 1, None, "obsInfo")
+        index, okay, failed = index_files(files, None, 1, None, "translated")
         self.assertEqual(set(files), set(okay))
         self.assertEqual(failed, [])
 

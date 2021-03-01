@@ -34,6 +34,12 @@ regex_option = click.option("-r", "--regex",
                             default=re_default,
                             help="When looking in a directory, regular expression to use to determine whether"
                             f" a file should be examined. Default: '{re_default}'")
+content_option = click.option("-c", "--content",
+                              default="translated",
+                              type=click.Choice(["translated", "metadata"], case_sensitive=False),
+                              help="Content to store in JSON file. Options are: "
+                              "'translated' stores translated metadata in the file; "
+                              "'metadata' stores raw FITS headers in the file.")
 
 
 @click.group(name="astrometadata", context_settings=dict(help_option_names=["-h", "--help"]))
@@ -127,13 +133,14 @@ def dump(ctx, files, hdrnum, mode, regex):
         raise click.exceptions.Exit(1)
 
 
-@main.command(help="Write JSON sidecar files with ObservationInfo summary information.")
+@main.command(help="Write JSON sidecar files alongside each data file.")
 @click.argument("files", nargs=-1)
 @hdrnum_option
 @regex_option
+@content_option
 @click.pass_context
-def write_sidecar(ctx, files, hdrnum, regex):
-    okay, failed = write_sidecar_files(files, regex, hdrnum, "obsInfo", ctx.obj["TRACEBACK"])
+def write_sidecar(ctx, files, hdrnum, regex, content):
+    okay, failed = write_sidecar_files(files, regex, hdrnum, content, ctx.obj["TRACEBACK"])
 
     if failed:
         click.echo("Files with failed header extraction:", err=True)
@@ -145,56 +152,17 @@ def write_sidecar(ctx, files, hdrnum, regex):
         raise click.exceptions.Exit(1)
 
 
-@main.command(help="Write metadata sidecar files with ObservationInfo summary information.")
+@main.command(help="Write JSON index file for entire directory.")
 @click.argument("files", nargs=-1)
 @hdrnum_option
 @regex_option
-@click.pass_context
-def write_metadata_sidecar(ctx, files, hdrnum, regex):
-    okay, failed = write_sidecar_files(files, regex, hdrnum, "metadata", ctx.obj["TRACEBACK"])
-
-    if failed:
-        click.echo("Files with failed header extraction:", err=True)
-        for f in failed:
-            click.echo(f"\t{f}", err=True)
-
-    if not okay:
-        # Good status if anything was returned in okay
-        raise click.exceptions.Exit(1)
-
-
-@main.command(help="Write JSON index file of ObervationInfo for entire directory.")
-@click.argument("files", nargs=-1)
-@hdrnum_option
-@regex_option
+@content_option
 @click.option("-o", "--outpath", type=str, default=None,
               help="If given, write a single index with all information in specified location."
               " Default is to write one index per directory where files are located.")
 @click.pass_context
-def write_index(ctx, files, hdrnum, regex, outpath):
-    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], mode="obsInfo",
-                                     outpath=outpath)
-
-    if failed:
-        click.echo("Files with failed header extraction:", err=True)
-        for f in failed:
-            click.echo(f"\t{f}", err=True)
-
-    if not okay:
-        # Good status if anything was returned in okay
-        raise click.exceptions.Exit(1)
-
-
-@main.command(help="Write JSON index file of original data headers for entire directory.")
-@click.argument("files", nargs=-1)
-@hdrnum_option
-@regex_option
-@click.option("-o", "--outpath", type=str, default=None,
-              help="If given, write a single index with all information in specified location."
-              " Default is to write one index per directory where files are located.")
-@click.pass_context
-def write_metadata_index(ctx, files, hdrnum, regex, outpath):
-    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], mode="metadata",
+def write_index(ctx, files, hdrnum, regex, content, outpath):
+    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], content=content,
                                      outpath=outpath)
 
     if failed:

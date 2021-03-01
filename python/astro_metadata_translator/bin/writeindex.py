@@ -22,7 +22,7 @@ from ..indexing import index_files
 log = logging.getLogger(__name__)
 
 
-def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
+def write_index_files(files, regex, hdrnum, print_trace, content="translated",
                       outpath=None, outstream=sys.stdout, errstream=sys.stderr):
     """Process each file and create JSON index file.
 
@@ -43,9 +43,9 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
-    mode : `str`
+    content : `str`
         Form of data to write in index file. Options are:
-        ``obsInfo`` (default) to write ObservationInfo to the index;
+        ``translated`` (default) to write ObservationInfo to the index;
         ``metadata`` to write native metadata headers to the index.
         The index file is called ``_index.json``
     outpath : `str`, optional
@@ -66,7 +66,7 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
     failed : `list` of `str`
         All the files that could not be processed.
     """
-    if mode not in ("obsInfo", "metadata"):
+    if content not in ("translated", "metadata"):
         raise ValueError("Unrecognized mode {mode}")
 
     if outpath is not None:
@@ -90,7 +90,7 @@ def write_index_files(files, regex, hdrnum, print_trace, mode="obsInfo",
 
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in by_directory.items():
-        output, this_okay, this_failed = index_files(files_in_dir, directory, hdrnum, print_trace, mode,
+        output, this_okay, this_failed = index_files(files_in_dir, directory, hdrnum, print_trace, content,
                                                      outstream, errstream)
 
         failed.extend(this_failed)
