@@ -104,14 +104,14 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
     return output, okay, failed
 
 
-def calculate_index(headers, content):
+def calculate_index(headers, content_mode):
     """Calculate an index data structure from the supplied headers.
 
     Parameters
     ----------
     headers : `dict` of [`str`, `dict`]
         The headers indexed by filename.
-    content : `str`
+    content_mode : `str`
         The mode associated with these headers. Not used other than to
         store the information in the data structure for later use on
         deserialization.
@@ -121,8 +121,8 @@ def calculate_index(headers, content):
     index_ : `dict` of [`str`, `dict`]
         The headers in form suitable for writing to an index.
     """
-    if content not in ("metadata", "translated"):
-        raise ValueError(f"Unrecognized mode for index creation: {content}")
+    if content_mode not in ("metadata", "translated"):
+        raise ValueError(f"Unrecognized mode for index creation: {content_mode}")
 
     # Merge all the information into a primary plus diff
     merged = merge_headers(headers.values(), mode="diff")
@@ -142,7 +142,7 @@ def calculate_index(headers, content):
 
     # Put the common headers first in the output.
     # Store the mode so that we can work out how to read the file in
-    output = {CONTENT_KEY: content, COMMON_KEY: merged}
+    output = {CONTENT_KEY: content_mode, COMMON_KEY: merged}
     for file, diff in zip(headers, diff_dict):
         output[file] = diff
 
@@ -213,12 +213,12 @@ def process_index_data(content, force_metadata=False, force_dict=False):
     # Copy the input structure so we can update in place
     unpacked = deepcopy(content)
 
-    content = unpacked.pop(CONTENT_KEY, None)
+    content_mode = unpacked.pop(CONTENT_KEY, None)
     if force_metadata:
-        content = "metadata"
+        content_mode = "metadata"
     elif content is None:
         log.warning("No '%s' key in data structure, assuming 'metadata'", CONTENT_KEY)
-        content = "metadata"
+        content_mode = "metadata"
 
     # The common headers will be copied into each header
     common = unpacked.pop(COMMON_KEY)
@@ -226,7 +226,7 @@ def process_index_data(content, force_metadata=False, force_dict=False):
     for file in unpacked:
         unpacked[file].update(common)
 
-    if content == "metadata":
+    if content_mode == "metadata":
         # nothing more to be done
         return unpacked
 

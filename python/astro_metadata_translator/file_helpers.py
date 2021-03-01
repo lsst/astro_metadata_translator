@@ -164,7 +164,7 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
     return md
 
 
-def read_file_info(file, hdrnum, print_trace=None, content="translated", content_type="simple",
+def read_file_info(file, hdrnum, print_trace=None, content_mode="translated", content_type="simple",
                    outstream=sys.stdout, errstream=sys.stderr):
     """Read information from file
 
@@ -180,7 +180,7 @@ def read_file_info(file, hdrnum, print_trace=None, content="translated", content
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition. If `None` the exception
         will be allowed to propagate.
-    content : `str`
+    content_mode : `str`
         Content returned. This can be: ``metadata`` to return the unfixed
         metadata headers; ``translated`` to return the output from metadata
         translation.
@@ -202,8 +202,8 @@ def read_file_info(file, hdrnum, print_trace=None, content="translated", content
         if there was a problem and `print_trace` is not `None`.
     """
 
-    if content not in ("metadata", "translated"):
-        raise ValueError(f"Unrecognized content request: {content}")
+    if content_mode not in ("metadata", "translated"):
+        raise ValueError(f"Unrecognized content mode request: {content_mode}")
 
     if content_type not in ("native", "simple", "json"):
         raise ValueError(f"Unrecognized content type request {content_type}")
@@ -214,11 +214,11 @@ def read_file_info(file, hdrnum, print_trace=None, content="translated", content
                                            can_raise=True if print_trace is None else False)
         if md is None:
             return None
-        if content == "metadata":
+        if content_mode == "metadata":
             # Do not fix the header
             if content_type == "json":
                 # Add a key to tell the reader whether this is md or translated
-                md["__CONTENT__"] = "metadata"
+                md["__CONTENT__"] = content_mode
                 try:
                     json_str = json.dumps(md)
                 except TypeError:
@@ -234,9 +234,9 @@ def read_file_info(file, hdrnum, print_trace=None, content="translated", content
             return simple
         if content_type == "json":
             # Add a key to tell the reader if this is metadata or translated
-            simple["__CONTENT__"] = "translated"
+            simple["__CONTENT__"] = content_mode
             return json.dumps(simple)
-        raise RuntimeError(f"Logic error. Unrecognized mode for reading file: {content}/{content_type}")
+        raise RuntimeError(f"Logic error. Unrecognized mode for reading file: {content_mode}/{content_type}")
     except Exception as e:
         if print_trace is None:
             raise e

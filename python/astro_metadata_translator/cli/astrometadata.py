@@ -162,7 +162,7 @@ def write_sidecar(ctx, files, hdrnum, regex, content):
               " Default is to write one index per directory where files are located.")
 @click.pass_context
 def write_index(ctx, files, hdrnum, regex, content, outpath):
-    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], content=content,
+    okay, failed = write_index_files(files, regex, hdrnum, ctx.obj["TRACEBACK"], content_mode=content,
                                      outpath=outpath)
 
     if failed:
