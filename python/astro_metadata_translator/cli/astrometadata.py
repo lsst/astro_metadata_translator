@@ -25,6 +25,16 @@ re_default = r"\.fit[s]?\b"
 
 PACKAGES_VAR = "METADATA_TRANSLATORS"
 
+hdrnum_option = click.option("-n", "--hdrnum",
+                             default=1,
+                             help="HDU number to read. If the HDU can not be found, a warning is issued but"
+                             " reading is attempted using the primary header. The primary header is"
+                             " always read and merged with this header.")
+regex_option = click.option("-r", "--regex",
+                            default=re_default,
+                            help="When looking in a directory, regular expression to use to determine whether"
+                            f" a file should be examined. Default: '{re_default}'")
+
 
 @click.group(name="astrometadata", context_settings=dict(help_option_names=["-h", "--help"]))
 @click.option("--log-level",
@@ -64,20 +74,14 @@ def main(ctx, log_level, traceback, packages):
 @click.option("-q", "--quiet/--no-quiet",
               default=False,
               help="Do not report the translation content from each header. Only report failures.")
-@click.option("-n", "--hdrnum", default=1,
-              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
-              " is attempted using the primary header. The primary header is always read and merged with"
-              " this header.")
+@hdrnum_option
 @click.option("-m", "--mode",
               default="auto",
               type=click.Choice(["auto", "verbose", "table"], case_sensitive=False),
               help="Output mode. 'verbose' prints all available information for each file found."
               " 'table' uses tabular output for a cutdown set of metadata."
               " 'auto' uses 'verbose' if one file found and 'table' if more than one is found.")
-@click.option("-r", "--regex",
-              default=re_default,
-              help="When looking in a directory, regular expression to use to determine whether"
-              f" a file should be examined. Default: '{re_default}'")
+@regex_option
 @click.pass_context
 def translate(ctx, files, quiet, hdrnum, mode, regex):
 
@@ -99,10 +103,7 @@ def translate(ctx, files, quiet, hdrnum, mode, regex):
 
 @main.command(help="Dump data header to standard out in YAML format.")
 @click.argument("files", nargs=-1)
-@click.option("-n", "--hdrnum", default=1,
-              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
-              " is attempted using the primary header. The primary header is always read and merged with"
-              " this header.")
+@hdrnum_option
 @click.option("-m", "--mode",
               default="yaml",
               type=click.Choice(["yaml", "fixed", "yamlnative", "fixexnative"], case_sensitive=False),
@@ -110,10 +111,7 @@ def translate(ctx, files, quiet, hdrnum, mode, regex):
               " 'fixed' dumps the header in YAML format after applying header corrections."
               " 'yamlnative' is as for 'yaml' but dumps the native (astropy vs PropertyList) native form."
               " 'yamlfixed' is as for 'fixed' but dumps the native (astropy vs PropertyList) native form.")
-@click.option("-r", "--regex",
-              default=re_default,
-              help="When looking in a directory, regular expression to use to determine whether"
-              f" a file should be examined. Default: '{re_default}'")
+@regex_option
 @click.pass_context
 def dump(ctx, files, hdrnum, mode, regex):
 
@@ -131,14 +129,8 @@ def dump(ctx, files, hdrnum, mode, regex):
 
 @main.command(help="Write JSON sidecar files with ObservationInfo summary information.")
 @click.argument("files", nargs=-1)
-@click.option("-n", "--hdrnum", default=1,
-              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
-              " is attempted using the primary header. The primary header is always read and merged with"
-              " this header.")
-@click.option("-r", "--regex",
-              default=re_default,
-              help="When looking in a directory, regular expression to use to determine whether"
-              f" a file should be examined. Default: '{re_default}'")
+@hdrnum_option
+@regex_option
 @click.pass_context
 def write_sidecar(ctx, files, hdrnum, regex):
     okay, failed = write_sidecar_files(files, regex, hdrnum, "obsInfo", ctx.obj["TRACEBACK"])
@@ -155,14 +147,8 @@ def write_sidecar(ctx, files, hdrnum, regex):
 
 @main.command(help="Write metadata sidecar files with ObservationInfo summary information.")
 @click.argument("files", nargs=-1)
-@click.option("-n", "--hdrnum", default=1,
-              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
-              " is attempted using the primary header. The primary header is always read and merged with"
-              " this header.")
-@click.option("-r", "--regex",
-              default=re_default,
-              help="When looking in a directory, regular expression to use to determine whether"
-              f" a file should be examined. Default: '{re_default}'")
+@hdrnum_option
+@regex_option
 @click.pass_context
 def write_metadata_sidecar(ctx, files, hdrnum, regex):
     okay, failed = write_sidecar_files(files, regex, hdrnum, "metadata", ctx.obj["TRACEBACK"])
@@ -179,14 +165,8 @@ def write_metadata_sidecar(ctx, files, hdrnum, regex):
 
 @main.command(help="Write JSON index file of ObervationInfo for entire directory.")
 @click.argument("files", nargs=-1)
-@click.option("-n", "--hdrnum", default=1,
-              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
-              " is attempted using the primary header. The primary header is always read and merged with"
-              " this header.")
-@click.option("-r", "--regex",
-              default=re_default,
-              help="When looking in a directory, regular expression to use to determine whether"
-              f" a file should be examined. Default: '{re_default}'")
+@hdrnum_option
+@regex_option
 @click.option("-o", "--outpath", type=str, default=None,
               help="If given, write a single index with all information in specified location."
               " Default is to write one index per directory where files are located.")
@@ -207,14 +187,8 @@ def write_index(ctx, files, hdrnum, regex, outpath):
 
 @main.command(help="Write JSON index file of original data headers for entire directory.")
 @click.argument("files", nargs=-1)
-@click.option("-n", "--hdrnum", default=1,
-              help="HDU number to read. If the HDU can not be found, a warning is issued but translation"
-              " is attempted using the primary header. The primary header is always read and merged with"
-              " this header.")
-@click.option("-r", "--regex",
-              default=re_default,
-              help="When looking in a directory, regular expression to use to determine whether"
-              f" a file should be examined. Default: '{re_default}'")
+@hdrnum_option
+@regex_option
 @click.option("-o", "--outpath", type=str, default=None,
               help="If given, write a single index with all information in specified location."
               " Default is to write one index per directory where files are located.")
