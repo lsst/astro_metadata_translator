@@ -282,6 +282,10 @@ def main():
         Exit status to be passed to `sys.exit()`. 0 if any of the files
         could be translated. 1 otherwise.
     """
+
+    logging.warn("This command is deprecated. Please use 'astrometadata translate' "
+                 " or 'astrometadata dump' instead. See 'astrometadata -h' for more details.")
+
     args = build_argparser().parse_args()
 
     # Process import requests
