@@ -163,13 +163,7 @@ def read_index(path, force_dict=False):
     Returns
     -------
     index_ : `ObservationGroup` or `dict[str, Union[dict, ObservaitonInfo]]`
-       If the index file referred to `ObservationInfo` this will return
-       an `ObservationGroup`, otherwise a `dict` will be returned with the
-       keys being paths to files and the values being the keys and values
-       stored in the index (with common information merged in). If
-       ``force_dict`` is `True` a `dict` will be returned with filename
-       keys even if the index file refers to `ObservationInfo` (the values
-       will be `ObservationInfo`).
+        The return content matches that returned by `process_index_data`.
     """
     if not path.endswith(".json"):
         raise ValueError(f"Index files must be in .json format; got {path}")
