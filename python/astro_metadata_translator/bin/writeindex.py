@@ -38,7 +38,8 @@ def write_index_files(files, regex, hdrnum, print_trace, content="translated",
         Regular expression string used to filter files when a directory is
         scanned.
     hdrnum : `int`
-        The HDU number to read. The primary header is always read and
+        The HDU number to read. The primary header is always read and merged
+        with the specified header.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
