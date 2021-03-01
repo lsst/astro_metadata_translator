@@ -49,13 +49,16 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
 
         - ``'overwrite'`` : Value in later header overwrites earlier value.
         - ``'drop'`` : Entire key is dropped. If a key only appears in a
-          subset of the headers it will be retained.
+          subset of the headers, and is identical in those, it will be
+          retained.
         - ``'diff'`` : As for ``drop`` but the dropped values are stored in a
           `list` of `dict` in the returned merged header in key
           ``__DIFF__``.  The order used matches the supplied order or
           the sorted order if specified.  This allows a simple header diff
           to be performed and associated with the original headers. Only
           keys that appear in all headers will be retained in the merged one.
+          Unlike for ``'drop'`` headers that are identical and only present in
+          a subset will always be included in the diff.
         - ``'first'`` : Retain first value encountered.
         - ``'append'`` : Convert value to list with a value for each header
           (`None` if the key was not present). If the value is
