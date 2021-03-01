@@ -170,7 +170,7 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
     return md
 
 
-def read_file_info(file, hdrnum, print_trace=None, mode="simple",
+def read_file_info(file, hdrnum, print_trace=None, content="translated", content_type="simple",
                    outstream=sys.stdout, errstream=sys.stderr):
     """Read information from file
 
@@ -186,13 +186,15 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition. If `None` the exception
         will be allowed to propagate.
-    mode : `str`
-        Type of content to return. Options are:
-        ``simple`` returns the simplified form of an ObservationInfo (default);
-        ``obsInfo`` returns an ObservationInfo;
-        ``json`` returns a JSON string of the ObservationInfo;
-        ``metadata`` returns the metadata (will be unfixed form);
-        ``jsonmetadata`` returns the unfixed metadata in JSON string.
+    content : `str`
+        Content returned. This can be: ``metadata`` to return the unfixed
+        metadata headers; ``translated`` to return the output from metadata
+        translation.
+    content_type : `str`, optional
+        Form of content to be returned. Can be either ``json`` to return a
+        JSON string, ``simple`` to always return a `dict`, or ``native`` to
+        return either a `dict` (for ``metadata``) or `ObservationInfo` for
+        ``translated``.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
@@ -201,13 +203,16 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
 
     Returns
     -------
-    simple : `dict` of `str`
+    simple : `dict` of `str` or `ObservationInfo`
         The return value of `ObservationInfo.to_simple()`. Returns `None`
         if there was a problem and `print_trace` is not `None`.
     """
 
-    if mode not in ("metadata", "obsInfo", "simple", "json", "jsonmetadata"):
-        raise ValueError(f"Unrecognized mode {mode}")
+    if content not in ("metadata", "translated"):
+        raise ValueError(f"Unrecognized content request: {content}")
+
+    if content_type not in ("native", "simple", "json"):
+        raise ValueError(f"Unrecognized content type request {content_type}")
 
     try:
         # Calculate the JSON from the file
@@ -215,10 +220,10 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
                                            can_raise=True if print_trace is None else False)
         if md is None:
             return None
-        if "metadata" in mode:
+        if content == "metadata":
             # Do not fix the header
-            if mode == "jsonmetadata":
-                # Add a key to tell the reader whether this is md or obsInfo
+            if content_type == "json":
+                # Add a key to tell the reader whether this is md or translated
                 md["__CONTENT__"] = "metadata"
                 try:
                     json_str = json.dumps(md)
@@ -228,16 +233,16 @@ def read_file_info(file, hdrnum, print_trace=None, mode="simple",
                 return json_str
             return md
         obs_info = ObservationInfo(md, pedantic=True, filename=file)
-        if mode == "obsInfo":
+        if content_type == "native":
             return obs_info
         simple = obs_info.to_simple()
-        if mode == "simple":
+        if content_type == "simple":
             return simple
-        if mode == "json":
+        if content_type == "json":
             # Add a key to tell the reader if this is metadata or translated
             simple["__CONTENT__"] = "translated"
             return json.dumps(simple)
-        raise RuntimeError(f"Logic error. Unrecognized mode for reading file: {mode}")
+        raise RuntimeError(f"Logic error. Unrecognized mode for reading file: {content}/{content_type}")
     except Exception as e:
         if print_trace is None:
             raise e

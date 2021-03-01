@@ -53,15 +53,9 @@ def write_sidecar_json(file, hdrnum, content, print_trace, outstream=sys.stdout,
     if content not in ("metadata", "translated"):
         raise ValueError(f"Specified content mode '{content}' is not understood.")
 
-    mode = content
-    if mode == "metadata":
-        mode = "jsonmetadata"
-    else:
-        mode = "json"
-
     try:
         # Calculate the JSON from the file
-        json_str = read_file_info(file, hdrnum, mode=mode, print_trace=print_trace,
+        json_str = read_file_info(file, hdrnum, content=content, content_type="json", print_trace=print_trace,
                                   outstream=outstream, errstream=errstream)
         if json_str is None:
             return False

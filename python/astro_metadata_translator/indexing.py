@@ -83,18 +83,13 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
     failed = []
     okay = []
 
-    # We want the reader to return simple dict to us here
-    read_mode = content
-    if read_mode == "translated":
-        read_mode = "simple"
-
     by_file = {}  # Mapping of path to file content
     for file in sorted(files):
         if root is not None:
             path = os.path.join(root, file)
         else:
             path = file
-        simple = read_file_info(path, hdrnum, print_trace, read_mode, outstream, errstream)
+        simple = read_file_info(path, hdrnum, print_trace, content, "simple", outstream, errstream)
         if simple is None:
             failed.append(path)
             continue

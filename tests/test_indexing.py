@@ -74,18 +74,18 @@ class IndexingTestCase(unittest.TestCase):
 
         # First with a real header (but YAML)
         file = os.path.join(TESTDATA, "fitsheader-hsc-HSCA04090107.yaml")
-        info = read_file_info(file, 1, None, "metadata")
+        info = read_file_info(file, 1, None, "metadata", content_type="simple")
         self.assertEqual(info["PROP-ID"], "o15426")
 
-        info = read_file_info(file, 1, None, "obsInfo")
+        info = read_file_info(file, 1, None, "translated", content_type="native")
         self.assertIsInstance(info, ObservationInfo)
         self.assertEqual(info.instrument, "HSC")
 
-        info = read_file_info(file, 1, None, "simple")
+        info = read_file_info(file, 1, None, "translated", content_type="simple")
         self.assertIsInstance(info, dict)
         self.assertEqual(info["instrument"], "HSC")
 
-        json_str = read_file_info(file, 1, None, "json")
+        json_str = read_file_info(file, 1, None, "translated", content_type="json")
         self.assertIsInstance(json_str, str)
         info = json.loads(json_str)
         self.assertEqual(info["instrument"], "HSC")
@@ -98,7 +98,7 @@ class IndexingTestCase(unittest.TestCase):
         self.assertIsInstance(processed, dict)
         self.assertEqual(processed["instrument"], "HSC")
 
-        json_str = read_file_info(file, 1, None, "jsonmetadata")
+        json_str = read_file_info(file, 1, None, "metadata", content_type="json")
         self.assertIsInstance(json_str, str)
         info = json.loads(json_str)
         self.assertEqual(info["PROP-ID"], "o15426")
@@ -108,7 +108,7 @@ class IndexingTestCase(unittest.TestCase):
 
         # Read a small fits file
         fits_file = os.path.join(TESTDATA, "small.fits")
-        info = read_file_info(fits_file, 0, None, "metadata")
+        info = read_file_info(fits_file, 0, None, "metadata", content_type="native")
         self.assertEqual(info["FILTER"], "r")
 
         # The fits file won't translate
