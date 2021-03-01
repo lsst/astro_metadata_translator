@@ -47,6 +47,10 @@ try:
         md : `dict`
             The requested header. `None` if it could not be read and
             ``can_raise`` is `False`.
+
+        Notes
+        -----
+        Tries to catch a FitsError 104 and convert to `FileNotFoundError`.
         """
         try:
             return readMetadata(file, hdu=hdu)
@@ -133,9 +137,15 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
         the file.
     """
     if file.endswith(".yaml"):
-        md = read_test_file(file,)
+        try:
+            md = read_test_file(file,)
+        except Exception as e:
+            if not can_raise:
+                md = None
+            else:
+                raise e
         if hdrnum != 0:
-            # YAML can't have HDUs
+            # YAML can't have HDUs so skip merging below
             hdrnum = 0
     else:
         md = _read_fits_metadata(file, 0, can_raise=can_raise)
