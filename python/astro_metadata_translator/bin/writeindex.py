@@ -79,18 +79,18 @@ def write_index_files(files, regex, hdrnum, print_trace, content="translated",
 
     failed = []
     okay = []
-    by_directory = {}
+    files_per_directory = {}
 
     # Group each file by directory if no explicit output path
     if outpath is None:
         for path in found_files:
             head, tail = os.path.split(path)
-            by_directory.setdefault(head, []).append(tail)
+            files_per_directory.setdefault(head, []).append(tail)
     else:
-        by_directory["."] = list(found_files)
+        files_per_directory["."] = list(found_files)
 
     # Extract translated metadata for each file in each directory
-    for directory, files_in_dir in by_directory.items():
+    for directory, files_in_dir in files_per_directory.items():
         output, this_okay, this_failed = index_files(files_in_dir, directory, hdrnum, print_trace, content,
                                                      outstream, errstream)
 

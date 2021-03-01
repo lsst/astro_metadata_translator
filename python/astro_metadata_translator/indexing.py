@@ -83,7 +83,7 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
     failed = []
     okay = []
 
-    by_file = {}  # Mapping of path to file content
+    content_by_file = {}  # Mapping of path to file content
     for file in sorted(files):
         if root is not None:
             path = os.path.join(root, file)
@@ -97,9 +97,9 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
             okay.append(path)
 
         # Store the information indexed by the filename within dir
-        by_file[file] = simple
+        content_by_file[file] = simple
 
-    output = calculate_index(by_file, content)
+    output = calculate_index(content_by_file, content)
 
     return output, okay, failed
 
