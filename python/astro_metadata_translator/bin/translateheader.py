@@ -19,36 +19,13 @@ __all__ = ("main", "process_files")
 import argparse
 import logging
 
-import os
-import re
 import sys
 import traceback
 import importlib
 import yaml
-from astro_metadata_translator import ObservationInfo, merge_headers, fix_header
-from astro_metadata_translator.tests import read_test_file
+from astro_metadata_translator import ObservationInfo, fix_header
 
-# Prefer afw over Astropy
-try:
-    from lsst.afw.fits import readMetadata
-    import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
-
-    def read_metadata(file, hdu):
-        try:
-            return readMetadata(file, hdu=hdu)
-        except lsst.afw.fits.FitsError:
-            return None
-
-except ImportError:
-    from astropy.io import fits
-
-    def read_metadata(file, hdu):
-        fits_file = fits.open(file)
-        try:
-            header = fits_file[hdu].header
-        except IndexError:
-            header = None
-        return header
+from ..file_helpers import find_files, read_basic_metadata_from_file
 
 
 # Output mode choices
@@ -182,24 +159,9 @@ def read_file(file, hdrnum, print_trace,
         print(f"Analyzing {file}...", file=errstream)
 
     try:
-        if file.endswith(".yaml"):
-            md = read_test_file(file,)
-            if hdrnum != 0:
-                # YAML can't have HDUs
-                hdrnum = 0
-        else:
-            md = read_metadata(file, 0)
+        md = read_basic_metadata_from_file(file, hdrnum, errstream=errstream, can_raise=True)
         if md is None:
-            print(f"Unable to open file {file}", file=errstream)
-            return False
-        if hdrnum != 0:
-            mdn = read_metadata(file, int(hdrnum))
-            # Astropy does not allow append mode since it does not
-            # convert lists to multiple cards. Overwrite for now
-            if mdn is not None:
-                md = merge_headers([md, mdn], mode="overwrite")
-            else:
-                print(f"HDU {hdrnum} was not found. Ignoring request.", file=errstream)
+            raise RuntimeError(f"Failed to read file {file} HDU={hdrnum}")
 
         if output_mode.endswith("native"):
             # Strip native and don't change type of md
@@ -247,7 +209,7 @@ def read_file(file, hdrnum, print_trace,
         if print_trace:
             traceback.print_exc(file=outstream)
         else:
-            print(repr(e), file=outstream)
+            print(f"Failure processing {file}: {e}", file=outstream)
         return False
     return True
 
@@ -287,19 +249,7 @@ def process_files(files, regex, hdrnum, print_trace,
     failed : `list` of `str`
         All the files that could not be processed.
     """
-    file_regex = re.compile(regex)
-    found_files = []
-
-    # Find all the files of interest
-    for file in files:
-        if os.path.isdir(file):
-            for root, dirs, files in os.walk(file):
-                for name in files:
-                    path = os.path.join(root, name)
-                    if os.path.isfile(path) and file_regex.search(name):
-                        found_files.append(path)
-        else:
-            found_files.append(file)
+    found_files = find_files(files, regex)
 
     # Convert "auto" to correct mode
     if output_mode == "auto":
@@ -334,6 +284,10 @@ def main():
         Exit status to be passed to `sys.exit()`. 0 if any of the files
         could be translated. 1 otherwise.
     """
+
+    logging.warn("This command is deprecated. Please use 'astrometadata translate' "
+                 " or 'astrometadata dump' instead. See 'astrometadata -h' for more details.")
+
     args = build_argparser().parse_args()
 
     # Process import requests

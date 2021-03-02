@@ -196,6 +196,55 @@ class HeadersTestCase(unittest.TestCase):
         }
         self.assertEqual(merged, expected)
 
+    def test_merging_diff(self):
+        self.maxDiff = None
+
+        # Nothing in common for diff
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
+                               mode="diff")
+
+        expected = {
+            "__DIFF__": [self.h1, self.h2, self.h3, self.h4]
+        }
+
+        self.assertEqual(merged, expected)
+
+        # Now with a subset that does have overlap
+        merged = merge_headers([self.h1, self.h2],
+                               mode="diff")
+        expected = {
+            "ORIGIN": "LSST",
+            "__DIFF__": [
+                {k: self.h1[k] for k in ("KEY0", "KEY1", "KEY2", "KEY3", "KEY4", "MJD-OBS")},
+                {k: self.h2[k] for k in ("KEY0", "KEY2", "KEY5", "MJD-OBS")},
+            ]
+        }
+        self.assertEqual(merged, expected)
+
+        # Reverse to make sure there is nothing special about the first header
+        merged = merge_headers([self.h2, self.h1],
+                               mode="diff")
+        expected = {
+            "ORIGIN": "LSST",
+            "__DIFF__": [
+                {k: self.h2[k] for k in ("KEY0", "KEY2", "KEY5", "MJD-OBS")},
+                {k: self.h1[k] for k in ("KEY0", "KEY1", "KEY2", "KEY3", "KEY4", "MJD-OBS")},
+            ]
+        }
+        self.assertEqual(merged, expected)
+
+        # Check that identical headers have empty diff
+        merged = merge_headers([self.h1, self.h1],
+                               mode="diff")
+        expected = {
+            **self.h1,
+            "__DIFF__": [
+                {},
+                {},
+            ]
+        }
+        self.assertEqual(merged, expected)
+
     def test_merging_append(self):
         # Try with two headers first
         merged = merge_headers([self.h1, self.h2], mode="append")

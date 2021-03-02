@@ -56,9 +56,9 @@ JIRA component
 Command Line Utilities
 ======================
 
-.. autoprogram:: astro_metadata_translator.bin.translateheader:build_argparser()
-   :prog: translate_header.py
-   :groups:
+.. click:: astro_metadata_translator.cli.astrometadata:main
+  :prog: astrometadata
+  :show-nested:
 
 Python API reference
 ====================
@@ -66,3 +66,5 @@ Python API reference
 .. automodapi:: astro_metadata_translator
 
 .. automodapi:: astro_metadata_translator.bin.translateheader
+
+.. automodapi:: astro_metadata_translator.indexing
