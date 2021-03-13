@@ -13,6 +13,7 @@
 
 __all__ = ("merge_headers", "fix_header")
 
+import datetime
 import pkg_resources
 import posixpath
 import logging
@@ -30,6 +31,12 @@ log = logging.getLogger(__name__)
 
 ENV_VAR_NAME = "METADATA_CORRECTIONS_PATH"
 """Name of environment variable containing search path for header fix up."""
+
+HIERARCH = "HIERARCH ASTRO METADATA FIX"
+"""FITS-style hierarchical keyword root."""
+
+FIXUP_SENTINEL = HIERARCH + " MODIFIED"
+"""Keyword to add to header when header has been fixed."""
 
 
 def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
@@ -286,9 +293,9 @@ def _find_from_file(header, paths, target_file):
 
     Returns
     -------
-    modified : `bool`
-        `True` if a correction was found. Only the first correction located
-        in a path is used.
+    correction_found : `str` or `None`
+        The path of the correction file used to update the header or
+        `None`. Only the first correction located in a path is used.
     """
     for p in paths:
         correction_file = os.path.join(p, target_file)
@@ -303,8 +310,8 @@ def _find_from_file(header, paths, target_file):
             # Apply corrections
             header.update(corrections)
 
-            return True
-    return False
+            return correction_file
+    return None
 
 
 def _find_from_resource(header, package, resource_root, target_file):
@@ -323,8 +330,8 @@ def _find_from_resource(header, package, resource_root, target_file):
 
     Returns
     -------
-    modified : `bool`
-        `True` if a correction was found.
+    resource : `str` or `None`
+        Name of resource read. `None` if no corrections found.
     """
     if package is not None and resource_root is not None:
         resource_name = posixpath.join(resource_root, target_file)
@@ -334,12 +341,12 @@ def _find_from_resource(header, package, resource_root, target_file):
                 corrections = _read_yaml(fh, f"package resource {package}:{resource_name}")
 
             if corrections is None:
-                return False
+                return None
 
             header.update(corrections)
 
-            return True
-    return False
+            return f"{package}:{resource_name}"
+    return None
 
 
 def fix_header(header, search_path=None, translator_class=None, filename=None):
@@ -404,6 +411,9 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     The first file located in the search path is used for the correction.
     """
 
+    if FIXUP_SENTINEL in header:
+        return header[FIXUP_SENTINEL]
+
     if translator_class is None:
         try:
             translator_class = MetadataTranslator.determine_translator(header,
@@ -444,12 +454,12 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     paths.extend(translator.search_paths())
 
     # Prioritize file system overrides
-    modified = _find_from_file(header, paths, target_file)
+    corrections_file = _find_from_file(header, paths, target_file)
 
     # Apply updates from resources only if none found in files
-    if not modified:
+    if corrections_file is None:
         package, resource_root = translator.resource_root()
-        modified = _find_from_resource(header, package, resource_root, target_file)
+        corrections_file = _find_from_resource(header, package, resource_root, target_file)
 
     # Allow a translation class to do local fixups
     # Allow it to fail but log the failure
@@ -460,4 +470,22 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
                   instrument, obsid, e)
         translator_modified = False
 
-    return modified or translator_modified
+    was_modified = (corrections_file is not None) or translator_modified
+
+    # Always add a sentinel even if we nothing was updated
+    # since this will speed up later fixes by not requiring the file
+    # system scan or calling of the per-instrument translator methods.
+    # Do not do it if there has been a problem determining a translator
+    # since it may be that a new translator is registered later on for
+    # another attempt.
+    header[FIXUP_SENTINEL] = was_modified
+
+    # Record provenance
+    header[HIERARCH + " DATE"] = datetime.datetime.now().isoformat()
+    if corrections_file is not None:
+        header[HIERARCH + " FILE"] = corrections_file
+    if translator_modified:
+        # Store the translator version
+        header[HIERARCH + " VERSION"] = translator_class.translator_version()
+
+    return was_modified

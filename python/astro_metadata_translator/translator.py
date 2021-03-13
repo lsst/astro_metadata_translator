@@ -15,6 +15,7 @@ __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
 from abc import abstractmethod
 import inspect
+import importlib
 import logging
 import warnings
 import math
@@ -29,6 +30,9 @@ log = logging.getLogger(__name__)
 
 # Location of the root of the corrections resource files
 CORRECTIONS_RESOURCE_ROOT = "corrections"
+
+"""Cache of version strings indexed by class."""
+_VERSION_CACHE = dict()
 
 
 def cache_translation(func, method=None):
@@ -465,6 +469,45 @@ class MetadataTranslator:
         else:
             raise ValueError(f"None of the registered translation classes {list(cls.translators.keys())}"
                              " understood this header")
+
+    @classmethod
+    def translator_version(cls):
+        """Return the version string for this translator class.
+
+        Returns
+        -------
+        version : `str`
+            String identifying the version of this translator.
+
+        Notes
+        -----
+        Assumes that the version is available from the ``__version__``
+        variable in the parent module. If this is not the case a translator
+        should subclass this method.
+        """
+        if cls in _VERSION_CACHE:
+            return _VERSION_CACHE[cls]
+
+        version = "unknown"
+        module_name = cls.__module__
+        components = module_name.split(".")
+        while components:
+            # This class has already been imported so importing it
+            # should work.
+            module = importlib.import_module(".".join(components))
+            if hasattr(module, v := "__version__"):
+                version = getattr(module, v)
+                if version == "unknown":
+                    # LSST software will have a fingerprint
+                    if hasattr(module, v := "__fingerprint__"):
+                        version = getattr(module, v)
+                break
+            else:
+                # Remove last component from module name and try again
+                components.pop()
+
+        _VERSION_CACHE[cls] = version
+        return version
 
     @classmethod
     def fix_header(cls, header, instrument, obsid, filename=None):

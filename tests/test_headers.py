@@ -9,6 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+import copy
 import unittest
 import os.path
 
@@ -26,6 +27,22 @@ class NotDecamTranslator(DecamTranslator):
     @classmethod
     def fix_header(cls, header, instrument, obsid, filename=None):
         header["DTSITE"] = "hi"
+        return True
+
+    @classmethod
+    def translator_version(cls):
+        # Hardcode a version so we can test for it
+        return "1.0.0"
+
+
+class NotDecamTranslator2(NotDecamTranslator):
+    """This is like NotDecamTranslator but has a fixup that will break on
+    repeat."""
+    name = None
+
+    @classmethod
+    def fix_header(cls, header, instrument, obsid, filename=None):
+        header["DTSITE"] += "hi"
         return True
 
 
@@ -385,24 +402,26 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertEqual(header["DETECTOR"], "S3-111_107419-8-3")
 
         # First fix header but using no search path (should work as no-op)
-        fixed = fix_header(header, translator_class=NullDecamTranslator)
+        fixed = fix_header(copy.copy(header), translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
         # Now using the test corrections directory
-        fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "corrections"),
+        header2 = copy.copy(header)
+        fixed = fix_header(header2, search_path=os.path.join(TESTDIR, "data", "corrections"),
                            translator_class=NullDecamTranslator)
         self.assertTrue(fixed)
-        self.assertEqual(header["DETECTOR"], "NEW-ID")
+        self.assertEqual(header2["DETECTOR"], "NEW-ID")
 
         # Now with a corrections directory that has bad YAML in it
+        header2 = copy.copy(header)
         with self.assertLogs(level="WARN"):
-            fixed = fix_header(header, search_path=os.path.join(TESTDIR, "data", "bad_corrections"),
+            fixed = fix_header(header2, search_path=os.path.join(TESTDIR, "data", "bad_corrections"),
                                translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
         # Test that fix_header of unknown header is allowed
         header = {"SOMETHING": "UNKNOWN"}
-        fixed = fix_header(header, translator_class=NullDecamTranslator)
+        fixed = fix_header(copy.copy(header), translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
     def test_hsc_fix_header(self):
@@ -415,6 +434,9 @@ class FixHeadersTestCase(unittest.TestCase):
         fixed = fix_header(header, translator_class=HscTranslator)
         self.assertTrue(fixed)
         self.assertEqual(header["DATA-TYP"], "OBJECT")
+
+        # Check provenance
+        self.assertIn("HSC-HSCA00120800.yaml", header["HIERARCH ASTRO METADATA FIX FILE"])
 
         # And that this header won't be corrected
         header = {"EXP-ID": "HSCA00120800X",
@@ -441,15 +463,44 @@ class FixHeadersTestCase(unittest.TestCase):
         # Read in a known header
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         self.assertEqual(header["DTSITE"], "ct")
-        fixed = fix_header(header, translator_class=NotDecamTranslator)
-        self.assertTrue(fixed)
-        self.assertEqual(header["DTSITE"], "hi")
 
-        header["DTSITE"] = "reset"
+        header2 = copy.copy(header)
+        fixed = fix_header(header2, translator_class=NotDecamTranslator)
+        self.assertTrue(fixed)
+        self.assertEqual(header2["DTSITE"], "hi")
+
+        header2 = copy.copy(header)
+        header2["DTSITE"] = "reset"
         with self.assertLogs("astro_metadata_translator", level="FATAL"):
-            fixed = fix_header(header, translator_class=AlsoNotDecamTranslator)
+            fixed = fix_header(header2, translator_class=AlsoNotDecamTranslator)
         self.assertFalse(fixed)
-        self.assertEqual(header["DTSITE"], "reset")
+        self.assertEqual(header2["DTSITE"], "reset")
+
+    def test_no_double_fix(self):
+        """Check that header fixup only happens once."""
+
+        # Read in a known header
+        header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
+        self.assertEqual(header["DTSITE"], "ct")
+
+        # First time it will modifiy DTSITE
+        fixed = fix_header(header, translator_class=NotDecamTranslator2)
+        self.assertTrue(fixed)
+        self.assertEqual(header["DTSITE"], "cthi")
+
+        # Get the fix up date
+        date = header["HIERARCH ASTRO METADATA FIX DATE"]
+
+        # Second time it will do nothing but still report it was fixed
+        fixed = fix_header(header, translator_class=NotDecamTranslator2)
+        self.assertTrue(fixed)
+        self.assertEqual(header["DTSITE"], "cthi")
+
+        # Date of fixup should be the same
+        self.assertEqual(header["HIERARCH ASTRO METADATA FIX DATE"], date)
+
+        # Test the translator version in provenance
+        self.assertEqual(header["HIERARCH ASTRO METADATA FIX VERSION"], "1.0.0")
 
 
 if __name__ == "__main__":
