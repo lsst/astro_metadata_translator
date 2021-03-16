@@ -13,6 +13,7 @@ __all__ = ("read_index", "calculate_index", "index_files", "process_index_data")
 
 """Functions to support file indexing."""
 
+import collections.abc
 import json
 import logging
 import os
@@ -126,6 +127,12 @@ def calculate_index(headers, content_mode):
 
     # Merge all the information into a primary plus diff
     merged = merge_headers(headers.values(), mode="diff")
+
+    # For a single file it is possible that the merged contents
+    # are not a dict but are an LSST-style PropertyList. JSON needs
+    # dict though.
+    if not isinstance(merged, collections.abc.Mapping):
+        merged = dict(merged)
 
     # The structure to write to file is intended to look like (in YAML):
     # __COMMON__:
