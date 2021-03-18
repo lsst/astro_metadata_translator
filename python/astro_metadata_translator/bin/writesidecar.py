@@ -18,6 +18,22 @@ import traceback
 from ..file_helpers import find_files, read_file_info
 
 
+def _split_ext(file):
+    """Split the extension from the file name and return it and the root.
+
+    Special case handling of .gz and other compression extensions.
+    """
+    special = {".gz", ".bz2", ".xz", ".fz"}
+
+    root, ext = os.path.splitext(file)
+
+    if ext in special:
+        root, second_ext = os.path.splitext(root)
+        ext = second_ext + ext
+
+    return root, ext
+
+
 def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.stdout, errstream=sys.stderr):
     """Write JSON summary to sidecar file.
 
@@ -60,8 +76,10 @@ def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.st
         if json_str is None:
             return False
 
-        # Calculate file name derived on this file
-        root, ext = os.path.splitext(file)
+        # Calculate sidecar file name derived from this file.
+        # Match the ButlerURI behavior in that .fits.gz should be replaced
+        # with .json, and not resulting in .fits.json.
+        root, ext = _split_ext(file)
         newfile = root + ".json"
         with open(newfile, "w") as fd:
             print(json_str, file=fd)
