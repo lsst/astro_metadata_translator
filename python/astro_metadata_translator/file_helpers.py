@@ -19,7 +19,8 @@ import os
 import sys
 import traceback
 
-from astro_metadata_translator import merge_headers, ObservationInfo
+from .headers import merge_headers
+from .observationInfo import ObservationInfo
 from .tests import read_test_file
 
 
@@ -111,7 +112,7 @@ def find_files(files, regex):
     return found_files
 
 
-def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=False):
+def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=True):
     """Read a raw header from a file, merging if necessary
 
     Parameters
@@ -126,7 +127,7 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`. Only used if exceptions are disabled.
     can_raise : `bool`, optional
-        Indicate whether the function can raise and exception (default)
+        Indicate whether the function can raise an exception (default)
         or should return `None` on error. Can still raise if an unexpected
         error is encountered.
 
