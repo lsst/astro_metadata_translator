@@ -122,7 +122,8 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
         top-level dict.
     hdrnum : `int`
         Header number to read. Only relevant for FITS. If greater than 1
-        it will be merged with the primary header.
+        it will be merged with the primary header. If negative the second
+        header will be merged with the primary header if a second is present.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`. Only used if exceptions are disabled.
@@ -153,8 +154,12 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
     if md is None:
         print(f"Unable to open file {file}", file=errstream)
         return None
-    if hdrnum != 0:
-        mdn = _read_fits_metadata(file, int(hdrnum), can_raise=can_raise)
+    if hdrnum < 0:
+        if "EXTEND" in md and md["EXTEND"]:
+            hdrnum = 1
+    if hdrnum > 0:
+        # Allow this to fail
+        mdn = _read_fits_metadata(file, int(hdrnum), can_raise=False)
         # Astropy does not allow append mode since it does not
         # convert lists to multiple cards. Overwrite for now
         if mdn is not None:
