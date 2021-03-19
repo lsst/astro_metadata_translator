@@ -17,6 +17,7 @@ import re
 import posixpath
 import logging
 
+from astropy.io import fits
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
@@ -297,3 +298,57 @@ class DecamTranslator(FitsTranslator):
                       log_label, header["FILTER"], obstype)
 
         return modified
+
+    @classmethod
+    def read_all_headers(cls, filename, primary=None):
+        """Read all relevant headers from the given file.
+
+        Returns all non-guide headers and does not include the primary
+        header.
+
+        Parameters
+        ----------
+        filename : `str`
+            Path to a file in a format understood by this translator.
+        primary : `dict`-like, optional
+            The primary header obtained by the caller. This is sometimes
+            already known, for example if a system is trying to bootstrap
+            without already knowing what data is in the file. For many
+            instruments where the primary header is the only relevant
+            header, the primary header will be returned with no further
+            action.
+
+        Yields
+        ------
+        headers : iterator of `dict`-like
+            Each relevant header in turn.
+
+        Notes
+        -----
+        DECam data use INHERIT=T so all returned headers will be merged
+        with the primary header.
+        """
+        # Circular dependency so must defer import
+        from ..headers import merge_headers
+
+        # Since we want to scan many HDUs we use astropy directly to keep
+        # the file open rather than continually opening and closing it
+        # as we go to each HDU.
+        with fits.open(filename) as fits_file:
+            # Astropy does not automatically handle the INHERIT=T in
+            # DECam headers so the primary header must be merged.
+            first_pass = True
+
+            for hdu in fits_file:
+                if first_pass:
+                    if not primary:
+                        primary = hdu.header
+                    first_pass = False
+                    continue
+
+                header = hdu.header
+                if "CCDNUM" not in header:
+                    continue
+                if header["CCDNUM"] > 62:  # ignore guide CCDs
+                    continue
+                yield merge_headers([primary, header], mode="overwrite")

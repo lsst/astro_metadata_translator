@@ -943,6 +943,39 @@ class MetadataTranslator:
         """
         return 0
 
+    @classmethod
+    def read_all_headers(cls, filename, primary=None):
+        """Read all relevant headers from the given file.
+
+        This should simply return all headers, but for multi-extension FITS
+        files where each file includes data from multiple detectors,
+        all the headers for each detector should be returned.
+
+        Parameters
+        ----------
+        filename : `str`
+            Path to a file in a format understood by this translator.
+        primary : `dict`-like, optional
+            The primary header obtained by the caller. This is sometimes
+            already known, for example if a system is trying to bootstrap
+            without already knowing what data is in the file. For many
+            instruments where the primary header is the only relevant
+            header, the primary header will be returned with no further
+            action.
+
+        Yields
+        ------
+        headers : iterator of `dict`-like
+            Each relevant header in turn.
+        """
+        if primary is not None:
+            yield primary
+        else:
+            # Prevent circular import by deferring
+            from .file_helpers import read_basic_metadata_from_file
+
+            yield read_basic_metadata_from_file(filename, 0)
+
 
 def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
     """Create a an abstract translation method for this property.
