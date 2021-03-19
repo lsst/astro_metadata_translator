@@ -462,13 +462,16 @@ class MetadataTranslator:
             None of the registered translation classes understood the supplied
             header.
         """
+        file_msg = ""
+        if filename is not None:
+            file_msg = f" from {filename}"
         for name, trans in cls.translators.items():
             if trans.can_translate(header, filename=filename):
-                log.debug(f"Using translation class {name}")
+                log.debug("Using translation class %s%s", name, file_msg)
                 return trans
         else:
             raise ValueError(f"None of the registered translation classes {list(cls.translators.keys())}"
-                             " understood this header")
+                             f" understood this header{file_msg}")
 
     @classmethod
     def translator_version(cls):
