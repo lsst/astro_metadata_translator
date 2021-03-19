@@ -23,7 +23,7 @@ import sys
 import traceback
 import importlib
 import yaml
-from astro_metadata_translator import ObservationInfo, fix_header
+from astro_metadata_translator import ObservationInfo, fix_header, MetadataTranslator
 
 from ..file_helpers import find_files, read_basic_metadata_from_file
 
@@ -51,6 +51,11 @@ TABLE_COLUMNS = ({
                  "format": "16.16s",
                  "attr": "physical_filter",
                  "label": "Filter",
+                 },
+                 {
+                 "format": ">8.8s",
+                 "attr": "detector_unique_name",
+                 "label": "Detector"
                  },
                  {
                  "format": "5.1f",
@@ -138,7 +143,9 @@ def read_file(file, hdrnum, print_trace,
         of the native object type representing the header (which can be
         PropertyList or an Astropy header).  Without this modify headers
         will be dumped as simple `dict` form.
-        "auto" is not allowed by this point.
+        "auto" is used to indicate that a single file has been specified
+        but the output will depend on whether the file is a multi-extension
+        FITS file or not.
     write_heading: `bool`, optional
         If `True` and in table mode, write a table heading out before writing
         the content.
@@ -151,8 +158,6 @@ def read_file(file, hdrnum, print_trace,
     """
     if output_mode not in OUTPUT_MODES:
         raise ValueError(f"Output mode of '{output_mode}' is not understood.")
-    if output_mode == "auto":
-        raise ValueError("Output mode can not be 'auto' here.")
 
     # This gets in the way in tabular mode
     if output_mode != "table":
@@ -178,33 +183,43 @@ def read_file(file, hdrnum, print_trace,
             # The header should be written out in the insertion order
             print(yaml.dump(md, sort_keys=False), file=outstream)
             return True
-        obs_info = ObservationInfo(md, pedantic=True, filename=file)
-        if output_mode == "table":
-            columns = ["{:{fmt}}".format(getattr(obs_info, c["attr"]), fmt=c["format"])
-                       for c in TABLE_COLUMNS]
 
-            if write_heading:
-                # Construct headings of the same width as the items
-                # we have calculated.  Doing this means we don't have to
-                # work out for ourselves how many characters will be used
-                # for non-strings (especially Quantity)
-                headings = []
-                separators = []
-                for thiscol, defn in zip(columns, TABLE_COLUMNS):
-                    width = len(thiscol)
-                    headings.append("{:{w}.{w}}".format(defn["label"], w=width))
-                    separators.append("-"*width)
-                print(" ".join(headings), file=outstream)
-                print(" ".join(separators), file=outstream)
+        # Try to work out a translator class.
+        translator_class = MetadataTranslator.determine_translator(md, filename=file)
+        headers = list(translator_class.read_all_headers(file, md))
+        if output_mode == "auto":
+            output_mode = "table" if len(headers) > 1 else "verbose"
 
-            row = " ".join(columns)
-            print(row, file=outstream)
-        elif output_mode == "verbose":
-            print(f"{obs_info}", file=outstream)
-        elif output_mode == "none":
-            pass
-        else:
-            raise RuntimeError(f"Output mode of '{output_mode}' not recognized but should be known.")
+        wrote_heading = False
+        for md in headers:
+            obs_info = ObservationInfo(md, pedantic=True, filename=file)
+            if output_mode == "table":
+                columns = ["{:{fmt}}".format(getattr(obs_info, c["attr"]), fmt=c["format"])
+                           for c in TABLE_COLUMNS]
+
+                if write_heading and not wrote_heading:
+                    # Construct headings of the same width as the items
+                    # we have calculated.  Doing this means we don't have to
+                    # work out for ourselves how many characters will be used
+                    # for non-strings (especially Quantity)
+                    headings = []
+                    separators = []
+                    for thiscol, defn in zip(columns, TABLE_COLUMNS):
+                        width = len(thiscol)
+                        headings.append("{:{w}.{w}}".format(defn["label"], w=width))
+                        separators.append("-"*width)
+                    print(" ".join(headings), file=outstream)
+                    print(" ".join(separators), file=outstream)
+                    wrote_heading = True
+
+                row = " ".join(columns)
+                print(row, file=outstream)
+            elif output_mode == "verbose":
+                print(f"{obs_info}", file=outstream)
+            elif output_mode == "none":
+                pass
+            else:
+                raise RuntimeError(f"Output mode of '{output_mode}' not recognized but should be known.")
     except Exception as e:
         if print_trace:
             traceback.print_exc(file=outstream)
@@ -251,12 +266,11 @@ def process_files(files, regex, hdrnum, print_trace,
     """
     found_files = find_files(files, regex)
 
-    # Convert "auto" to correct mode
+    # Convert "auto" to correct mode but for a single file keep it
+    # auto in case that file has multiple headers
     if output_mode == "auto":
         if len(found_files) > 1:
             output_mode = "table"
-        else:
-            output_mode = "verbose"
 
     # Process each file
     failed = []
