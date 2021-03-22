@@ -977,7 +977,8 @@ class MetadataTranslator:
             # Prevent circular import by deferring
             from .file_helpers import read_basic_metadata_from_file
 
-            yield read_basic_metadata_from_file(filename, 0)
+            # Merge primary and secondary header if they exist.
+            yield read_basic_metadata_from_file(filename, -1)
 
 
 def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
