@@ -220,13 +220,6 @@ class MegaPrimeTranslator(FitsTranslator):
         class to then call to obtain the real headers to be used for
         translation.
         """
-
-        # If this is not a FITS file return the primary if defined.
-        # It is likely that the metadata came from a test YAML file.
-        if not re.search(r"\.fit[s]?\b", filename) and primary is not None:
-            yield primary
-            return
-
         # Since we want to scan many HDUs we use astropy directly to keep
         # the file open rather than continually opening and closing it
         # as we go to each HDU.
