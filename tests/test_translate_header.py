@@ -95,7 +95,7 @@ class TestTranslateHeader(unittest.TestCase):
                                              outstream=out, errstream=err, output_mode="none")
 
                 lines = self._readlines(out)
-                self.assertEqual(len(lines), 26)
+                self.assertEqual(len(lines), 22)
                 self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
 
                 lines = self._readlines(err)

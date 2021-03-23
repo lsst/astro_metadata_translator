@@ -15,6 +15,8 @@ __all__ = ("MegaPrimeTranslator", )
 
 import re
 import posixpath
+
+from astropy.io import fits
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
@@ -183,3 +185,63 @@ class MegaPrimeTranslator(FitsTranslator):
             The observation counter.
         """
         return self.to_exposure_id()
+
+    @classmethod
+    def determine_translatable_headers(cls, filename, primary=None):
+        """Given a file return all the headers usable for metadata translation.
+
+        MegaPrime files are multi-extension FITS with a primary header and
+        each detector stored in a subsequent extension.  MegaPrime uses
+        ``INHERIT=F`` therefore the primary header will always be ignored
+        if given.
+
+        Parameters
+        ----------
+        filename : `str`
+            Path to a file in a format understood by this translator.
+        primary : `dict`-like, optional
+            The primary header obtained by the caller. This is sometimes
+            already known, for example if a system is trying to bootstrap
+            without already knowing what data is in the file. Will be
+            ignored.
+
+        Yields
+        ------
+        headers : iterator of `dict`-like
+            Each detector header in turn. The supplied header will never be
+            included.
+
+        Notes
+        -----
+        This translator class is specifically tailored to raw MegaPrime data
+        and is not designed to work with general FITS files. The normal
+        paradigm is for the caller to have read the first header and then
+        called `determine_translator()` on the result to work out which
+        translator class to then call to obtain the real headers to be used for
+        translation.
+        """
+        # Since we want to scan many HDUs we use astropy directly to keep
+        # the file open rather than continually opening and closing it
+        # as we go to each HDU.
+        with fits.open(filename) as fits_file:
+            for hdu in fits_file:
+                # Astropy <=4.2 strips the EXTNAME header but some CFHT data
+                # have two EXTNAME headers and the CCD number is in the
+                # second one.
+                if hdu.name == "PRIMARY":
+                    continue
+
+                if hdu.name.startswith("ccd"):
+                    # It may only be some data files that are broken so
+                    # handle the expected form.
+                    yield hdu.header
+                    continue
+
+                # Some test data at least has the EXTNAME as
+                # COMPRESSED_IMAGE but the EXTVER as the detector number.
+                if hdu.name == "COMPRESSED_IMAGE":
+                    header = hdu.header
+
+                    # Astropy strips EXTNAME so put it back for the translator
+                    header["EXTNAME"] = f"ccd{hdu.ver:02d}"
+                    yield header

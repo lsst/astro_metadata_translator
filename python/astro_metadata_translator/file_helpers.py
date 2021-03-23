@@ -19,7 +19,8 @@ import os
 import sys
 import traceback
 
-from astro_metadata_translator import merge_headers, ObservationInfo
+from .headers import merge_headers
+from .observationInfo import ObservationInfo
 from .tests import read_test_file
 
 
@@ -111,7 +112,7 @@ def find_files(files, regex):
     return found_files
 
 
-def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=False):
+def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=True):
     """Read a raw header from a file, merging if necessary
 
     Parameters
@@ -121,12 +122,15 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
         top-level dict.
     hdrnum : `int`
         Header number to read. Only relevant for FITS. If greater than 1
-        it will be merged with the primary header.
+        it will be merged with the primary header. If a negative number is
+        given the second header, if present, will be merged with the primary
+        header. If there is only a primary header a negative number behaves
+        identically to specifying 0 for the HDU number.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`. Only used if exceptions are disabled.
     can_raise : `bool`, optional
-        Indicate whether the function can raise and exception (default)
+        Indicate whether the function can raise an exception (default)
         or should return `None` on error. Can still raise if an unexpected
         error is encountered.
 
@@ -152,8 +156,12 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
     if md is None:
         print(f"Unable to open file {file}", file=errstream)
         return None
-    if hdrnum != 0:
-        mdn = _read_fits_metadata(file, int(hdrnum), can_raise=can_raise)
+    if hdrnum < 0:
+        if "EXTEND" in md and md["EXTEND"]:
+            hdrnum = 1
+    if hdrnum > 0:
+        # Allow this to fail
+        mdn = _read_fits_metadata(file, int(hdrnum), can_raise=False)
         # Astropy does not allow append mode since it does not
         # convert lists to multiple cards. Overwrite for now
         if mdn is not None:

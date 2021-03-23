@@ -17,6 +17,7 @@ import re
 import posixpath
 import logging
 
+from astropy.io import fits
 from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
 
@@ -297,3 +298,65 @@ class DecamTranslator(FitsTranslator):
                       log_label, header["FILTER"], obstype)
 
         return modified
+
+    @classmethod
+    def determine_translatable_headers(cls, filename, primary=None):
+        """Given a file return all the headers usable for metadata translation.
+
+        DECam files are multi-extension FITS with a primary header and
+        each detector stored in a subsequent extension.  DECam uses
+        ``INHERIT=T`` and each detector header will be merged with the
+        primary header.
+
+        Guide headers are not returned.
+
+        Parameters
+        ----------
+        filename : `str`
+            Path to a file in a format understood by this translator.
+        primary : `dict`-like, optional
+            The primary header obtained by the caller. This is sometimes
+            already known, for example if a system is trying to bootstrap
+            without already knowing what data is in the file. Will be
+            merged with detector headers if supplied, else will be read
+            from the file.
+
+        Yields
+        ------
+        headers : iterator of `dict`-like
+            Each detector header in turn. The supplied header will be merged
+            with the contents of each detector header.
+
+        Notes
+        -----
+        This translator class is specifically tailored to raw DECam data and
+        is not designed to work with general FITS files. The normal paradigm
+        is for the caller to have read the first header and then called
+        `determine_translator()` on the result to work out which translator
+        class to then call to obtain the real headers to be used for
+        translation.
+        """
+        # Circular dependency so must defer import.
+        from ..headers import merge_headers
+
+        # Since we want to scan many HDUs we use astropy directly to keep
+        # the file open rather than continually opening and closing it
+        # as we go to each HDU.
+        with fits.open(filename) as fits_file:
+            # Astropy does not automatically handle the INHERIT=T in
+            # DECam headers so the primary header must be merged.
+            first_pass = True
+
+            for hdu in fits_file:
+                if first_pass:
+                    if not primary:
+                        primary = hdu.header
+                    first_pass = False
+                    continue
+
+                header = hdu.header
+                if "CCDNUM" not in header:  # Primary does not have CCDNUM
+                    continue
+                if header["CCDNUM"] > 62:  # ignore guide CCDs
+                    continue
+                yield merge_headers([primary, header], mode="overwrite")

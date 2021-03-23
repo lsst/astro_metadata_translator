@@ -80,7 +80,7 @@ def read_test_file(filename, dir=None):
         header = yaml.load(fd, Loader=Loader)
     # Cannot directly check for Mapping because PropertyList is not one
     if not hasattr(header, "items"):
-        raise ValueError(f"Contents of YAML file are not a mapping, they are {type(header)}")
+        raise ValueError(f"Contents of YAML file {filename} are not a mapping, they are {type(header)}")
     return header
 
 
