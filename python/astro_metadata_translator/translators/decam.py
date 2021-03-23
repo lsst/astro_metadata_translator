@@ -361,7 +361,7 @@ class DecamTranslator(FitsTranslator):
                     continue
 
                 header = hdu.header
-                if "CCDNUM" not in header:
+                if "CCDNUM" not in header:  # Primary does not have CCDNUM
                     continue
                 if header["CCDNUM"] > 62:  # ignore guide CCDs
                     continue
