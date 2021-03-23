@@ -29,8 +29,9 @@ hdrnum_option = click.option("-n", "--hdrnum",
                              default=-1,
                              help="HDU number to read. If the HDU can not be found, a warning is issued but"
                              " reading is attempted using the primary header. The primary header is"
-                             " always read and merged with this header. Negative number indicates that"
-                             " the second header will be merged if the FITS file supports extended FITS.")
+                             " always read and merged with this header. Negative number (the default) "
+                             " indicates that the second header will be merged if the FITS file supports"
+                             " extended FITS.")
 regex_option = click.option("-r", "--regex",
                             default=re_default,
                             help="When looking in a directory, regular expression to use to determine whether"
