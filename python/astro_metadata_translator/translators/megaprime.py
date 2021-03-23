@@ -241,11 +241,7 @@ class MegaPrimeTranslator(FitsTranslator):
                 if hdu.name.startswith("ccd"):
                     # It may only be some data files that are broken so
                     # handle the expected form.
-                    header = hdu.header
-
-                    # Astropy strips EXTNAME but translator needs it
-                    header["EXTNAME"] = hdu.name
-                    yield header
+                    yield hdu.header
                     continue
 
                 # Some test data at least has the EXTNAME as
