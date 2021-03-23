@@ -186,7 +186,7 @@ def read_file(file, hdrnum, print_trace,
 
         # Try to work out a translator class.
         translator_class = MetadataTranslator.determine_translator(md, filename=file)
-        headers = list(translator_class.read_all_headers(file, md))
+        headers = list(translator_class.determine_translatable_headers(file, md))
         if output_mode == "auto":
             output_mode = "table" if len(headers) > 1 else "verbose"
 

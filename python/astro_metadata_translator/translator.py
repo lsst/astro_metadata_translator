@@ -947,12 +947,23 @@ class MetadataTranslator:
         return 0
 
     @classmethod
-    def read_all_headers(cls, filename, primary=None):
-        """Read all relevant headers from the given file.
+    def determine_translatable_headers(cls, filename, primary=None):
+        """Given a file return all the headers usable for metadata translation.
 
-        This should simply return all headers, but for multi-extension FITS
-        files where each file includes data from multiple detectors,
-        all the headers for each detector should be returned.
+        This method can optionally be given a header from the file.  This
+        header will generally be the primary header or a merge of the first
+        two headers.  In the base class implementation it is assumed that
+        this supplied header is the only useful header for metadata translation
+        and it will be returned unchanged if given. This can avoid
+        unnecesarily re-opening the file and re-reading the header when the
+        content is already known.
+
+        If no header is supplied, a header will be read from the supplied
+        file using `read_basic_metadata_from_file`, allowing it to merge
+        the primary and secondary header of a multi-extension FITS file.
+
+        Subclasses can return multiple headers and ignore the externally
+        supplied header.
 
         Parameters
         ----------
@@ -969,7 +980,17 @@ class MetadataTranslator:
         Yields
         ------
         headers : iterator of `dict`-like
-            Each relevant header in turn.
+            Each relevant header in turn. Can be the supplied primary header.
+
+        Notes
+        -----
+        Each translator class can have code specifically tailored to its
+        own file format. It is important not to call this method with
+        an incorrect translator class. The normal paradigm is for the
+        caller to have read the first header and then called
+        `determine_translator()` on the result to work out which translator
+        class to then call to obtain the real headers to be used for
+        translation.
         """
         if primary is not None:
             yield primary

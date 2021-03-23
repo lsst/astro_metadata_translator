@@ -187,11 +187,13 @@ class MegaPrimeTranslator(FitsTranslator):
         return self.to_exposure_id()
 
     @classmethod
-    def read_all_headers(cls, filename, primary=None):
-        """Read all relevant headers from the given file.
+    def determine_translatable_headers(cls, filename, primary=None):
+        """Given a file return all the headers usable for metadata translation.
 
-        Returns all non-guide headers and does not include the primary
-        header.
+        MegaPrime files are multi-extension FITS with a primary header and
+        each detector stored in a subsequent extension.  MegaPrime uses
+        ``INHERIT=F`` therefore the primary header will always be ignored
+        if given.
 
         Parameters
         ----------
@@ -200,20 +202,23 @@ class MegaPrimeTranslator(FitsTranslator):
         primary : `dict`-like, optional
             The primary header obtained by the caller. This is sometimes
             already known, for example if a system is trying to bootstrap
-            without already knowing what data is in the file. For many
-            instruments where the primary header is the only relevant
-            header, the primary header will be returned with no further
-            action.
+            without already knowing what data is in the file. Will be
+            ignored.
 
         Yields
         ------
         headers : iterator of `dict`-like
-            Each relevant header in turn.
+            Each detector header in turn.
 
         Notes
         -----
-        MegaPrime data use INHERIT=F such that the primary header will never
-        be returned.
+        Each translator class can have code specifically tailored to its
+        own file format. It is important not to call this method with
+        an incorrect translator class. The normal paradigm is for the
+        caller to have read the first header and then called
+        `determine_translator()` on the result to work out which translator
+        class to then call to obtain the real headers to be used for
+        translation.
         """
 
         # If this is not a FITS file return the primary if defined.
