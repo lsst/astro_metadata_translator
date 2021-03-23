@@ -122,8 +122,10 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
         top-level dict.
     hdrnum : `int`
         Header number to read. Only relevant for FITS. If greater than 1
-        it will be merged with the primary header. If negative the second
-        header will be merged with the primary header if a second is present.
+        it will be merged with the primary header. If a negative number is
+        given the second header, if present, will be merged with the primary
+        header. If there is only a primary header a negative number behaves
+        identically to specifying 0 for the HDU number.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`. Only used if exceptions are disabled.

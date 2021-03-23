@@ -952,7 +952,9 @@ class MetadataTranslator:
 
         This method can optionally be given a header from the file.  This
         header will generally be the primary header or a merge of the first
-        two headers.  In the base class implementation it is assumed that
+        two headers.
+
+        In the base class implementation it is assumed that
         this supplied header is the only useful header for metadata translation
         and it will be returned unchanged if given. This can avoid
         unnecesarily re-opening the file and re-reading the header when the
@@ -961,9 +963,13 @@ class MetadataTranslator:
         If no header is supplied, a header will be read from the supplied
         file using `read_basic_metadata_from_file`, allowing it to merge
         the primary and secondary header of a multi-extension FITS file.
+        Subclasses can read the header from the data file using whatever
+        technique is best for that instrument.
 
         Subclasses can return multiple headers and ignore the externally
-        supplied header.
+        supplied header. They can also merge it with another header and return
+        a new derived header if that is required by the particular data file.
+        There is no requirement for the supplied header to be used.
 
         Parameters
         ----------
@@ -980,7 +986,10 @@ class MetadataTranslator:
         Yields
         ------
         headers : iterator of `dict`-like
-            Each relevant header in turn. Can be the supplied primary header.
+            A header usable for metadata translation. For this base
+            implementation it will be either the supplied primary header
+            or a header read from the file. This implementation will only
+            ever yield a single header.
 
         Notes
         -----

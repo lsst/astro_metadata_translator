@@ -208,16 +208,16 @@ class MegaPrimeTranslator(FitsTranslator):
         Yields
         ------
         headers : iterator of `dict`-like
-            Each detector header in turn.
+            Each detector header in turn. The supplied header will never be
+            included.
 
         Notes
         -----
-        Each translator class can have code specifically tailored to its
-        own file format. It is important not to call this method with
-        an incorrect translator class. The normal paradigm is for the
-        caller to have read the first header and then called
-        `determine_translator()` on the result to work out which translator
-        class to then call to obtain the real headers to be used for
+        This translator class is specifically tailored to raw MegaPrime data
+        and is not designed to work with general FITS files. The normal
+        paradigm is for the caller to have read the first header and then
+        called `determine_translator()` on the result to work out which
+        translator class to then call to obtain the real headers to be used for
         translation.
         """
         # Since we want to scan many HDUs we use astropy directly to keep
