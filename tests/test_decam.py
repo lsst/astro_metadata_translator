@@ -136,7 +136,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file} from dict-like"):
-                self.assertObservationInfoIsConsistent(file, dir=self.datadir, **expected)
+                self.assertObservationInfoConsistent(file, dir=self.datadir, **expected)
 
 
 if __name__ == "__main__":

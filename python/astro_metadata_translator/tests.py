@@ -125,8 +125,8 @@ class MetadataAssertHelper:
             sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
-    def assertObservationInfoIsConsistent(self, file, dir=None, check_wcs=True,  # noqa: N802
-                                          wcs_params=None, **kwargs):
+    def assertObservationInfoConsistent(self, file, dir=None, check_wcs=True,  # noqa: N802
+                                        wcs_params=None, **kwargs):
         """Check contents of an ObservationInfo instantiated from dict-like and
         Astropy Header objects..
 
@@ -159,8 +159,7 @@ class MetadataAssertHelper:
             raise AssertionError("ObservationInfo derived from an dict-like "
                                  "type is inconsistent.") from error
 
-        # For Header, `in` operator does not work as expected for a dict-like
-        # object. Explicitly verify consistency when instantiating from Header
+        # Explicitly verify consistency when instantiating from Header
         if not isinstance(header, dict):
             header = header.toDict()
         # Header can not parse multi-line header keys as lists
