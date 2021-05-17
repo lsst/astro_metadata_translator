@@ -52,7 +52,7 @@ class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
                      )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):
-                self.assertObservationInfoConsistent(file, dir=self.datadir, **expected)
+                self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
 
 if __name__ == "__main__":

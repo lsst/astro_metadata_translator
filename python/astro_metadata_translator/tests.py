@@ -125,10 +125,9 @@ class MetadataAssertHelper:
             sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
-    def assertObservationInfoConsistent(self, file, dir=None, check_wcs=True,  # noqa: N802
-                                        wcs_params=None, **kwargs):
-        """Check contents of an ObservationInfo instantiated from dict-like and
-        Astropy Header objects..
+    def assertObservationInfoFromYaml(self, file, dir=None, check_wcs=True,  # noqa: N802
+                                      wcs_params=None, **kwargs):
+        """Check contents of an ObservationInfo.
 
         Parameters
         ----------
@@ -155,25 +154,22 @@ class MetadataAssertHelper:
         try:
             self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
                                        wcs_params=wcs_params, **kwargs)
-        except AssertionError as error:
+        except AssertionError as e:
             raise AssertionError("ObservationInfo derived from an dict-like "
-                                 "type is inconsistent.") from error
+                                 "type is inconsistent.") from e
 
-        # Explicitly verify consistency when instantiating from Header
-        if not isinstance(header, dict):
-            header = header.toDict()
-        # Header can not parse multi-line header keys as lists
+        astropy_header = Header()
         for key, val in header.items():
-            if isinstance(val, list):
-                header[key] = "".join(val)
+            values = val if isinstance(val, list) else [val]
+            for v in values:
+                astropy_header[key] = v
 
-        header = Header(header)
         try:
-            self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
+            self.assertObservationInfo(astropy_header, filename=file, check_wcs=check_wcs,
                                        wcs_params=wcs_params, **kwargs)
-        except AssertionError as error:
+        except AssertionError as e:
             raise AssertionError("ObservationInfo derived from an Astropy "
-                                 "Header is inconsistent.") from error
+                                 "Header is inconsistent.") from e
 
     def assertObservationInfo(self, header, filename=None, check_wcs=True,  # noqa: N802
                               wcs_params=None, **kwargs):
