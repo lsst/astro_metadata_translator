@@ -151,10 +151,12 @@ class MetadataAssertHelper:
         """
         header = read_test_file(file, dir=dir)
 
+        # DM-30093: Astropy Header does not always behave dict-like
         astropy_header = Header()
         for key, val in header.items():
             values = val if isinstance(val, list) else [val]
             for v in values:
+                # appending ensures *all* duplicated keys are also preserved
                 astropy_header.append((key, v))
 
         for hdr in (header, astropy_header):
