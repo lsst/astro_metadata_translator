@@ -151,25 +151,19 @@ class MetadataAssertHelper:
         """
         header = read_test_file(file, dir=dir)
 
-        try:
-            self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
-                                       wcs_params=wcs_params, **kwargs)
-        except AssertionError as e:
-            raise AssertionError("ObservationInfo derived from an dict-like "
-                                 "type is inconsistent.") from e
-
         astropy_header = Header()
         for key, val in header.items():
             values = val if isinstance(val, list) else [val]
             for v in values:
-                astropy_header[key] = v
+                astropy_header.append((key, v))
 
-        try:
-            self.assertObservationInfo(astropy_header, filename=file, check_wcs=check_wcs,
-                                       wcs_params=wcs_params, **kwargs)
-        except AssertionError as e:
-            raise AssertionError("ObservationInfo derived from an Astropy "
-                                 "Header is inconsistent.") from e
+        for hdr in (header, astropy_header):
+            try:
+                self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
+                                           wcs_params=wcs_params, **kwargs)
+            except AssertionError as e:
+                raise AssertionError(f"ObservationInfo derived from {type(hdr)} "
+                                     "type is inconsistent.") from e
 
     def assertObservationInfo(self, header, filename=None, check_wcs=True,  # noqa: N802
                               wcs_params=None, **kwargs):
