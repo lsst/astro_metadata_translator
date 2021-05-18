@@ -19,6 +19,7 @@ from collections import OrderedDict
 from astropy.time import Time
 import astropy.utils.exceptions
 import warnings
+from astropy.io.fits import Header
 
 from astro_metadata_translator import ObservationInfo
 
@@ -149,8 +150,22 @@ class MetadataAssertHelper:
             inconsistent.
         """
         header = read_test_file(file, dir=dir)
-        self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
-                                   wcs_params=wcs_params, **kwargs)
+
+        # DM-30093: Astropy Header does not always behave dict-like
+        astropy_header = Header()
+        for key, val in header.items():
+            values = val if isinstance(val, list) else [val]
+            for v in values:
+                # appending ensures *all* duplicated keys are also preserved
+                astropy_header.append((key, v))
+
+        for hdr in (header, astropy_header):
+            try:
+                self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
+                                           wcs_params=wcs_params, **kwargs)
+            except AssertionError as e:
+                raise AssertionError(f"ObservationInfo derived from {type(hdr)} "
+                                     "type is inconsistent.") from e
 
     def assertObservationInfo(self, header, filename=None, check_wcs=True,  # noqa: N802
                               wcs_params=None, **kwargs):
