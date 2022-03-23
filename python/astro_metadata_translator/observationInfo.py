@@ -23,15 +23,87 @@ import astropy.time
 from astropy.coordinates import SkyCoord, AltAz
 
 from .translator import MetadataTranslator
-from .properties import PROPERTIES
+from .properties import PROPERTIES as _PROPERTIES  # renamed because we'll use the original name later
 from .headers import fix_header
 
 log = logging.getLogger(__name__)
 
 
-class ObservationInfo:
+# Method to add the standard properties
+def _make_property(property, doc, return_typedoc, return_type):
+    """Create a getter method with associated docstring.
+
+    Parameters
+    ----------
+    property : `str`
+        Name of the property getter to be created.
+    doc : `str`
+        Description of this property.
+    return_typedoc : `str`
+        Type string of this property (used in the doc string).
+    return_type : `class`
+        Type of this property.
+
+    Returns
+    -------
+    p : `function`
+        Getter method for this property.
+    """
+    def getter(self):
+        return getattr(self, f"_{property}")
+
+    getter.__doc__ = f"""{doc}
+
+    Returns
+    -------
+    {property} : `{return_typedoc}`
+        Access the property.
+    """
+    return getter
+
+
+class ObservationInfoMeta(type):
+    """Metaclass for `ObservationInfo`
+
+    We use the list of properties (in the ``PROPERTIES`` class variable) to set
+    up internal properties (each of the properties with a leading underscore)
+    and associated getter methods.
+
+    This is done via a metaclass instead of a class decorator or other
+    post-processing of the class in order to make subclassing of
+    `ObservationInfo` convenient: the user writing the subclass doesn't need to
+    worry about this detail, as the metaclass is inherited and fires
+    automatically.
+    """
+    def __new__(cls, name, bases, attrs):
+        assert "PROPERTIES" in attrs, "The PROPERTIES class variable must be defined"
+        # Initialize the internal properties (underscored) and add the
+        # associated getter methods.
+        for name, description in attrs["PROPERTIES"].items():
+            attrs[f"_{name}"] = None
+            attrs[name] = property(_make_property(name, *description[:3]))
+        return super().__new__(cls, name, bases, attrs)
+
+
+class ObservationInfo(metaclass=ObservationInfoMeta):
     """Standardized representation of an instrument header for a single
     exposure observation.
+
+    When subclassing in order to extend the list of properties, the only
+    required update is the ``PROPERTIES`` class variable dict, e.g.:
+
+        class MyObsInfo(ObservationInfo):
+            PROPERTIES = dict(
+                myInfo=("My special information", "str", str, None, None),
+                **ObservationInfo.PROPERTIES
+            )
+
+    The tuple that must be provided for each property includes:
+    - description of property
+    - Python type of property as a string (suitable for docstrings)
+    - Actual python type as a type
+    - Simplification function (can be None)
+    - Function to convert simple form back to required type (can be None)
 
     Parameters
     ----------
@@ -85,7 +157,7 @@ class ObservationInfo:
     modify the header provided to the constructor.
     """
 
-    _PROPERTIES = PROPERTIES
+    PROPERTIES = _PROPERTIES
     """All the properties supported by this class with associated
     documentation."""
 
@@ -129,7 +201,7 @@ class ObservationInfo:
             file_info = ""
 
         # Determine the properties of interest
-        all_properties = set(self._PROPERTIES)
+        all_properties = set(self.PROPERTIES)
         if subset is not None:
             if not subset:
                 raise ValueError("Cannot request no properties be calculated.")
@@ -170,7 +242,7 @@ class ObservationInfo:
 
             if not self._is_property_ok(t, value):
                 err_msg = f"Value calculated for property '{t}' is wrong type " \
-                    f"({type(value)} != {self._PROPERTIES[t][1]}) using translator {translator.__class__}" \
+                    f"({type(value)} != {self.PROPERTIES[t][1]}) using translator {translator.__class__}" \
                     f"{file_info}"
                 if pedantic or t in required:
                     raise TypeError(err_msg)
@@ -209,7 +281,7 @@ class ObservationInfo:
         if value is None:
             return True
 
-        property_type = cls._PROPERTIES[property][2]
+        property_type = cls.PROPERTIES[property][2]
 
         # For AltAz coordinates, they can either arrive as AltAz or
         # as SkyCoord(frame=AltAz) so try to find the frame inside
@@ -254,7 +326,7 @@ class ObservationInfo:
         # Put more interesting answers at front of list
         # and then do remainder
         priority = ("instrument", "telescope", "datetime_begin")
-        properties = sorted(set(self._PROPERTIES.keys()) - set(priority))
+        properties = sorted(set(self.PROPERTIES.keys()) - set(priority))
 
         result = ""
         for p in itertools.chain(priority, properties):
@@ -305,14 +377,14 @@ class ObservationInfo:
             Dict containing items that can be persisted.
         """
         state = dict()
-        for p in self._PROPERTIES:
+        for p in self.PROPERTIES:
             property = f"_{p}"
             state[p] = getattr(self, property)
 
         return state
 
     def __setstate__(self, state):
-        for p in self._PROPERTIES:
+        for p in self.PROPERTIES:
             property = f"_{p}"
             setattr(self, property, state[p])
 
@@ -335,14 +407,14 @@ class ObservationInfo:
         """
         simple = {}
 
-        for p in self._PROPERTIES:
+        for p in self.PROPERTIES:
             property = f"_{p}"
             value = getattr(self, property)
             if value is None:
                 continue
 
             # Access the function to simplify the property
-            simplifier = self._PROPERTIES[p][3]
+            simplifier = self.PROPERTIES[p][3]
 
             if simplifier is None:
                 simple[p] = value
@@ -384,7 +456,7 @@ class ObservationInfo:
                 continue
 
             # Access the function to convert from simple form
-            complexifier = cls._PROPERTIES[k][4]
+            complexifier = cls.PROPERTIES[k][4]
 
             if complexifier is not None:
                 v = complexifier(v, **processed)
@@ -433,13 +505,13 @@ class ObservationInfo:
 
         unused = set(kwargs)
 
-        for p in cls._PROPERTIES:
+        for p in cls.PROPERTIES:
             if p in kwargs:
                 property = f"_{p}"
                 value = kwargs[p]
                 if not cls._is_property_ok(p, value):
                     raise TypeError(f"Supplied value {value} for property {p} "
-                                    f"should be of class {cls._PROPERTIES[p][1]} not {value.__class__}")
+                                    f"should be of class {cls.PROPERTIES[p][1]} not {value.__class__}")
                 setattr(obsinfo, property, value)
                 unused.remove(p)
 
@@ -448,46 +520,6 @@ class ObservationInfo:
             raise KeyError(f"Unrecognized propert{'y' if n == 1 else 'ies'} provided: {', '.join(unused)}")
 
         return obsinfo
-
-
-# Method to add the standard properties
-def _make_property(property, doc, return_typedoc, return_type):
-    """Create a getter method with associated docstring.
-
-    Parameters
-    ----------
-    property : `str`
-        Name of the property getter to be created.
-    doc : `str`
-        Description of this property.
-    return_typedoc : `str`
-        Type string of this property (used in the doc string).
-    return_type : `class`
-        Type of this property.
-
-    Returns
-    -------
-    p : `function`
-        Getter method for this property.
-    """
-    def getter(self):
-        return getattr(self, f"_{property}")
-
-    getter.__doc__ = f"""{doc}
-
-    Returns
-    -------
-    {property} : `{return_typedoc}`
-        Access the property.
-    """
-    return getter
-
-
-# Initialize the internal properties (underscored) and add the associated
-# getter methods.
-for name, description in ObservationInfo._PROPERTIES.items():
-    setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_make_property(name, *description[:3])))
 
 
 def makeObservationInfo(**kwargs):  # noqa: N802
