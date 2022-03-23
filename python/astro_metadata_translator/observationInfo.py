@@ -33,6 +33,13 @@ class ObservationInfo:
     """Standardized representation of an instrument header for a single
     exposure observation.
 
+    There is a core set of instrumental properties that are pre-defined.
+    Additional properties may be defined, either through the
+    ``makeObservationInfo`` factory function by providing the ``extensions``
+    definitions, or through the regular ``ObservationInfo`` constructor when
+    the extensions have been defined in the ``MetadataTranslator`` for the
+    instrument of interest (or in the provided ``translator_class``).
+
     Parameters
     ----------
     header : `dict`-like
@@ -83,11 +90,9 @@ class ObservationInfo:
     -----
     Headers will be corrected if correction files are located and this will
     modify the header provided to the constructor.
-    """
 
-    _PROPERTIES = PROPERTIES
-    """All the properties supported by this class with associated
-    documentation."""
+    Values of the properties are read-only.
+    """
 
     def __init__(self, header, filename=None, translator_class=None, pedantic=False,
                  search_path=None, required=None, subset=None):
@@ -115,6 +120,8 @@ class ObservationInfo:
         elif not issubclass(translator_class, MetadataTranslator):
             raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
+        self._declare_extensions(translator_class.extensions)
+
         # Create an instance for this header
         translator = translator_class(header, filename=filename)
 
@@ -129,29 +136,29 @@ class ObservationInfo:
             file_info = ""
 
         # Determine the properties of interest
-        all_properties = set(self._PROPERTIES)
+        full_set = set(self.all_properties)
         if subset is not None:
             if not subset:
                 raise ValueError("Cannot request no properties be calculated.")
-            if not subset.issubset(all_properties):
+            if not subset.issubset(full_set):
                 raise ValueError("Requested subset is not a subset of known properties. "
-                                 f"Got extra: {subset - all_properties}")
+                                 f"Got extra: {subset - full_set}")
             properties = subset
         else:
-            properties = all_properties
+            properties = full_set
 
         if required is None:
             required = set()
         else:
-            if not required.issubset(all_properties):
+            if not required.issubset(full_set):
                 raise ValueError("Requested required properties include unknowns: "
-                                 f"{required - all_properties}")
+                                 f"{required - full_set}")
 
         # Loop over each property and request the translated form
         for t in properties:
             # prototype code
             method = f"to_{t}"
-            property = f"_{t}"
+            property = f"_{t}" if not t.startswith("ext_") else t
 
             try:
                 value = getattr(translator, method)()
@@ -168,9 +175,10 @@ class ObservationInfo:
                     log.warning(f"Ignoring {err_msg}: {e}")
                     continue
 
-            if not self._is_property_ok(t, value):
+            definition = self.all_properties[t]
+            if not self._is_property_ok(definition, value):
                 err_msg = f"Value calculated for property '{t}' is wrong type " \
-                    f"({type(value)} != {self._PROPERTIES[t][1]}) using translator {translator.__class__}" \
+                    f"({type(value)} != {definition.str_type}) using translator {translator.__class__}" \
                     f"{file_info}"
                 if pedantic or t in required:
                     raise TypeError(err_msg)
@@ -181,17 +189,82 @@ class ObservationInfo:
             if value is None and t in required:
                 raise KeyError(f"Calculation of required property {t} resulted in a value of None")
 
-            setattr(self, property, value)
+            super().__setattr__(property, value)  # allows setting even write-protected extensions
+
+    @staticmethod
+    def _get_all_properties(extensions=None):
+        """Return the definitions of all properties
+
+        Parameters
+        ----------
+        extensions : `dict` [`str`: `PropertyDefinition`]
+            List of extension property definitions, indexed by name (with no
+            "ext_" prefix).
+
+        Returns
+        -------
+        properties : `dict` [`str`: `PropertyDefinition`]
+            Merged list of all property definitions, indexed by name. Extension
+            properties will be listed with an ``ext_`` prefix.
+        """
+        properties = dict(PROPERTIES)
+        if extensions:
+            properties.update({"ext_" + pp: dd for pp, dd in extensions.items()})
+        return properties
+
+    def _declare_extensions(self, extensions):
+        """Declare and set up extension properties
+
+        This should always be called internally as part of the creation of a
+        new `ObservationInfo`.
+
+        The core set of properties each have a python ``property`` that makes
+        them read-only, and serves as a useful place to hang the docstring.
+        However, the core set are set up at compile time, whereas the extension
+        properties have to be configured at run time (because we don't know
+        what they will be until we look at the header and figure out what
+        instrument we're dealing with) when we have an instance rather than a
+        class (and python ``property`` doesn't work on instances; only on
+        classes). We therefore use a separate scheme for the extension
+        properties: we write them directly to their associated instance
+        variable, and we use ``__setattr__`` to protect them as read-only.
+        Unfortunately, with this scheme, we can't give extension properties a
+        docstring; but we're setting them up at runtime, so maybe that's not
+        terribly important.
+
+        Parameters
+        ----------
+        extensions : `dict` [`str`: `PropertyDefinition`]
+            List of extension property definitions, indexed by name (with no
+            "ext_" prefix).
+        """
+        if not extensions:
+            extensions = {}
+        for name in extensions:
+            super().__setattr__("ext_" + name, None)
+        self.extensions = extensions
+        self.all_properties = self._get_all_properties(extensions)
+
+    def __setattr__(self, name, value):
+        """Set attribute
+
+        This provides read-only protection for the extension properties. The
+        core set of properties have read-only protection via the use of the
+        python ``property``.
+        """
+        if hasattr(self, "extensions") and name.startswith("ext_") and name[4:] in self.extensions:
+            raise AttributeError(f"Attribute {name} is read-only")
+        return super().__setattr__(name, value)
 
     @classmethod
-    def _is_property_ok(cls, property, value):
+    def _is_property_ok(cls, definition, value):
         """Compare the supplied value against the expected type as defined
         for the corresponding property.
 
         Parameters
         ----------
-        property : `str`
-            Name of property.
+        definition : `PropertyDefinition`
+            Property definition.
         value : `object`
             Value of the property to validate.
 
@@ -209,15 +282,13 @@ class ObservationInfo:
         if value is None:
             return True
 
-        property_type = cls._PROPERTIES[property][2]
-
         # For AltAz coordinates, they can either arrive as AltAz or
         # as SkyCoord(frame=AltAz) so try to find the frame inside
         # the SkyCoord.
-        if issubclass(property_type, AltAz) and isinstance(value, SkyCoord):
+        if issubclass(definition.py_type, AltAz) and isinstance(value, SkyCoord):
             value = value.frame
 
-        if not isinstance(value, property_type):
+        if not isinstance(value, definition.py_type):
             return False
 
         return True
@@ -254,7 +325,7 @@ class ObservationInfo:
         # Put more interesting answers at front of list
         # and then do remainder
         priority = ("instrument", "telescope", "datetime_begin")
-        properties = sorted(set(self._PROPERTIES.keys()) - set(priority))
+        properties = sorted(set(self.all_properties) - set(priority))
 
         result = ""
         for p in itertools.chain(priority, properties):
@@ -278,6 +349,10 @@ class ObservationInfo:
         self_simple = self.to_simple()
         other_simple = other.to_simple()
 
+        # We don't care about the translator internal detail
+        self_simple.pop("_translator", None)
+        other_simple.pop("_translator", None)
+
         for k, self_value in self_simple.items():
             other_value = other_simple[k]
             if self_value != other_value:
@@ -296,25 +371,41 @@ class ObservationInfo:
     def __getstate__(self):
         """Get pickleable state
 
-        Returns the properties, the name of the translator, and the
-        cards that were used.  Does not return the full header.
+        Returns the properties.  Deliberately does not preserve the full
+        current state; in particular, does not return the full header or
+        translator.
 
         Returns
         -------
-        state : `dict`
-            Dict containing items that can be persisted.
+        state : `tuple`
+            Pickled state.
         """
         state = dict()
-        for p in self._PROPERTIES:
-            property = f"_{p}"
-            state[p] = getattr(self, property)
+        for p in self.all_properties:
+            state[p] = getattr(self, p)
 
-        return state
+        return state, self.extensions
 
     def __setstate__(self, state):
-        for p in self._PROPERTIES:
-            property = f"_{p}"
-            setattr(self, property, state[p])
+        """Set object state from pickle
+
+        Parameters
+        ----------
+        state : `tuple`
+            Pickled state.
+        """
+        try:
+            state, extensions = state
+        except ValueError:
+            # Backwards compatibility for pickles generated before DM-34175
+            extensions = {}
+        self._declare_extensions(extensions)
+        for p in self.all_properties:
+            if p.startswith("ext_"):
+                super().__setattr__(p, state[p])  # allows setting even write-protected extensions
+            else:
+                property = f"_{p}"
+                setattr(self, property, state[p])
 
     def to_simple(self):
         """Convert the contents of this object to simple dict form.
@@ -332,17 +423,26 @@ class ObservationInfo:
         -------
         simple : `dict` of [`str`, `Any`]
             Simple dict of all properties.
+
+        Notes
+        -----
+        Round-tripping of extension properties requires that the
+        `ObservationInfo` was created with the help of a registered
+        `MetadataTranslator` (which contains the extension property
+        definitions).
         """
         simple = {}
+        if hasattr(self, "_translator") and self._translator and self._translator.name:
+            simple["_translator"] = self._translator.name
 
-        for p in self._PROPERTIES:
-            property = f"_{p}"
+        for p in self.all_properties:
+            property = f"_{p}" if not p.startswith("ext_") else p
             value = getattr(self, property)
             if value is None:
                 continue
 
             # Access the function to simplify the property
-            simplifier = self._PROPERTIES[p][3]
+            simplifier = self.all_properties[p].to_simple
 
             if simplifier is None:
                 simple[p] = value
@@ -359,6 +459,13 @@ class ObservationInfo:
         -------
         j : `str`
             The properties of the ObservationInfo in JSON string form.
+
+        Notes
+        -----
+        Round-tripping of extension properties requires that the
+        `ObservationInfo` was created with the help of a registered
+        `MetadataTranslator` (which contains the extension property
+        definitions).
         """
         return json.dumps(self.to_simple())
 
@@ -376,7 +483,23 @@ class ObservationInfo:
         -------
         obsinfo : `ObservationInfo`
             New object constructed from the dict.
+
+        Notes
+        -----
+        Round-tripping of extension properties requires that the
+        `ObservationInfo` was created with the help of a registered
+        `MetadataTranslator` (which contains the extension property
+        definitions).
         """
+        extensions = {}
+        translator = simple.pop("_translator", None)
+        if translator:
+            if translator not in MetadataTranslator.translators:
+                raise KeyError(f"Unrecognised translator: {translator}")
+            extensions = MetadataTranslator.translators[translator].extensions
+
+        properties = cls._get_all_properties(extensions)
+
         processed = {}
         for k, v in simple.items():
 
@@ -384,14 +507,14 @@ class ObservationInfo:
                 continue
 
             # Access the function to convert from simple form
-            complexifier = cls._PROPERTIES[k][4]
+            complexifier = properties[k].from_simple
 
             if complexifier is not None:
                 v = complexifier(v, **processed)
 
             processed[k] = v
 
-        return cls.makeObservationInfo(**processed)
+        return cls.makeObservationInfo(extensions=extensions, **processed)
 
     @classmethod
     def from_json(cls, json_str):
@@ -406,13 +529,29 @@ class ObservationInfo:
         -------
         obsinfo : `ObservationInfo`
             Reconstructed object.
+
+        Notes
+        -----
+        Round-tripping of extension properties requires that the
+        `ObservationInfo` was created with the help of a registered
+        `MetadataTranslator` (which contains the extension property
+        definitions).
         """
         simple = json.loads(json_str)
         return cls.from_simple(simple)
 
     @classmethod
-    def makeObservationInfo(cls, **kwargs):  # noqa: N802
+    def makeObservationInfo(cls, *, extensions=None, **kwargs):  # noqa: N802
         """Construct an `ObservationInfo` from the supplied parameters.
+
+        Parameters
+        ----------
+        extensions : `dict` [`str`: `PropertyDefinition`], optional
+            Optional extension definitions, indexed by extension name (without
+            the ``ext_`` prefix, which will be added by `ObservationInfo`).
+        **kwargs
+            Name-value pairs for any properties to be set. In the case of
+            extension properties, the names should include the ``ext_`` prefix.
 
         Notes
         -----
@@ -430,17 +569,19 @@ class ObservationInfo:
         """
 
         obsinfo = cls(None)
+        obsinfo._declare_extensions(extensions)
 
         unused = set(kwargs)
 
-        for p in cls._PROPERTIES:
+        for p in obsinfo.all_properties:
             if p in kwargs:
-                property = f"_{p}"
+                property = f"_{p}" if not p.startswith("ext_") else p
                 value = kwargs[p]
-                if not cls._is_property_ok(p, value):
+                definition = obsinfo.all_properties[p]
+                if not cls._is_property_ok(definition, value):
                     raise TypeError(f"Supplied value {value} for property {p} "
-                                    f"should be of class {cls._PROPERTIES[p][1]} not {value.__class__}")
-                setattr(obsinfo, property, value)
+                                    f"should be of class {definition.str_type} not {value.__class__}")
+                super(cls, obsinfo).__setattr__(property, value)  # allows setting write-protected extensions
                 unused.remove(p)
 
         if unused:
@@ -483,15 +624,26 @@ def _make_property(property, doc, return_typedoc, return_type):
     return getter
 
 
-# Initialize the internal properties (underscored) and add the associated
-# getter methods.
-for name, description in ObservationInfo._PROPERTIES.items():
+# Set up the core set of properties
+# In order to provide read-only protection, each attribute is hidden behind a
+# python "property" wrapper.
+for name, definition in PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_make_property(name, *description[:3])))
+    setattr(ObservationInfo, name, property(_make_property(name, definition.doc, definition.str_type,
+                                                           definition.py_type)))
 
 
-def makeObservationInfo(**kwargs):  # noqa: N802
+def makeObservationInfo(*, extensions=None, **kwargs):  # noqa: N802
     """Construct an `ObservationInfo` from the supplied parameters.
+
+    Parameters
+    ----------
+    extensions : `dict` [`str`: `PropertyDefinition`], optional
+        Optional extension definitions, indexed by extension name (without
+        the ``ext_`` prefix, which will be added by `ObservationInfo`).
+    **kwargs
+        Name-value pairs for any properties to be set. In the case of
+        extension properties, the names should include the ``ext_`` prefix.
 
     Notes
     -----
@@ -507,4 +659,4 @@ def makeObservationInfo(**kwargs):  # noqa: N802
         Raised if a supplied value does not match the expected type
         of the property.
     """
-    return ObservationInfo.makeObservationInfo(**kwargs)
+    return ObservationInfo.makeObservationInfo(extensions=extensions, **kwargs)
