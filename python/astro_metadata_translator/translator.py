@@ -104,6 +104,18 @@ class MetadataTranslator:
     supported_instrument = None
     """Name of instrument understood by this translation class."""
 
+    extensions = {}
+    """Extension properties (`str`: `PropertyDefinition`)
+
+    Some instruments have important properties beyond the standard set; this is
+    the place to declare that they exist, and they will be treated in the same
+    way as the standard set, except that their names will everywhere be
+    prefixed with ``ext_``.
+
+    Each property is indexed by name (`str`), with a corresponding
+    `PropertyDefinition`.
+    """
+
     @classmethod
     def defined_in_this_class(cls, name):
         """Report if the specified class attribute is defined specifically in
@@ -152,8 +164,8 @@ class MetadataTranslator:
                     return False
         return True
 
-    @staticmethod
-    def _make_const_mapping(property_key, constant):
+    @classmethod
+    def _make_const_mapping(cls, property_key, constant):
         """Make a translator method that returns a constant value.
 
         Parameters
@@ -171,8 +183,9 @@ class MetadataTranslator:
         def constant_translator(self):
             return constant
 
-        if property_key in PROPERTIES:
-            property_doc, return_type = PROPERTIES[property_key][:2]
+        if property_key in cls.all_properties:
+            property_doc = cls.all_properties[property_key].doc
+            return_type = cls.all_properties[property_key].py_type
         else:
             return_type = type(constant).__name__
             property_doc = f"Returns constant value for '{property_key}' property"
@@ -186,8 +199,8 @@ class MetadataTranslator:
         """
         return constant_translator
 
-    @staticmethod
-    def _make_trivial_mapping(property_key, header_key, default=None, minimum=None, maximum=None,
+    @classmethod
+    def _make_trivial_mapping(cls, property_key, header_key, default=None, minimum=None, maximum=None,
                               unit=None, checker=None):
         """Make a translator method returning a header value.
 
@@ -230,8 +243,9 @@ class MetadataTranslator:
             Function implementing a translator with the specified
             parameters.
         """
-        if property_key in PROPERTIES:
-            property_doc, return_type = PROPERTIES[property_key][:2]
+        if property_key in cls.all_properties:
+            property_doc = cls.all_properties[property_key].doc
+            return_type = cls.all_properties[property_key].str_type
         else:
             return_type = "str` or `numbers.Number"
             property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
@@ -349,6 +363,10 @@ class MetadataTranslator:
                 log.warning("%s: %s is defined explicitly but will be replaced %s",
                             cls.__name__, name, location)
 
+        properties = set(PROPERTIES) | set(("ext_" + pp for pp in cls.extensions))
+        cls.all_properties = dict(PROPERTIES)
+        cls.all_properties.update(cls.extensions)
+
         # Go through the trival mappings for this class and create
         # corresponding translator methods
         for property_key, header_key in trivial_map.items():
@@ -360,7 +378,7 @@ class MetadataTranslator:
             method = f"to_{property_key}"
             translator.__name__ = f"{method}_trivial_in_{cls.__name__}"
             setattr(cls, method, cache_translation(translator, method=method))
-            if property_key not in PROPERTIES:
+            if property_key not in properties:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
 
         # Go through the constant mappings for this class and create
@@ -370,7 +388,7 @@ class MetadataTranslator:
             method = f"to_{property_key}"
             translator.__name__ = f"{method}_constant_in_{cls.__name__}"
             setattr(cls, method, translator)
-            if property_key not in PROPERTIES:
+            if property_key not in properties:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
 
     def __init__(self, header, filename=None):
@@ -1051,16 +1069,19 @@ def _make_abstract_translator_method(property, doc, return_typedoc, return_type)
 # Assigning to __abstractmethods__ directly does work but interacts
 # poorly with the metaclass automatically generating methods from
 # _trivialMap and _constMap.
+# Note that subclasses that provide extension properties are assumed to not
+# need abstract methods created for them.
 
 # Allow for concrete translator methods to exist in the base class
 # These translator methods can be defined in terms of other properties
 CONCRETE = set()
 
-for name, description in PROPERTIES.items():
+for name, definition in PROPERTIES.items():
     method = f"to_{name}"
     if not MetadataTranslator.defined_in_this_class(method):
         setattr(MetadataTranslator, f"to_{name}",
-                abstractmethod(_make_abstract_translator_method(name, *description[:3])))
+                abstractmethod(_make_abstract_translator_method(name, definition.doc, definition.str_type,
+                                                                definition.py_type)))
     else:
         CONCRETE.add(method)
 
@@ -1134,5 +1155,9 @@ def _make_forwarded_stub_translator_method(cls, property, doc, return_typedoc, r
 # Create stub translation methods for each property.  These stubs warn
 # rather than fail and should be overridden by translators.
 for name, description in PROPERTIES.items():
-    setattr(StubTranslator, f"to_{name}", _make_forwarded_stub_translator_method(StubTranslator,
-                                                                                 name, *description[:3]))
+    setattr(
+        StubTranslator,
+        f"to_{name}",
+        _make_forwarded_stub_translator_method(StubTranslator, name, definition.doc, definition.str_type,
+                                               definition.py_type),
+    )
