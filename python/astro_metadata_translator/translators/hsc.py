@@ -11,24 +11,23 @@
 
 """Metadata translation code for HSC FITS headers"""
 
-__all__ = ("HscTranslator", )
+__all__ = ("HscTranslator",)
 
-import re
 import logging
 import posixpath
+import re
 
 import astropy.units as u
 from astropy.coordinates import Angle
 
-from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
+from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .suprimecam import SuprimeCamTranslator
 
 log = logging.getLogger(__name__)
 
 
 class HscTranslator(SuprimeCamTranslator):
-    """Metadata translator for HSC standard headers.
-    """
+    """Metadata translator for HSC standard headers."""
 
     name = "HSC"
     """Name of this translation class"""
@@ -39,139 +38,140 @@ class HscTranslator(SuprimeCamTranslator):
     default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "HSC")
     """Default resource path root to use to locate header correction files."""
 
-    _const_map = {"instrument": "HSC",
-                  "boresight_rotation_coord": "sky"}
+    _const_map = {"instrument": "HSC", "boresight_rotation_coord": "sky"}
     """Hard wire HSC even though modern headers call it Hyper Suprime-Cam"""
 
-    _trivial_map = {"detector_serial": "T_CCDSN",
-                    }
+    _trivial_map = {
+        "detector_serial": "T_CCDSN",
+    }
     """One-to-one mappings"""
 
     # Zero point for HSC dates: 2012-01-01  51544 -> 2000-01-01
     _DAY0 = 55927
 
     # CCD index mapping for commissioning run 2
-    _CCD_MAP_COMMISSIONING_2 = {112: 106,
-                                107: 105,
-                                113: 107,
-                                115: 109,
-                                108: 110,
-                                114: 108,
-                                }
+    _CCD_MAP_COMMISSIONING_2 = {
+        112: 106,
+        107: 105,
+        113: 107,
+        115: 109,
+        108: 110,
+        114: 108,
+    }
 
     _DETECTOR_NUM_TO_UNIQUE_NAME = [
-        '1_53',
-        '1_54',
-        '1_55',
-        '1_56',
-        '1_42',
-        '1_43',
-        '1_44',
-        '1_45',
-        '1_46',
-        '1_47',
-        '1_36',
-        '1_37',
-        '1_38',
-        '1_39',
-        '1_40',
-        '1_41',
-        '0_30',
-        '0_29',
-        '0_28',
-        '1_32',
-        '1_33',
-        '1_34',
-        '0_27',
-        '0_26',
-        '0_25',
-        '0_24',
-        '1_00',
-        '1_01',
-        '1_02',
-        '1_03',
-        '0_23',
-        '0_22',
-        '0_21',
-        '0_20',
-        '1_04',
-        '1_05',
-        '1_06',
-        '1_07',
-        '0_19',
-        '0_18',
-        '0_17',
-        '0_16',
-        '1_08',
-        '1_09',
-        '1_10',
-        '1_11',
-        '0_15',
-        '0_14',
-        '0_13',
-        '0_12',
-        '1_12',
-        '1_13',
-        '1_14',
-        '1_15',
-        '0_11',
-        '0_10',
-        '0_09',
-        '0_08',
-        '1_16',
-        '1_17',
-        '1_18',
-        '1_19',
-        '0_07',
-        '0_06',
-        '0_05',
-        '0_04',
-        '1_20',
-        '1_21',
-        '1_22',
-        '1_23',
-        '0_03',
-        '0_02',
-        '0_01',
-        '0_00',
-        '1_24',
-        '1_25',
-        '1_26',
-        '1_27',
-        '0_34',
-        '0_33',
-        '0_32',
-        '1_28',
-        '1_29',
-        '1_30',
-        '0_41',
-        '0_40',
-        '0_39',
-        '0_38',
-        '0_37',
-        '0_36',
-        '0_47',
-        '0_46',
-        '0_45',
-        '0_44',
-        '0_43',
-        '0_42',
-        '0_56',
-        '0_55',
-        '0_54',
-        '0_53',
-        '0_31',
-        '1_35',
-        '0_35',
-        '1_31',
-        '1_48',
-        '1_51',
-        '1_52',
-        '1_57',
-        '0_57',
-        '0_52',
-        '0_51',
-        '0_48',
+        "1_53",
+        "1_54",
+        "1_55",
+        "1_56",
+        "1_42",
+        "1_43",
+        "1_44",
+        "1_45",
+        "1_46",
+        "1_47",
+        "1_36",
+        "1_37",
+        "1_38",
+        "1_39",
+        "1_40",
+        "1_41",
+        "0_30",
+        "0_29",
+        "0_28",
+        "1_32",
+        "1_33",
+        "1_34",
+        "0_27",
+        "0_26",
+        "0_25",
+        "0_24",
+        "1_00",
+        "1_01",
+        "1_02",
+        "1_03",
+        "0_23",
+        "0_22",
+        "0_21",
+        "0_20",
+        "1_04",
+        "1_05",
+        "1_06",
+        "1_07",
+        "0_19",
+        "0_18",
+        "0_17",
+        "0_16",
+        "1_08",
+        "1_09",
+        "1_10",
+        "1_11",
+        "0_15",
+        "0_14",
+        "0_13",
+        "0_12",
+        "1_12",
+        "1_13",
+        "1_14",
+        "1_15",
+        "0_11",
+        "0_10",
+        "0_09",
+        "0_08",
+        "1_16",
+        "1_17",
+        "1_18",
+        "1_19",
+        "0_07",
+        "0_06",
+        "0_05",
+        "0_04",
+        "1_20",
+        "1_21",
+        "1_22",
+        "1_23",
+        "0_03",
+        "0_02",
+        "0_01",
+        "0_00",
+        "1_24",
+        "1_25",
+        "1_26",
+        "1_27",
+        "0_34",
+        "0_33",
+        "0_32",
+        "1_28",
+        "1_29",
+        "1_30",
+        "0_41",
+        "0_40",
+        "0_39",
+        "0_38",
+        "0_37",
+        "0_36",
+        "0_47",
+        "0_46",
+        "0_45",
+        "0_44",
+        "0_43",
+        "0_42",
+        "0_56",
+        "0_55",
+        "0_54",
+        "0_53",
+        "0_31",
+        "1_35",
+        "0_35",
+        "1_31",
+        "1_48",
+        "1_51",
+        "1_52",
+        "1_57",
+        "0_57",
+        "0_52",
+        "0_51",
+        "0_48",
     ]
 
     @classmethod
@@ -237,14 +237,14 @@ class HscTranslator(SuprimeCamTranslator):
             if visit % 2:  # Odd?
                 visit -= 1
         self._used_these_cards("EXP-ID", "FRAMEID")
-        return visit + 1000000*(ord(letter) - ord("A"))
+        return visit + 1000000 * (ord(letter) - ord("A"))
 
     @cache_translation
     def to_boresight_rotation_angle(self):
         # Docstring will be inherited. Property defined in properties.py
         # Rotation angle formula determined empirically from visual inspection
         # of HSC images.  See DM-9111.
-        angle = Angle(270.*u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
+        angle = Angle(270.0 * u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
         angle = angle.wrap_at("360d")
         return angle
 

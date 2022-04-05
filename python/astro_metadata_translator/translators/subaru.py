@@ -11,7 +11,7 @@
 
 """Metadata translation code for Subaru telescope"""
 
-__all__ = ("SubaruTranslator", )
+__all__ = ("SubaruTranslator",)
 
 from astropy.coordinates import EarthLocation
 
@@ -20,8 +20,7 @@ from .fits import FitsTranslator
 
 
 class SubaruTranslator(FitsTranslator):
-    """Metadata translator for Subaru telescope headers.
-    """
+    """Metadata translator for Subaru telescope headers."""
 
     @cache_translation
     def to_location(self):

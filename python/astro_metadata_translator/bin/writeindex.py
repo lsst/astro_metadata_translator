@@ -9,10 +9,10 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-__all__ = ("write_index_files")
+__all__ = "write_index_files"
 
-import logging
 import json
+import logging
 import os
 import sys
 
@@ -22,8 +22,16 @@ from ..indexing import index_files
 log = logging.getLogger(__name__)
 
 
-def write_index_files(files, regex, hdrnum, print_trace, content_mode="translated",
-                      outpath=None, outstream=sys.stdout, errstream=sys.stderr):
+def write_index_files(
+    files,
+    regex,
+    hdrnum,
+    print_trace,
+    content_mode="translated",
+    outpath=None,
+    outstream=sys.stdout,
+    errstream=sys.stderr,
+):
     """Process each file and create JSON index file.
 
     The index file will have common information in the toplevel.
@@ -91,8 +99,9 @@ def write_index_files(files, regex, hdrnum, print_trace, content_mode="translate
 
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in files_per_directory.items():
-        output, this_okay, this_failed = index_files(files_in_dir, directory, hdrnum, print_trace,
-                                                     content_mode, outstream, errstream)
+        output, this_okay, this_failed = index_files(
+            files_in_dir, directory, hdrnum, print_trace, content_mode, outstream, errstream
+        )
 
         failed.extend(this_failed)
         okay.extend(this_okay)

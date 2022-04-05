@@ -9,11 +9,10 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-from .fits import *
 from .decam import *
+from .fits import *
 from .hsc import *
 from .megaprime import *
-from .subaru import *
-from .hsc import *
-from .suprimecam import *
 from .sdss import *
+from .subaru import *
+from .suprimecam import *

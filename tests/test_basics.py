@@ -10,15 +10,15 @@
 # license that can be found in the LICENSE file.
 
 import unittest
-import astropy.units as u
+
 import astropy.time
+import astropy.units as u
 
 import astro_metadata_translator
 from astro_metadata_translator import ObservationInfo, makeObservationInfo
 
 
 class BasicTestCase(unittest.TestCase):
-
     def test_basic(self):
         version = astro_metadata_translator.__version__
         self.assertIsNotNone(version)
@@ -44,11 +44,11 @@ class BasicTestCase(unittest.TestCase):
 
         reference = dict(
             boresight_airmass=1.5,
-            temperature=15*u.deg_C,
+            temperature=15 * u.deg_C,
             observation_type="bias",
-            exposure_time=5*u.ks,
+            exposure_time=5 * u.ks,
             detector_num=32,
-            datetime_begin=astropy.time.Time("2021-02-15T12:00:00", format="isot", scale="utc")
+            datetime_begin=astropy.time.Time("2021-02-15T12:00:00", format="isot", scale="utc"),
         )
 
         obsinfo = makeObservationInfo(**reference)

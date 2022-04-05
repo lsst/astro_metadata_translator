@@ -20,10 +20,10 @@ import os
 import sys
 from copy import deepcopy
 
-from .observationInfo import ObservationInfo
-from .observationGroup import ObservationGroup
-from .headers import merge_headers
 from .file_helpers import read_file_info
+from .headers import merge_headers
+from .observationGroup import ObservationGroup
+from .observationInfo import ObservationInfo
 
 log = logging.getLogger(__name__)
 

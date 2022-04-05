@@ -11,12 +11,8 @@
 
 import pickle
 import unittest
-from astro_metadata_translator import (
-    ObservationInfo,
-    StubTranslator,
-    makeObservationInfo,
-    PropertyDefinition
-)
+
+from astro_metadata_translator import ObservationInfo, PropertyDefinition, StubTranslator, makeObservationInfo
 
 """Test that extensions to the core set of properties works"""
 

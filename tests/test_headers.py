@@ -10,18 +10,18 @@
 # license that can be found in the LICENSE file.
 
 import copy
-import unittest
 import os.path
+import unittest
 
-from astro_metadata_translator import merge_headers, fix_header, HscTranslator
+from astro_metadata_translator import DecamTranslator, HscTranslator, fix_header, merge_headers
 from astro_metadata_translator.tests import read_test_file
-from astro_metadata_translator import DecamTranslator
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class NotDecamTranslator(DecamTranslator):
     """This is a DECam translator with override list of header corrections."""
+
     name = None
 
     @classmethod
@@ -38,6 +38,7 @@ class NotDecamTranslator(DecamTranslator):
 class NotDecamTranslator2(NotDecamTranslator):
     """This is like NotDecamTranslator but has a fixup that will break on
     repeat."""
+
     name = None
 
     @classmethod
@@ -49,6 +50,7 @@ class NotDecamTranslator2(NotDecamTranslator):
 class AlsoNotDecamTranslator(DecamTranslator):
     """This is a DECam translator with override list of header corrections
     that fails."""
+
     name = None
 
     @classmethod
@@ -58,6 +60,7 @@ class AlsoNotDecamTranslator(DecamTranslator):
 
 class NullDecamTranslator(DecamTranslator):
     """This is a DECam translator that doesn't do any fixes."""
+
     name = None
 
     @classmethod
@@ -66,7 +69,6 @@ class NullDecamTranslator(DecamTranslator):
 
 
 class HeadersTestCase(unittest.TestCase):
-
     def setUp(self):
         # Define reference headers
         self.h1 = dict(
@@ -78,12 +80,7 @@ class HeadersTestCase(unittest.TestCase):
             KEY4="a",
         )
 
-        self.h2 = dict(
-            ORIGIN="LSST",
-            KEY0="0",
-            KEY2=4,
-            KEY5=42
-        )
+        self.h2 = dict(ORIGIN="LSST", KEY0="0", KEY2=4, KEY5=42)
         self.h3 = dict(
             ORIGIN="AUXTEL",
             KEY3=3.1415,
@@ -130,8 +127,7 @@ class HeadersTestCase(unittest.TestCase):
         }
         self.assertEqual(merged, expected)
 
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="overwrite")
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="overwrite")
 
         expected = {
             "MJD-OBS": self.h4["MJD-OBS"],
@@ -148,8 +144,7 @@ class HeadersTestCase(unittest.TestCase):
         self.assertEqual(merged, expected)
 
     def test_merging_first(self):
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="first")
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="first")
 
         expected = {
             "MJD-OBS": self.h1["MJD-OBS"],
@@ -166,8 +161,7 @@ class HeadersTestCase(unittest.TestCase):
         self.assertEqual(merged, expected)
 
     def test_merging_drop(self):
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="drop")
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="drop")
 
         expected = {
             "KEY3": self.h1["KEY3"],
@@ -179,13 +173,17 @@ class HeadersTestCase(unittest.TestCase):
         self.assertEqual(merged, expected)
 
         # Sorting the headers should make no difference to drop mode
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="drop", sort=True)
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="drop", sort=True)
         self.assertEqual(merged, expected)
 
         # Now retain some headers
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="drop", sort=False, first=["ORIGIN"], last=["KEY2", "KEY1"])
+        merged = merge_headers(
+            [self.h1, self.h2, self.h3, self.h4],
+            mode="drop",
+            sort=False,
+            first=["ORIGIN"],
+            last=["KEY2", "KEY1"],
+        )
 
         expected = {
             "KEY2": self.h3["KEY2"],
@@ -199,8 +197,13 @@ class HeadersTestCase(unittest.TestCase):
         self.assertEqual(merged, expected)
 
         # Now retain some headers with sorting
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="drop", sort=True, first=["ORIGIN"], last=["KEY2", "KEY1"])
+        merged = merge_headers(
+            [self.h1, self.h2, self.h3, self.h4],
+            mode="drop",
+            sort=True,
+            first=["ORIGIN"],
+            last=["KEY2", "KEY1"],
+        )
 
         expected = {
             "KEY2": self.h3["KEY2"],
@@ -217,48 +220,42 @@ class HeadersTestCase(unittest.TestCase):
         self.maxDiff = None
 
         # Nothing in common for diff
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="diff")
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="diff")
 
-        expected = {
-            "__DIFF__": [self.h1, self.h2, self.h3, self.h4]
-        }
+        expected = {"__DIFF__": [self.h1, self.h2, self.h3, self.h4]}
 
         self.assertEqual(merged, expected)
 
         # Now with a subset that does have overlap
-        merged = merge_headers([self.h1, self.h2],
-                               mode="diff")
+        merged = merge_headers([self.h1, self.h2], mode="diff")
         expected = {
             "ORIGIN": "LSST",
             "__DIFF__": [
                 {k: self.h1[k] for k in ("KEY0", "KEY1", "KEY2", "KEY3", "KEY4", "MJD-OBS")},
                 {k: self.h2[k] for k in ("KEY0", "KEY2", "KEY5", "MJD-OBS")},
-            ]
+            ],
         }
         self.assertEqual(merged, expected)
 
         # Reverse to make sure there is nothing special about the first header
-        merged = merge_headers([self.h2, self.h1],
-                               mode="diff")
+        merged = merge_headers([self.h2, self.h1], mode="diff")
         expected = {
             "ORIGIN": "LSST",
             "__DIFF__": [
                 {k: self.h2[k] for k in ("KEY0", "KEY2", "KEY5", "MJD-OBS")},
                 {k: self.h1[k] for k in ("KEY0", "KEY1", "KEY2", "KEY3", "KEY4", "MJD-OBS")},
-            ]
+            ],
         }
         self.assertEqual(merged, expected)
 
         # Check that identical headers have empty diff
-        merged = merge_headers([self.h1, self.h1],
-                               mode="diff")
+        merged = merge_headers([self.h1, self.h1], mode="diff")
         expected = {
             **self.h1,
             "__DIFF__": [
                 {},
                 {},
-            ]
+            ],
         }
         self.assertEqual(merged, expected)
 
@@ -279,8 +276,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="append")
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="append")
 
         expected = {
             "MJD-OBS": [self.h1["MJD-OBS"], self.h2["MJD-OBS"], self.h3["MJD-OBS"], self.h4["MJD-OBS"]],
@@ -311,8 +307,7 @@ class HeadersTestCase(unittest.TestCase):
         }
         self.assertEqual(merged, expected)
 
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="overwrite", sort=True)
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="overwrite", sort=True)
 
         expected = {
             "MJD-OBS": self.h3["MJD-OBS"],
@@ -329,14 +324,12 @@ class HeadersTestCase(unittest.TestCase):
         self.assertEqual(merged, expected)
 
         # Changing the order should not change the result
-        merged = merge_headers([self.h4, self.h1, self.h3, self.h2],
-                               mode="overwrite", sort=True)
+        merged = merge_headers([self.h4, self.h1, self.h3, self.h2], mode="overwrite", sort=True)
 
         self.assertEqual(merged, expected)
 
     def test_merging_first_sort(self):
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="first", sort=True)
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="first", sort=True)
 
         expected = {
             "MJD-OBS": self.h2["MJD-OBS"],
@@ -369,8 +362,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-        merged = merge_headers([self.h1, self.h2, self.h3, self.h4],
-                               mode="append", sort=True)
+        merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="append", sort=True)
 
         expected = {
             "MJD-OBS": [self.h2["MJD-OBS"], self.h1["MJD-OBS"], self.h4["MJD-OBS"], self.h3["MJD-OBS"]],
@@ -387,16 +379,13 @@ class HeadersTestCase(unittest.TestCase):
         self.assertEqual(merged, expected)
 
         # Order should not matter
-        merged = merge_headers([self.h4, self.h3, self.h2, self.h1],
-                               mode="append", sort=True)
+        merged = merge_headers([self.h4, self.h3, self.h2, self.h1], mode="append", sort=True)
         self.assertEqual(merged, expected)
 
 
 class FixHeadersTestCase(unittest.TestCase):
-
     def test_basic_fix_header(self):
-        """Test that a header can be fixed if we specify a local path.
-        """
+        """Test that a header can be fixed if we specify a local path."""
 
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         self.assertEqual(header["DETECTOR"], "S3-111_107419-8-3")
@@ -407,16 +396,22 @@ class FixHeadersTestCase(unittest.TestCase):
 
         # Now using the test corrections directory
         header2 = copy.copy(header)
-        fixed = fix_header(header2, search_path=os.path.join(TESTDIR, "data", "corrections"),
-                           translator_class=NullDecamTranslator)
+        fixed = fix_header(
+            header2,
+            search_path=os.path.join(TESTDIR, "data", "corrections"),
+            translator_class=NullDecamTranslator,
+        )
         self.assertTrue(fixed)
         self.assertEqual(header2["DETECTOR"], "NEW-ID")
 
         # Now with a corrections directory that has bad YAML in it
         header2 = copy.copy(header)
         with self.assertLogs(level="WARN"):
-            fixed = fix_header(header2, search_path=os.path.join(TESTDIR, "data", "bad_corrections"),
-                               translator_class=NullDecamTranslator)
+            fixed = fix_header(
+                header2,
+                search_path=os.path.join(TESTDIR, "data", "bad_corrections"),
+                translator_class=NullDecamTranslator,
+            )
         self.assertFalse(fixed)
 
         # Test that fix_header of unknown header is allowed
@@ -427,9 +422,7 @@ class FixHeadersTestCase(unittest.TestCase):
     def test_hsc_fix_header(self):
         """Check that one of the known HSC corrections is being applied
         properly."""
-        header = {"EXP-ID": "HSCA00120800",
-                  "INSTRUME": "HSC",
-                  "DATA-TYP": "FLAT"}
+        header = {"EXP-ID": "HSCA00120800", "INSTRUME": "HSC", "DATA-TYP": "FLAT"}
 
         fixed = fix_header(header, translator_class=HscTranslator)
         self.assertTrue(fixed)
@@ -439,9 +432,7 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertIn("HSC-HSCA00120800.yaml", header["HIERARCH ASTRO METADATA FIX FILE"])
 
         # And that this header won't be corrected
-        header = {"EXP-ID": "HSCA00120800X",
-                  "INSTRUME": "HSC",
-                  "DATA-TYP": "FLAT"}
+        header = {"EXP-ID": "HSCA00120800X", "INSTRUME": "HSC", "DATA-TYP": "FLAT"}
 
         fixed = fix_header(header, translator_class=HscTranslator)
         self.assertFalse(fixed)

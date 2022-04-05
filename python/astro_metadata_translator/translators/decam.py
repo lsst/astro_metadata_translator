@@ -11,27 +11,25 @@
 
 """Metadata translation code for DECam FITS headers"""
 
-__all__ = ("DecamTranslator", )
+__all__ = ("DecamTranslator",)
 
-import re
-import posixpath
 import logging
+import posixpath
+import re
 
-from astropy.io import fits
-from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
+from astropy.coordinates import Angle, EarthLocation
+from astropy.io import fits
 
-from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
+from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
-from .helpers import altaz_from_degree_headers, is_non_science, \
-    tracking_from_degree_headers
+from .helpers import altaz_from_degree_headers, is_non_science, tracking_from_degree_headers
 
 log = logging.getLogger(__name__)
 
 
 class DecamTranslator(FitsTranslator):
-    """Metadata translator for DECam standard headers.
-    """
+    """Metadata translator for DECam standard headers."""
 
     name = "DECam"
     """Name of this translation class"""
@@ -44,43 +42,98 @@ class DecamTranslator(FitsTranslator):
 
     # DECam has no rotator, and the instrument angle on sky is set to +Y=East,
     # +X=South which we define as a 90 degree rotation and an X-flip.
-    _const_map = {"boresight_rotation_angle": Angle(90*u.deg),
-                  "boresight_rotation_coord": "sky",
-                  }
+    _const_map = {
+        "boresight_rotation_angle": Angle(90 * u.deg),
+        "boresight_rotation_coord": "sky",
+    }
 
-    _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
-                    "dark_time": ("DARKTIME", dict(unit=u.s)),
-                    "boresight_airmass": ("AIRMASS", dict(checker=is_non_science)),
-                    "observation_id": "OBSID",
-                    "object": "OBJECT",
-                    "science_program": "PROPID",
-                    "detector_num": "CCDNUM",
-                    "detector_serial": "DETECTOR",
-                    "detector_unique_name": "DETPOS",
-                    "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
-                    "instrument": ("INSTRUME", dict(default="DECam")),
-                    # Ensure that reasonable values are always available
-                    "relative_humidity": ("HUMIDITY", dict(default=40., minimum=0, maximum=100.)),
-                    "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10., minimum=-10., maximum=40.)),
-                    # Header says torr but seems to be mbar. Use hPa unit
-                    # which is the SI equivalent of mbar.
-                    "pressure": ("PRESSURE", dict(unit=u.hPa,
-                                 default=771.611, minimum=700., maximum=850.)),
-                    }
+    _trivial_map = {
+        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "dark_time": ("DARKTIME", dict(unit=u.s)),
+        "boresight_airmass": ("AIRMASS", dict(checker=is_non_science)),
+        "observation_id": "OBSID",
+        "object": "OBJECT",
+        "science_program": "PROPID",
+        "detector_num": "CCDNUM",
+        "detector_serial": "DETECTOR",
+        "detector_unique_name": "DETPOS",
+        "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
+        "instrument": ("INSTRUME", dict(default="DECam")),
+        # Ensure that reasonable values are always available
+        "relative_humidity": ("HUMIDITY", dict(default=40.0, minimum=0, maximum=100.0)),
+        "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10.0, minimum=-10.0, maximum=40.0)),
+        # Header says torr but seems to be mbar. Use hPa unit
+        # which is the SI equivalent of mbar.
+        "pressure": ("PRESSURE", dict(unit=u.hPa, default=771.611, minimum=700.0, maximum=850.0)),
+    }
 
     # Unique detector names are currently not used but are read directly from
     # header.
     # The detector_group could be N or S with detector_name corresponding
     # to the number in that group.
     detector_names = {
-        1: 'S29', 2: 'S30', 3: 'S31', 4: 'S25', 5: 'S26', 6: 'S27', 7: 'S28', 8: 'S20', 9: 'S21',
-        10: 'S22', 11: 'S23', 12: 'S24', 13: 'S14', 14: 'S15', 15: 'S16', 16: 'S17', 17: 'S18',
-        18: 'S19', 19: 'S8', 20: 'S9', 21: 'S10', 22: 'S11', 23: 'S12', 24: 'S13', 25: 'S1', 26: 'S2',
-        27: 'S3', 28: 'S4', 29: 'S5', 30: 'S6', 31: 'S7', 32: 'N1', 33: 'N2', 34: 'N3', 35: 'N4',
-        36: 'N5', 37: 'N6', 38: 'N7', 39: 'N8', 40: 'N9', 41: 'N10', 42: 'N11', 43: 'N12', 44: 'N13',
-        45: 'N14', 46: 'N15', 47: 'N16', 48: 'N17', 49: 'N18', 50: 'N19', 51: 'N20', 52: 'N21',
-        53: 'N22', 54: 'N23', 55: 'N24', 56: 'N25', 57: 'N26', 58: 'N27', 59: 'N28', 60: 'N29',
-        62: 'N31'}
+        1: "S29",
+        2: "S30",
+        3: "S31",
+        4: "S25",
+        5: "S26",
+        6: "S27",
+        7: "S28",
+        8: "S20",
+        9: "S21",
+        10: "S22",
+        11: "S23",
+        12: "S24",
+        13: "S14",
+        14: "S15",
+        15: "S16",
+        16: "S17",
+        17: "S18",
+        18: "S19",
+        19: "S8",
+        20: "S9",
+        21: "S10",
+        22: "S11",
+        23: "S12",
+        24: "S13",
+        25: "S1",
+        26: "S2",
+        27: "S3",
+        28: "S4",
+        29: "S5",
+        30: "S6",
+        31: "S7",
+        32: "N1",
+        33: "N2",
+        34: "N3",
+        35: "N4",
+        36: "N5",
+        37: "N6",
+        38: "N7",
+        39: "N8",
+        40: "N9",
+        41: "N10",
+        42: "N11",
+        43: "N12",
+        44: "N13",
+        45: "N14",
+        46: "N15",
+        47: "N16",
+        48: "N17",
+        49: "N18",
+        50: "N19",
+        51: "N20",
+        52: "N21",
+        53: "N22",
+        54: "N23",
+        55: "N24",
+        56: "N25",
+        57: "N26",
+        58: "N27",
+        59: "N28",
+        60: "N29",
+        62: "N31",
+    }
 
     @classmethod
     def can_translate(cls, header, filename=None):
@@ -230,8 +283,7 @@ class DecamTranslator(FitsTranslator):
     @cache_translation
     def to_altaz_begin(self):
         # Docstring will be inherited. Property defined in properties.py
-        return altaz_from_degree_headers(self, (("ZD", "AZ"),),
-                                         self.to_datetime_begin(), is_zd=set(["ZD"]))
+        return altaz_from_degree_headers(self, (("ZD", "AZ"),), self.to_datetime_begin(), is_zd=set(["ZD"]))
 
     @cache_translation
     def to_detector_exposure_id(self):
@@ -294,8 +346,7 @@ class DecamTranslator(FitsTranslator):
         if "bias" in obstype.lower() or "zero" in obstype.lower():
             header["FILTER"] = "solid plate 0.0 0.0"
             modified = True
-            log.debug("%s: Set FILTER to %s because OBSTYPE is %s",
-                      log_label, header["FILTER"], obstype)
+            log.debug("%s: Set FILTER to %s because OBSTYPE is %s", log_label, header["FILTER"], obstype)
 
         return modified
 

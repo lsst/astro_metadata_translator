@@ -39,7 +39,7 @@ def dates_to_fits(date_begin, date_end):
 
     date_avg = None
     if date_begin is not None and date_end is not None:
-        date_avg = date_begin + (date_end - date_begin)/2.0
+        date_avg = date_begin + (date_end - date_begin) / 2.0
 
     for fragment, date in (("OBS", date_begin), ("END", date_end), ("AVG", date_avg)):
         if date is not None:

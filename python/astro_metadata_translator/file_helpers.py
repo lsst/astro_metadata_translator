@@ -14,8 +14,8 @@
 __all__ = ("find_files", "read_basic_metadata_from_file", "read_file_info")
 
 import json
-import re
 import os
+import re
 import sys
 import traceback
 
@@ -23,11 +23,10 @@ from .headers import merge_headers
 from .observationInfo import ObservationInfo
 from .tests import read_test_file
 
-
 # Prefer afw over Astropy
 try:
-    from lsst.afw.fits import readMetadata
     import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
+    from lsst.afw.fits import readMetadata
 
     def _read_fits_metadata(file, hdu, can_raise=False):
         """Read a FITS header using afw.
@@ -142,7 +141,9 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
     """
     if file.endswith(".yaml"):
         try:
-            md = read_test_file(file,)
+            md = read_test_file(
+                file,
+            )
         except Exception as e:
             if not can_raise:
                 md = None
@@ -172,8 +173,15 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
     return md
 
 
-def read_file_info(file, hdrnum, print_trace=None, content_mode="translated", content_type="simple",
-                   outstream=sys.stdout, errstream=sys.stderr):
+def read_file_info(
+    file,
+    hdrnum,
+    print_trace=None,
+    content_mode="translated",
+    content_type="simple",
+    outstream=sys.stdout,
+    errstream=sys.stderr,
+):
     """Read information from file
 
     Parameters
@@ -218,8 +226,9 @@ def read_file_info(file, hdrnum, print_trace=None, content_mode="translated", co
 
     try:
         # Calculate the JSON from the file
-        md = read_basic_metadata_from_file(file, hdrnum, errstream=errstream,
-                                           can_raise=True if print_trace is None else False)
+        md = read_basic_metadata_from_file(
+            file, hdrnum, errstream=errstream, can_raise=True if print_trace is None else False
+        )
         if md is None:
             return None
         if content_mode == "metadata":

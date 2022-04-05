@@ -11,25 +11,24 @@
 
 """Metadata translation code for SuprimeCam FITS headers"""
 
-__all__ = ("SuprimeCamTranslator", )
+__all__ = ("SuprimeCamTranslator",)
 
-import re
 import logging
 import posixpath
+import re
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import Angle, SkyCoord
 
-from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
-from .subaru import SubaruTranslator
+from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .helpers import altaz_from_degree_headers
+from .subaru import SubaruTranslator
 
 log = logging.getLogger(__name__)
 
 
 class SuprimeCamTranslator(SubaruTranslator):
-    """Metadata translator for HSC standard headers.
-    """
+    """Metadata translator for HSC standard headers."""
 
     name = "SuprimeCam"
     """Name of this translation class"""
@@ -40,22 +39,22 @@ class SuprimeCamTranslator(SubaruTranslator):
     default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "SuprimeCam")
     """Default resource path root to use to locate header correction files."""
 
-    _const_map = {"boresight_rotation_coord": "unknown",
-                  "detector_group": None}
+    _const_map = {"boresight_rotation_coord": "unknown", "detector_group": None}
     """Constant mappings"""
 
-    _trivial_map = {"observation_id": "EXP-ID",
-                    "object": "OBJECT",
-                    "science_program": "PROP-ID",
-                    "detector_num": "DET-ID",
-                    "detector_serial": "DETECTOR",  # DETECTOR is the "call name"
-                    "boresight_airmass": "AIRMASS",
-                    "relative_humidity": "OUT-HUM",
-                    "temperature": ("OUT-TMP", dict(unit=u.K)),
-                    "pressure": ("OUT-PRS", dict(unit=u.hPa)),
-                    "exposure_time": ("EXPTIME", dict(unit=u.s)),
-                    "dark_time": ("EXPTIME", dict(unit=u.s)),  # Assume same as exposure time
-                    }
+    _trivial_map = {
+        "observation_id": "EXP-ID",
+        "object": "OBJECT",
+        "science_program": "PROP-ID",
+        "detector_num": "DET-ID",
+        "detector_serial": "DETECTOR",  # DETECTOR is the "call name"
+        "boresight_airmass": "AIRMASS",
+        "relative_humidity": "OUT-HUM",
+        "temperature": ("OUT-TMP", dict(unit=u.K)),
+        "pressure": ("OUT-PRS", dict(unit=u.hPa)),
+        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "dark_time": ("EXPTIME", dict(unit=u.s)),  # Assume same as exposure time
+    }
     """One-to-one mappings"""
 
     # Zero point for SuprimeCam dates: 2004-01-01
@@ -116,8 +115,9 @@ class SuprimeCamTranslator(SubaruTranslator):
     def to_datetime_begin(self):
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UT-STR"], scale="utc")
+        value = self._from_fits_date_string(
+            self._header["DATE-OBS"], time_str=self._header["UT-STR"], scale="utc"
+        )
         self._used_these_cards("DATE-OBS", "UT-STR")
         return value
 
@@ -125,8 +125,9 @@ class SuprimeCamTranslator(SubaruTranslator):
     def to_datetime_end(self):
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UT-END"], scale="utc")
+        value = self._from_fits_date_string(
+            self._header["DATE-OBS"], time_str=self._header["UT-END"], scale="utc"
+        )
         self._used_these_cards("DATE-OBS", "UT-END")
 
         # Sometimes the end time is less than the begin time plus the
@@ -194,17 +195,21 @@ class SuprimeCamTranslator(SubaruTranslator):
     @cache_translation
     def to_tracking_radec(self):
         # Docstring will be inherited. Property defined in properties.py
-        radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
-                         frame="icrs", unit=(u.hourangle, u.deg),
-                         obstime=self.to_datetime_begin(), location=self.to_location())
+        radec = SkyCoord(
+            self._header["RA2000"],
+            self._header["DEC2000"],
+            frame="icrs",
+            unit=(u.hourangle, u.deg),
+            obstime=self.to_datetime_begin(),
+            location=self.to_location(),
+        )
         self._used_these_cards("RA2000", "DEC2000")
         return radec
 
     @cache_translation
     def to_altaz_begin(self):
         # Docstring will be inherited. Property defined in properties.py
-        return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),),
-                                         self.to_datetime_begin())
+        return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),), self.to_datetime_begin())
 
     @cache_translation
     def to_boresight_rotation_angle(self):

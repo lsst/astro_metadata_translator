@@ -42,8 +42,9 @@ class ObservationGroup(MutableSequence):
     """
 
     def __init__(self, members, translator_class=None, pedantic=None):
-        self._members = [self._coerce_value(m, translator_class=translator_class, pedantic=pedantic)
-                         for m in members]
+        self._members = [
+            self._coerce_value(m, translator_class=translator_class, pedantic=pedantic) for m in members
+        ]
 
         # Cache of members in time order
         self._sorted = None
@@ -106,8 +107,7 @@ class ObservationGroup(MutableSequence):
         return iter(self._members)
 
     def __eq__(self, other):
-        """Compares equal if all the members are equal in the same order.
-        """
+        """Compares equal if all the members are equal in the same order."""
         if not isinstance(other, ObservationGroup):
             return NotImplemented
 

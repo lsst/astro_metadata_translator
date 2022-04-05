@@ -11,15 +11,16 @@
 
 __all__ = ("read_test_file", "MetadataAssertHelper")
 
-import astropy.units as u
 import os
 import pickle
-import yaml
-from collections import OrderedDict
-from astropy.time import Time
-import astropy.utils.exceptions
 import warnings
+from collections import OrderedDict
+
+import astropy.units as u
+import astropy.utils.exceptions
+import yaml
 from astropy.io.fits import Header
+from astropy.time import Time
 
 from astro_metadata_translator import ObservationInfo
 
@@ -125,8 +126,9 @@ class MetadataAssertHelper:
             sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
-    def assertObservationInfoFromYaml(self, file, dir=None, check_wcs=True,  # noqa: N802
-                                      wcs_params=None, **kwargs):
+    def assertObservationInfoFromYaml(  # noqa: N802
+        self, file, dir=None, check_wcs=True, wcs_params=None, **kwargs
+    ):
         """Check contents of an ObservationInfo.
 
         Parameters
@@ -161,14 +163,15 @@ class MetadataAssertHelper:
 
         for hdr in (header, astropy_header):
             try:
-                self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
-                                           wcs_params=wcs_params, **kwargs)
+                self.assertObservationInfo(
+                    header, filename=file, check_wcs=check_wcs, wcs_params=wcs_params, **kwargs
+                )
             except AssertionError as e:
-                raise AssertionError(f"ObservationInfo derived from {type(hdr)} "
-                                     "type is inconsistent.") from e
+                raise AssertionError(f"ObservationInfo derived from {type(hdr)} type is inconsistent.") from e
 
-    def assertObservationInfo(self, header, filename=None, check_wcs=True,  # noqa: N802
-                              wcs_params=None, **kwargs):
+    def assertObservationInfo(  # noqa: N802
+        self, header, filename=None, check_wcs=True, wcs_params=None, **kwargs
+    ):
         """Check contents of an ObservationInfo.
 
         Parameters
@@ -237,8 +240,7 @@ class MetadataAssertHelper:
         self.assertLessEqual(datetime_begin, datetime_end)
 
         # Check that exposure time is not outside datetime_end
-        self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time,
-                             obsinfo.datetime_end)
+        self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time, obsinfo.datetime_end)
 
         # Check the WCS consistency
         if check_wcs and obsinfo.observation_type == "science":

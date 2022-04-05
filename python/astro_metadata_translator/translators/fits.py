@@ -11,11 +11,11 @@
 
 """Metadata translation code for standard FITS headers"""
 
-__all__ = ("FitsTranslator", )
+__all__ = ("FitsTranslator",)
 
-from astropy.time import Time
-from astropy.coordinates import EarthLocation
 import astropy.units as u
+from astropy.coordinates import EarthLocation
+from astropy.time import Time
 
 from ..translator import MetadataTranslator, cache_translation
 
@@ -33,8 +33,7 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _trivial_map = dict(instrument="INSTRUME",
-                        telescope="TELESCOP")
+    _trivial_map = dict(instrument="INSTRUME", telescope="TELESCOP")
 
     @classmethod
     def can_translate(cls, header, filename=None):
@@ -71,7 +70,7 @@ class FitsTranslator(MetadataTranslator):
         return instrument == cls.supported_instrument
 
     @classmethod
-    def _from_fits_date_string(cls, date_str, scale='utc', time_str=None):
+    def _from_fits_date_string(cls, date_str, scale="utc", time_str=None):
         """Parse standard FITS ISO-style date string and return time object
 
         Parameters

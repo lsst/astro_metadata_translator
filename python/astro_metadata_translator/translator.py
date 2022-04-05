@@ -13,15 +13,15 @@
 
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
-from abc import abstractmethod
-import inspect
 import importlib
+import inspect
 import logging
-import warnings
 import math
+import warnings
+from abc import abstractmethod
 
-import astropy.units as u
 import astropy.io.fits.card
+import astropy.units as u
 from astropy.coordinates import Angle
 
 from .properties import PROPERTIES
@@ -61,6 +61,7 @@ def cache_translation(func, method=None):
         if name not in self._translation_cache:
             self._translation_cache[name] = func(self)
         return self._translation_cache[name]
+
     func_wrapper.__doc__ = func.__doc__
     func_wrapper.__name__ = f"{name}_cached"
     return func_wrapper
@@ -180,6 +181,7 @@ class MetadataTranslator:
         f : `function`
             Function returning the constant.
         """
+
         def constant_translator(self):
             return constant
 
@@ -200,8 +202,9 @@ class MetadataTranslator:
         return constant_translator
 
     @classmethod
-    def _make_trivial_mapping(cls, property_key, header_key, default=None, minimum=None, maximum=None,
-                              unit=None, checker=None):
+    def _make_trivial_mapping(
+        cls, property_key, header_key, default=None, minimum=None, maximum=None, unit=None, checker=None
+    ):
         """Make a translator method returning a header value.
 
         The header value can be converted to a `~astropy.units.Quantity`
@@ -252,9 +255,9 @@ class MetadataTranslator:
 
         def trivial_translator(self):
             if unit is not None:
-                q = self.quantity_from_card(header_key, unit,
-                                            default=default, minimum=minimum, maximum=maximum,
-                                            checker=checker)
+                q = self.quantity_from_card(
+                    header_key, unit, default=default, minimum=minimum, maximum=maximum, checker=checker
+                )
                 # Convert to Angle if this quantity is an angle
                 if return_type == "astropy.coordinates.Angle":
                     q = Angle(q)
@@ -333,24 +336,28 @@ class MetadataTranslator:
         # Only register classes with declared names
         if hasattr(cls, "name") and cls.name is not None:
             if cls.name in MetadataTranslator.translators:
-                log.warning("%s: Replacing %s translator with %s",
-                            cls.name, MetadataTranslator.translators[cls.name], cls)
+                log.warning(
+                    "%s: Replacing %s translator with %s",
+                    cls.name,
+                    MetadataTranslator.translators[cls.name],
+                    cls,
+                )
             MetadataTranslator.translators[cls.name] = cls
 
         # Check that we have not inherited constant/trivial mappings from
         # parent class that we have already applied. Empty maps are always
         # assumed okay
         const_map = cls._const_map if cls._const_map and cls.defined_in_this_class("_const_map") else {}
-        trivial_map = cls._trivial_map \
-            if cls._trivial_map and cls.defined_in_this_class("_trivial_map") else {}
+        trivial_map = (
+            cls._trivial_map if cls._trivial_map and cls.defined_in_this_class("_trivial_map") else {}
+        )
 
         # Check for shadowing
         trivials = set(trivial_map.keys())
         constants = set(const_map.keys())
         both = trivials & constants
         if both:
-            log.warning("%s: defined in both const_map and trivial_map: %s",
-                        cls.__name__, ", ".join(both))
+            log.warning("%s: defined in both const_map and trivial_map: %s", cls.__name__, ", ".join(both))
 
         all = trivials | constants
         for name in all:
@@ -360,8 +367,9 @@ class MetadataTranslator:
                 location = "by _trivial_map"
                 if name in constants:
                     location = "by _const_map"
-                log.warning("%s: %s is defined explicitly but will be replaced %s",
-                            cls.__name__, name, location)
+                log.warning(
+                    "%s: %s is defined explicitly but will be replaced %s", cls.__name__, name, location
+                )
 
         properties = set(PROPERTIES) | set(("ext_" + pp for pp in cls.extensions))
         cls.all_properties = dict(PROPERTIES)
@@ -488,8 +496,10 @@ class MetadataTranslator:
                 log.debug("Using translation class %s%s", name, file_msg)
                 return trans
         else:
-            raise ValueError(f"None of the registered translation classes {list(cls.translators.keys())}"
-                             f" understood this header{file_msg}")
+            raise ValueError(
+                f"None of the registered translation classes {list(cls.translators.keys())}"
+                f" understood this header{file_msg}"
+            )
 
     @classmethod
     def translator_version(cls):
@@ -1048,6 +1058,7 @@ def _make_abstract_translator_method(property, doc, return_typedoc, return_type)
     m : `function`
         Translator method for this property.
     """
+
     def to_property(self):
         raise NotImplementedError(f"Translator for '{property}' undefined.")
 
@@ -1079,9 +1090,15 @@ CONCRETE = set()
 for name, definition in PROPERTIES.items():
     method = f"to_{name}"
     if not MetadataTranslator.defined_in_this_class(method):
-        setattr(MetadataTranslator, f"to_{name}",
-                abstractmethod(_make_abstract_translator_method(name, definition.doc, definition.str_type,
-                                                                definition.py_type)))
+        setattr(
+            MetadataTranslator,
+            f"to_{name}",
+            abstractmethod(
+                _make_abstract_translator_method(
+                    name, definition.doc, definition.str_type, definition.py_type
+                )
+            ),
+        )
     else:
         CONCRETE.add(method)
 
@@ -1096,6 +1113,7 @@ class StubTranslator(MetadataTranslator):
     removed from the inheritance tree.
 
     """
+
     pass
 
 
@@ -1132,8 +1150,9 @@ def _make_forwarded_stub_translator_method(cls, property, doc, return_typedoc, r
         except NotImplementedError:
             pass
 
-        warnings.warn(f"Please implement translator for property '{property}' for translator {self}",
-                      stacklevel=3)
+        warnings.warn(
+            f"Please implement translator for property '{property}' for translator {self}", stacklevel=3
+        )
         return None
 
     to_stub.__doc__ = f"""Unimplemented forwarding translator for {property}.
@@ -1158,6 +1177,7 @@ for name, description in PROPERTIES.items():
     setattr(
         StubTranslator,
         f"to_{name}",
-        _make_forwarded_stub_translator_method(StubTranslator, name, definition.doc, definition.str_type,
-                                               definition.py_type),
+        _make_forwarded_stub_translator_method(
+            StubTranslator, name, definition.doc, definition.str_type, definition.py_type
+        ),
     )

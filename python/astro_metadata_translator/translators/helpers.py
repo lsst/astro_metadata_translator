@@ -22,14 +22,17 @@ translation classes without using `MetadataTranslator` properties.
 
 """
 
-__all__ = ("to_location_via_telescope_name",
-           "is_non_science",
-           "tracking_from_degree_headers",
-           "altitude_from_zenith_distance")
+__all__ = (
+    "to_location_via_telescope_name",
+    "is_non_science",
+    "tracking_from_degree_headers",
+    "altitude_from_zenith_distance",
+)
 
 import logging
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz
+
 import astropy.units as u
+from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +74,7 @@ def altitude_from_zenith_distance(zd):
     alt : `astropy.units.Quantity`
         Altitude.
     """
-    return 90.*u.deg - zd
+    return 90.0 * u.deg - zd
 
 
 def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
@@ -114,9 +117,14 @@ def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
         frame = "icrs"
     for ra_key, dec_key in radecpairs:
         if self.are_keys_ok([ra_key, dec_key]):
-            radec = SkyCoord(self._header[ra_key], self._header[dec_key],
-                             frame=frame, unit=unit, obstime=self.to_datetime_begin(),
-                             location=self.to_location())
+            radec = SkyCoord(
+                self._header[ra_key],
+                self._header[dec_key],
+                frame=frame,
+                unit=unit,
+                obstime=self.to_datetime_begin(),
+                location=self.to_location(),
+            )
             self._used_these_cards(ra_key, dec_key, *used)
             return radec
     if self.to_observation_type() == "science":
@@ -173,8 +181,7 @@ def altaz_from_degree_headers(self, altazpairs, obstime, is_zd=None):
                 log.warning("%s: Clipping altitude (%f) at 90 degrees", self._log_prefix, alt)
                 alt = 90.0
 
-            altaz = AltAz(az * u.deg, alt * u.deg,
-                          obstime=obstime, location=self.to_location())
+            altaz = AltAz(az * u.deg, alt * u.deg, obstime=obstime, location=self.to_location())
             self._used_these_cards(az_key, alt_key)
             return altaz
     if self.to_observation_type() == "science":

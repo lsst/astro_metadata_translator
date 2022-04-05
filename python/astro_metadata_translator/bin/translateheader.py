@@ -17,52 +17,45 @@ Read file metadata from the specified files and report the translated content.
 __all__ = ("main", "process_files")
 
 import argparse
+import importlib
 import logging
-
 import sys
 import traceback
-import importlib
+
 import yaml
-from astro_metadata_translator import ObservationInfo, fix_header, MetadataTranslator
+
+from astro_metadata_translator import MetadataTranslator, ObservationInfo, fix_header
 
 from ..file_helpers import find_files, read_basic_metadata_from_file
-
 
 # Output mode choices
 OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlnative", "fixednative", "none")
 
 # Definitions for table columns
-TABLE_COLUMNS = ({
-                 "format": "32.32s",
-                 "attr": "observation_id",
-                 "label": "ObsId"
-                 },
-                 {
-                 "format": "8.8s",
-                 "attr": "observation_type",
-                 "label": "ImgType",
-                 },
-                 {
-                 "format": "16.16s",
-                 "attr": "object",
-                 "label": "Object",
-                 },
-                 {
-                 "format": "16.16s",
-                 "attr": "physical_filter",
-                 "label": "Filter",
-                 },
-                 {
-                 "format": ">8.8s",
-                 "attr": "detector_unique_name",
-                 "label": "Detector"
-                 },
-                 {
-                 "format": "5.1f",
-                 "attr": "exposure_time",
-                 "label": "ExpTime",
-                 },
-                 )
+TABLE_COLUMNS = (
+    {"format": "32.32s", "attr": "observation_id", "label": "ObsId"},
+    {
+        "format": "8.8s",
+        "attr": "observation_type",
+        "label": "ImgType",
+    },
+    {
+        "format": "16.16s",
+        "attr": "object",
+        "label": "Object",
+    },
+    {
+        "format": "16.16s",
+        "attr": "physical_filter",
+        "label": "Filter",
+    },
+    {"format": ">8.8s", "attr": "detector_unique_name", "label": "Detector"},
+    {
+        "format": "5.1f",
+        "attr": "exposure_time",
+        "label": "ExpTime",
+    },
+)
 
 
 def build_argparser():
@@ -76,48 +69,84 @@ def build_argparser():
     """
 
     parser = argparse.ArgumentParser(description="Summarize headers from astronomical data files")
-    parser.add_argument("files", metavar="file", type=str, nargs="+",
-                        help="File(s) from which headers will be parsed."
-                        " If a directory is given it will be scanned for files matching the regular"
-                        " expression defined in --regex.")
-    parser.add_argument("-q", "--quiet", action="store_true",
-                        help="Do not report the translation content from each header. This forces "
-                             "output mode 'none'.")
-    parser.add_argument("-d", "--dumphdr", action="store_true",
-                        help="Dump the header in YAML format to standard output rather than translating it."
-                             " This is the same as using mode=yaml")
-    parser.add_argument("--traceback", action="store_true",
-                        help="Give detailed trace back when any errors encountered")
-    parser.add_argument("-n", "--hdrnum", default=1,
-                        help="HDU number to read.  If the HDU can not be found, a warning is issued but "
-                             "translation is attempted using the primary header.  "
-                             "The primary header is always read and merged with this header.")
-    parser.add_argument("-m", "--mode", default="auto", choices=OUTPUT_MODES,
-                        help="Display mode for translated parameters. 'verbose' displays all the information"
-                             " available. 'table' displays important information in tabular form."
-                             " 'yaml' dumps the header in YAML format (this is equivalent to -d option)."
-                             " 'fixed' dumps the header in YAML after it has had corrections applied."
-                             " Add 'native' suffix to dump YAML in PropertyList or Astropy native form."
-                             " 'none' displays no translated header information and is an alias for the "
-                             " '--quiet' option."
-                             " 'auto' mode is 'verbose' for a single file and 'table' for multiple files.")
-    parser.add_argument("-l", "--log", default="warn",
-                        help="Python logging level to use.")
+    parser.add_argument(
+        "files",
+        metavar="file",
+        type=str,
+        nargs="+",
+        help="File(s) from which headers will be parsed."
+        " If a directory is given it will be scanned for files matching the regular"
+        " expression defined in --regex.",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Do not report the translation content from each header. This forces output mode 'none'.",
+    )
+    parser.add_argument(
+        "-d",
+        "--dumphdr",
+        action="store_true",
+        help="Dump the header in YAML format to standard output rather than translating it."
+        " This is the same as using mode=yaml",
+    )
+    parser.add_argument(
+        "--traceback", action="store_true", help="Give detailed trace back when any errors encountered"
+    )
+    parser.add_argument(
+        "-n",
+        "--hdrnum",
+        default=1,
+        help="HDU number to read.  If the HDU can not be found, a warning is issued but "
+        "translation is attempted using the primary header.  "
+        "The primary header is always read and merged with this header.",
+    )
+    parser.add_argument(
+        "-m",
+        "--mode",
+        default="auto",
+        choices=OUTPUT_MODES,
+        help="Display mode for translated parameters. 'verbose' displays all the information"
+        " available. 'table' displays important information in tabular form."
+        " 'yaml' dumps the header in YAML format (this is equivalent to -d option)."
+        " 'fixed' dumps the header in YAML after it has had corrections applied."
+        " Add 'native' suffix to dump YAML in PropertyList or Astropy native form."
+        " 'none' displays no translated header information and is an alias for the "
+        " '--quiet' option."
+        " 'auto' mode is 'verbose' for a single file and 'table' for multiple files.",
+    )
+    parser.add_argument("-l", "--log", default="warn", help="Python logging level to use.")
 
     re_default = r"\.fit[s]?\b"
-    parser.add_argument("-r", "--regex", default=re_default,
-                        help="When looking in a directory, regular expression to use to determine whether"
-                        f" a file should be examined. Default: '{re_default}'")
+    parser.add_argument(
+        "-r",
+        "--regex",
+        default=re_default,
+        help="When looking in a directory, regular expression to use to determine whether"
+        f" a file should be examined. Default: '{re_default}'",
+    )
 
-    parser.add_argument("-p", "--packages", action="append", type=str,
-                        help="Python packages to import to register additional translators")
+    parser.add_argument(
+        "-p",
+        "--packages",
+        action="append",
+        type=str,
+        help="Python packages to import to register additional translators",
+    )
 
     return parser
 
 
-def read_file(file, hdrnum, print_trace,
-              outstream=sys.stdout, errstream=sys.stderr, output_mode="verbose",
-              write_heading=False):
+def read_file(
+    file,
+    hdrnum,
+    print_trace,
+    outstream=sys.stdout,
+    errstream=sys.stderr,
+    output_mode="verbose",
+    write_heading=False,
+):
     """Read the specified file and process it.
 
     Parameters
@@ -170,7 +199,7 @@ def read_file(file, hdrnum, print_trace,
 
         if output_mode.endswith("native"):
             # Strip native and don't change type of md
-            output_mode = output_mode[:-len("native")]
+            output_mode = output_mode[: -len("native")]
         else:
             # Rewrite md as simple dict for output
             md = {k: v for k, v in md.items()}
@@ -200,8 +229,9 @@ def read_file(file, hdrnum, print_trace,
         for md in headers:
             obs_info = ObservationInfo(md, pedantic=True, filename=file)
             if output_mode == "table":
-                columns = ["{:{fmt}}".format(getattr(obs_info, c["attr"]), fmt=c["format"])
-                           for c in TABLE_COLUMNS]
+                columns = [
+                    "{:{fmt}}".format(getattr(obs_info, c["attr"]), fmt=c["format"]) for c in TABLE_COLUMNS
+                ]
 
                 if write_heading and not wrote_heading:
                     # Construct headings of the same width as the items
@@ -213,7 +243,7 @@ def read_file(file, hdrnum, print_trace,
                     for thiscol, defn in zip(columns, TABLE_COLUMNS):
                         width = len(thiscol)
                         headings.append("{:{w}.{w}}".format(defn["label"], w=width))
-                        separators.append("-"*width)
+                        separators.append("-" * width)
                     print(" ".join(headings), file=outstream)
                     print(" ".join(separators), file=outstream)
                     wrote_heading = True
@@ -235,9 +265,9 @@ def read_file(file, hdrnum, print_trace,
     return True
 
 
-def process_files(files, regex, hdrnum, print_trace,
-                  outstream=sys.stdout, errstream=sys.stderr,
-                  output_mode="auto"):
+def process_files(
+    files, regex, hdrnum, print_trace, outstream=sys.stdout, errstream=sys.stderr, output_mode="auto"
+):
     """Read and translate metadata from the specified files.
 
     Parameters
@@ -283,8 +313,7 @@ def process_files(files, regex, hdrnum, print_trace,
     okay = []
     heading = True
     for path in sorted(found_files):
-        isok = read_file(path, hdrnum, print_trace, outstream, errstream, output_mode,
-                         heading)
+        isok = read_file(path, hdrnum, print_trace, outstream, errstream, output_mode, heading)
         heading = False
         if isok:
             okay.append(path)
@@ -305,8 +334,10 @@ def main():
         could be translated. 1 otherwise.
     """
 
-    logging.warn("This command is deprecated. Please use 'astrometadata translate' "
-                 " or 'astrometadata dump' instead. See 'astrometadata -h' for more details.")
+    logging.warn(
+        "This command is deprecated. Please use 'astrometadata translate' "
+        " or 'astrometadata dump' instead. See 'astrometadata -h' for more details."
+    )
 
     args = build_argparser().parse_args()
 
@@ -329,9 +360,7 @@ def main():
     logging.basicConfig(level=numeric_level)
 
     # Main loop over files
-    okay, failed = process_files(args.files, args.regex, args.hdrnum,
-                                 args.traceback,
-                                 output_mode=output_mode)
+    okay, failed = process_files(args.files, args.regex, args.hdrnum, args.traceback, output_mode=output_mode)
 
     if failed:
         print("Files with failed translations:", file=sys.stderr)

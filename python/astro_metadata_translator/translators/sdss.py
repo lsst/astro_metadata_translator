@@ -11,14 +11,14 @@
 
 """Metadata translation code for SDSS FITS headers"""
 
-__all__ = ("SdssTranslator", )
+__all__ = ("SdssTranslator",)
 
 import posixpath
 
-from astropy.coordinates import EarthLocation, Angle, AltAz
 import astropy.units as u
+from astropy.coordinates import AltAz, Angle, EarthLocation
 
-from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
+from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
 from .helpers import tracking_from_degree_headers
 
@@ -41,31 +41,61 @@ class SdssTranslator(FitsTranslator):
     # SDSS has has a rotator, but in drift scan mode, the instrument
     # angle on sky is set to +X=East, +Y=North which we define as a
     # 0 degree rotation.
-    _const_map = {"boresight_rotation_angle": Angle(0*u.deg),
-                  "boresight_rotation_coord": "sky",
-                  "dark_time": 0.0*u.s,  # Drift scan implies no dark time
-                  "instrument": "Imager on SDSS 2.5m",  # We only ever ingest data from the imager
-                  "telescope": "SDSS 2.5m",  # Value of TELESCOP in header is ambiguous
-                  "relative_humidity": None,
-                  "temperature": None,
-                  "pressure": None,
-                  "detector_serial": "UNKNOWN",
-                  }
+    _const_map = {
+        "boresight_rotation_angle": Angle(0 * u.deg),
+        "boresight_rotation_coord": "sky",
+        "dark_time": 0.0 * u.s,  # Drift scan implies no dark time
+        "instrument": "Imager on SDSS 2.5m",  # We only ever ingest data from the imager
+        "telescope": "SDSS 2.5m",  # Value of TELESCOP in header is ambiguous
+        "relative_humidity": None,
+        "temperature": None,
+        "pressure": None,
+        "detector_serial": "UNKNOWN",
+    }
 
-    _trivial_map = {"exposure_time": ("EXPTIME", dict(unit=u.s)),
-                    "object": "OBJECT",
-                    "physical_filter": "FILTER",
-                    "exposure_id": "RUN",
-                    "visit_id": "RUN",
-                    "science_program": "OBJECT",  # This is the closest I can think of to a useful program
-                    "detector_name": "CCDLOC",  # This is a numeric incoding of the "slot", i.e. filter+camcol
-                    }
+    _trivial_map = {
+        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "object": "OBJECT",
+        "physical_filter": "FILTER",
+        "exposure_id": "RUN",
+        "visit_id": "RUN",
+        "science_program": "OBJECT",  # This is the closest I can think of to a useful program
+        "detector_name": "CCDLOC",  # This is a numeric incoding of the "slot", i.e. filter+camcol
+    }
 
     #  Need a mapping from unique name to index.  The order is arbitrary.
-    detector_name_id_map = {"g1": 0, "z1": 1, "u1": 2, "i1": 3, "r1": 4, "g2": 5, "z2": 6, "u2": 7,
-                            "i2": 8, "r2": 9, "g3": 10, "z3": 11, "u3": 12, "i3": 13, "r3": 14,
-                            "g4": 15, "z4": 16, "u4": 17, "i4": 18, "r4": 19, "g5": 20, "z5": 21,
-                            "u5": 22, "i5": 23, "r5": 24, "g6": 25, "z6": 26, "u6": 27, "i6": 28, "r6": 29}
+    detector_name_id_map = {
+        "g1": 0,
+        "z1": 1,
+        "u1": 2,
+        "i1": 3,
+        "r1": 4,
+        "g2": 5,
+        "z2": 6,
+        "u2": 7,
+        "i2": 8,
+        "r2": 9,
+        "g3": 10,
+        "z3": 11,
+        "u3": 12,
+        "i3": 13,
+        "r3": 14,
+        "g4": 15,
+        "z4": 16,
+        "u4": 17,
+        "i4": 18,
+        "r4": 19,
+        "g5": 20,
+        "z5": 21,
+        "u5": 22,
+        "i5": 23,
+        "r5": 24,
+        "g6": 25,
+        "z6": 26,
+        "u6": 27,
+        "i6": 28,
+        "r6": 29,
+    }
 
     @classmethod
     def can_translate(cls, header, filename=None):
@@ -85,9 +115,14 @@ class SdssTranslator(FitsTranslator):
             `True` if the header is recognized by this class. `False`
             otherwise.
         """
-        if (cls.is_keyword_defined(header, "ORIGIN") and cls.is_keyword_defined(header, "CCDMODE")
-                and cls.is_keyword_defined(header, "TELESCOP") and "2.5m" in header["TELESCOP"]
-                and "SDSS" in header["ORIGIN"] and "DRIFT" in header["CCDMODE"]):
+        if (
+            cls.is_keyword_defined(header, "ORIGIN")
+            and cls.is_keyword_defined(header, "CCDMODE")
+            and cls.is_keyword_defined(header, "TELESCOP")
+            and "2.5m" in header["TELESCOP"]
+            and "SDSS" in header["ORIGIN"]
+            and "DRIFT" in header["CCDMODE"]
+        ):
             return True
         return False
 
@@ -95,7 +130,7 @@ class SdssTranslator(FitsTranslator):
     def to_detector_unique_name(self):
         # Docstring will be inherited. Property defined in properties.py
         if self.is_key_ok("CAMCOL"):
-            return self.to_physical_filter()+str(self._header["CAMCOL"])
+            return self.to_physical_filter() + str(self._header["CAMCOL"])
         else:
             raise ValueError(f"{self._log_prefix}: CAMCOL key is not definded")
 
@@ -114,15 +149,15 @@ class SdssTranslator(FitsTranslator):
             A string uniquely describing the observation.
             This incorporates the run, camcol, filter and frame.
         """
-        return " ".join([str(self._header[el]) for el in
-                        ["RUN", "CAMCOL", "FILTER", "FRAME"]])
+        return " ".join([str(self._header[el]) for el in ["RUN", "CAMCOL", "FILTER", "FRAME"]])
 
     @cache_translation
     def to_datetime_begin(self):
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["TAIHMS"], scale="tai")
+        value = self._from_fits_date_string(
+            self._header["DATE-OBS"], time_str=self._header["TAIHMS"], scale="tai"
+        )
         self._used_these_cards("DATE-OBS", "TAIHMS")
         return value
 
@@ -178,15 +213,16 @@ class SdssTranslator(FitsTranslator):
             # It appears SDSS defines azimuth as increasing
             # from South through East. This translates to
             # North through East
-            az = (-az + 180.)%360.
-            altaz = AltAz(az * u.deg, alt * u.deg,
-                          obstime=self.to_datetime_begin(), location=self.to_location())
+            az = (-az + 180.0) % 360.0
+            altaz = AltAz(
+                az * u.deg, alt * u.deg, obstime=self.to_datetime_begin(), location=self.to_location()
+            )
             self._used_these_cards("AZ", "ALT")
             return altaz
         except Exception as e:
             if self.to_observation_type() != "science":
                 return None  # Allow Alt/Az not to be set for calibrations
-            raise(e)
+            raise (e)
 
     @cache_translation
     def to_boresight_airmass(self):
@@ -208,11 +244,9 @@ class SdssTranslator(FitsTranslator):
         except Exception as e:
             if self.to_observation_type() != "science":
                 return None
-            raise(e)
+            raise (e)
         filter_id_map = dict(u=0, g=1, r=2, i=3, z=4)
-        return ((int(run) * 10
-                + filter_id_map[filt]) * 10
-                + int(camcol)) * 10000 + int(field)
+        return ((int(run) * 10 + filter_id_map[filt]) * 10 + int(camcol)) * 10000 + int(field)
 
     @cache_translation
     def to_detector_group(self):

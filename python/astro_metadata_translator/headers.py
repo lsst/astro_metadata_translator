@@ -13,16 +13,17 @@
 
 __all__ = ("merge_headers", "fix_header")
 
-import datetime
-import pkg_resources
-import posixpath
-import logging
-import itertools
 import copy
+import datetime
+import itertools
+import logging
 import os
-import yaml
-from collections.abc import Mapping
+import posixpath
 from collections import Counter
+from collections.abc import Mapping
+
+import pkg_resources
+import yaml
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
@@ -116,6 +117,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
         return copy.deepcopy(headers[0])
 
     if sort:
+
         def key_func(hdr):
             translator_class = None
             try:
@@ -223,8 +225,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
 
         # Fill the entries that have multiple differing values
         for key in fill:
-            merged[key] = [h[key] if key in h else None
-                           for h in itertools.chain([first_hdr], headers)]
+            merged[key] = [h[key] if key in h else None for h in itertools.chain([first_hdr], headers)]
 
     else:
         raise ValueError(f"Unsupported value of '{mode}' for mode parameter.")
@@ -232,6 +233,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     # Force the first and last values to be inserted
     #
     if mode != "append":
+
         def retain_value(to_receive, to_retain, sources):
             if to_retain:
                 for k in to_retain:
@@ -416,13 +418,15 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
 
     if translator_class is None:
         try:
-            translator_class = MetadataTranslator.determine_translator(header,
-                                                                       filename=filename)
+            translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         except ValueError as e:
             # if the header is not recognized, we should not complain
             # and should not proceed further.
-            log.debug("Unable to determine translator class %s -- not fixing header: %e",
-                      f"for {filename}" if filename is not None else "", e)
+            log.debug(
+                "Unable to determine translator class %s -- not fixing header: %e",
+                f"for {filename}" if filename is not None else "",
+                e,
+            )
             return False
     elif not issubclass(translator_class, MetadataTranslator):
         raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
@@ -466,8 +470,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     try:
         translator_modified = translator_class.fix_header(header, instrument, obsid, filename=filename)
     except Exception as e:
-        log.fatal("Ignoring translator header fixup of %s %s: %s",
-                  instrument, obsid, e)
+        log.fatal("Ignoring translator header fixup of %s %s: %s", instrument, obsid, e)
         translator_modified = False
 
     was_modified = (corrections_file is not None) or translator_modified

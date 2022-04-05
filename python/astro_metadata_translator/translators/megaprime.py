@@ -11,23 +11,22 @@
 
 """Metadata translation code for CFHT MegaPrime FITS headers"""
 
-__all__ = ("MegaPrimeTranslator", )
+__all__ = ("MegaPrimeTranslator",)
 
-import re
 import posixpath
+import re
 
-from astropy.io import fits
-from astropy.coordinates import EarthLocation, Angle
 import astropy.units as u
+from astropy.coordinates import Angle, EarthLocation
+from astropy.io import fits
 
-from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
+from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
-from .helpers import tracking_from_degree_headers, altaz_from_degree_headers
+from .helpers import altaz_from_degree_headers, tracking_from_degree_headers
 
 
 class MegaPrimeTranslator(FitsTranslator):
-    """Metadata translator for CFHT MegaPrime standard headers.
-    """
+    """Metadata translator for CFHT MegaPrime standard headers."""
 
     name = "MegaPrime"
     """Name of this translation class"""
@@ -40,29 +39,34 @@ class MegaPrimeTranslator(FitsTranslator):
 
     # CFHT Megacam has no rotator, and the instrument angle on sky is set to
     # +Y=N, +X=W which we define as a 0 degree rotation.
-    _const_map = {"boresight_rotation_angle": Angle(0*u.deg),
-                  "boresight_rotation_coord": "sky",
-                  "detector_group": None}
+    _const_map = {
+        "boresight_rotation_angle": Angle(0 * u.deg),
+        "boresight_rotation_coord": "sky",
+        "detector_group": None,
+    }
 
-    _trivial_map = {"physical_filter": "FILTER",
-                    "dark_time": ("DARKTIME", dict(unit=u.s)),
-                    "exposure_time": ("EXPTIME", dict(unit=u.s)),
-                    "observation_id": "OBSID",
-                    "object": "OBJECT",
-                    "science_program": "RUNID",
-                    "exposure_id": "EXPNUM",
-                    "visit_id": "EXPNUM",
-                    "detector_serial": "CCDNAME",
-                    "relative_humidity": ["RELHUMID", "HUMIDITY"],
-                    "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
-                    "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"]}
+    _trivial_map = {
+        "physical_filter": "FILTER",
+        "dark_time": ("DARKTIME", dict(unit=u.s)),
+        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "observation_id": "OBSID",
+        "object": "OBJECT",
+        "science_program": "RUNID",
+        "exposure_id": "EXPNUM",
+        "visit_id": "EXPNUM",
+        "detector_serial": "CCDNAME",
+        "relative_humidity": ["RELHUMID", "HUMIDITY"],
+        "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
+        "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"],
+    }
 
     @cache_translation
     def to_datetime_begin(self):
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UTC-OBS"], scale="utc")
+        value = self._from_fits_date_string(
+            self._header["DATE-OBS"], time_str=self._header["UTC-OBS"], scale="utc"
+        )
         self._used_these_cards("DATE-OBS", "UTC-OBS")
         return value
 
@@ -72,8 +76,9 @@ class MegaPrimeTranslator(FitsTranslator):
         # Older files are missing UTCEND
         if self.is_key_ok("UTCEND"):
             # We know it is UTC
-            value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                                time_str=self._header["UTCEND"], scale="utc")
+            value = self._from_fits_date_string(
+                self._header["DATE-OBS"], time_str=self._header["UTCEND"], scale="utc"
+            )
             self._used_these_cards("DATE-OBS", "UTCEND")
         else:
             # Take a guess by adding on the exposure time
@@ -157,8 +162,9 @@ class MegaPrimeTranslator(FitsTranslator):
     @cache_translation
     def to_altaz_begin(self):
         # Docstring will be inherited. Property defined in properties.py
-        return altaz_from_degree_headers(self, (("TELALT", "TELAZ"), ("BORE-ALT", "BORE-AZ")),
-                                         self.to_datetime_begin())
+        return altaz_from_degree_headers(
+            self, (("TELALT", "TELAZ"), ("BORE-ALT", "BORE-AZ")), self.to_datetime_begin()
+        )
 
     @cache_translation
     def to_detector_exposure_id(self):

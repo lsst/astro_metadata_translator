@@ -71,8 +71,15 @@ def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.st
 
     try:
         # Calculate the JSON from the file
-        json_str = read_file_info(file, hdrnum, content_mode=content_mode, content_type="json",
-                                  print_trace=print_trace, outstream=outstream, errstream=errstream)
+        json_str = read_file_info(
+            file,
+            hdrnum,
+            content_mode=content_mode,
+            content_type="json",
+            print_trace=print_trace,
+            outstream=outstream,
+            errstream=errstream,
+        )
         if json_str is None:
             return False
 
@@ -95,8 +102,9 @@ def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.st
     return True
 
 
-def write_sidecar_files(files, regex, hdrnum, content_mode, print_trace,
-                        outstream=sys.stdout, errstream=sys.stderr):
+def write_sidecar_files(
+    files, regex, hdrnum, content_mode, print_trace, outstream=sys.stdout, errstream=sys.stderr
+):
     """Process each file and create sidecar file.
 
     Parameters
