@@ -16,7 +16,7 @@ __all__ = ("read_test_file", "MetadataAssertHelper")
 import os
 import pickle
 import warnings
-from typing import Any, Dict, MutableMapping, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, MutableMapping, NoReturn, Optional, Type
 
 import astropy.units as u
 import astropy.utils.exceptions
@@ -92,6 +92,35 @@ class MetadataAssertHelper:
     """Class with helpful asserts that can be used for testing metadata
     translations.
     """
+
+    # This class is assumed to be combined with unittest.TestCase but mypy
+    # does not know this. We need to teach mypy about the APIs we are using.
+    if TYPE_CHECKING:
+
+        def assertAlmostEqual(  # noqa: N802
+            self,
+            a: float,
+            b: float,
+            places: Optional[int] = None,
+            msg: Optional[str] = None,
+            delta: Optional[float] = None,
+        ) -> None:
+            pass
+
+        def assertIsNotNone(self, a: Any) -> None:  # noqa: N802
+            pass
+
+        def assertEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+            pass
+
+        def assertLess(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+            pass
+
+        def assertLessEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+            pass
+
+        def fail(self, msg: str) -> NoReturn:
+            pass
 
     def assertCoordinatesConsistent(  # noqa: N802
         self, obsinfo: ObservationInfo, max_sep: float = 1.0, amdelta: float = 0.01
