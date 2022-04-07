@@ -1059,6 +1059,60 @@ class MetadataTranslator:
         """
         return 0
 
+    @cache_translation
+    def to_group_counter_start(self) -> int:
+        """Return the observation counter of the observation that began
+        this group.
+
+        The definition of the relevant group is up to the metadata
+        translator. It can be the first observation in the exposure_group
+        or the first observation in the visit, but must be derivable
+        from the metadata of this observation.
+
+        Returns
+        -------
+        counter : `int`
+            The observation counter for the start of the relevant group.
+            Default implementation always returns the observation counter
+            of this observation.
+        """
+        return self.to_observation_counter()
+
+    @cache_translation
+    def to_group_counter_end(self) -> int:
+        """Return the observation counter of the observation that ends
+        this group.
+
+        The definition of the relevant group is up to the metadata
+        translator. It can be the last observation in the exposure_group
+        or the last observation in the visit, but must be derivable
+        from the metadata of this observation. It is of course possible
+        that the last observation in the group does not exist if a sequence
+        of observations was not completed.
+
+        Returns
+        -------
+        counter : `int`
+            The observation counter for the end of the relevant group.
+            Default implementation always returns the observation counter
+            of this observation.
+        """
+        return self.to_observation_counter()
+
+    @cache_translation
+    def to_has_simulated_content(self) -> bool:
+        """Return a boolean indicating whether any part of the observation
+        was simulated.
+
+        Returns
+        -------
+        is_simulated : `bool`
+            `True` if this exposure has simulated content. This can be
+            if some parts of the metadata or data were simulated. Default
+            implementation always returns `False`.
+        """
+        return False
+
     @classmethod
     def determine_translatable_headers(
         cls, filename: str, primary: Optional[MutableMapping[str, Any]] = None
