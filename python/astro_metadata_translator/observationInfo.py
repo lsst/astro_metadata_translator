@@ -20,7 +20,19 @@ import itertools
 import json
 import logging
 import math
-from typing import Any, Callable, Dict, FrozenSet, MutableMapping, Optional, Sequence, Set, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+)
 
 import astropy.time
 from astropy.coordinates import AltAz, SkyCoord
@@ -28,6 +40,10 @@ from astropy.coordinates import AltAz, SkyCoord
 from .headers import fix_header
 from .properties import PROPERTIES, PropertyDefinition
 from .translator import MetadataTranslator
+
+if TYPE_CHECKING:
+    import astropy.coordinates
+    import astropy.units
 
 log = logging.getLogger(__name__)
 
@@ -96,6 +112,37 @@ class ObservationInfo:
 
     Values of the properties are read-only.
     """
+
+    # Static typing requires that we define the standard dynamic properties
+    # statically.
+    if TYPE_CHECKING:
+        telescope: int
+        instrument: str
+        location: astropy.coordinates.EarthLocation
+        exposure_id: int
+        visit_id: int
+        physical_filter: str
+        datetime_begin: astropy.time.Time
+        datetime_end: astropy.time.Time
+        exposure_time: astropy.units.Quantity
+        dark_time: astropy.units.Quantity
+        boresight_airmass: float
+        boresight_rotation_angle: astropy.units.Quantity
+        boresight_rotation_coord: str
+        detector_num: int
+        detector_name: str
+        detector_serial: str
+        detector_group: str
+        detector_exposure_id: int
+        object: str
+        temperature: astropy.units.Quantity
+        pressure: astropy.units.Quantity
+        relative_humidity: float
+        tracking_radec: astropy.coordinates.SkyCoord
+        altaz_begin: astropy.coordinates.AltAz
+        science_program: str
+        observation_type: str
+        observation_id: str
 
     def __init__(
         self,

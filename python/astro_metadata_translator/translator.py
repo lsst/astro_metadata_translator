@@ -22,6 +22,7 @@ import math
 import warnings
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -44,6 +45,10 @@ import astropy.units as u
 from astropy.coordinates import Angle
 
 from .properties import PROPERTIES, PropertyDefinition
+
+if TYPE_CHECKING:
+    import astropy.coordinates
+    import astropy.time
 
 log = logging.getLogger(__name__)
 
@@ -141,6 +146,37 @@ class MetadataTranslator:
     Each property is indexed by name (`str`), with a corresponding
     `PropertyDefinition`.
     """
+
+    # Static typing requires that we define the standard dynamic properties
+    # statically.
+    if TYPE_CHECKING:
+        to_telescope: Callable[[MetadataTranslator], str]
+        to_instrument: Callable[[MetadataTranslator], str]
+        to_location: Callable[[MetadataTranslator], astropy.coordinates.EarthLocation]
+        to_exposure_id: Callable[[MetadataTranslator], int]
+        to_visit_id: Callable[[MetadataTranslator], int]
+        to_physical_filter: Callable[[MetadataTranslator], str]
+        to_datetime_begin: Callable[[MetadataTranslator], astropy.time.Time]
+        to_datetime_end: Callable[[MetadataTranslator], astropy.time.Time]
+        to_exposure_time: Callable[[MetadataTranslator], u.Quantity]
+        to_dark_time: Callable[[MetadataTranslator], u.Quantity]
+        to_boresight_airmass: Callable[[MetadataTranslator], float]
+        to_boresight_rotation_angle: Callable[[MetadataTranslator], u.Quantity]
+        to_boresight_rotation_coord: Callable[[MetadataTranslator], str]
+        to_detector_num: Callable[[MetadataTranslator], int]
+        to_detector_name: Callable[[MetadataTranslator], str]
+        to_detector_serial: Callable[[MetadataTranslator], str]
+        to_detector_group: Callable[[MetadataTranslator], Optional[str]]
+        to_detector_exposure_id: Callable[[MetadataTranslator], int]
+        to_object: Callable[[MetadataTranslator], str]
+        to_temperature: Callable[[MetadataTranslator], u.Quantity]
+        to_pressure: Callable[[MetadataTranslator], u.Quantity]
+        to_relative_humidity: Callable[[MetadataTranslator], float]
+        to_tracking_radec: Callable[[MetadataTranslator], astropy.coordinates.SkyCoord]
+        to_altaz_begin: Callable[[MetadataTranslator], astropy.coordinates.AltAz]
+        to_science_program: Callable[[MetadataTranslator], str]
+        to_observation_type: Callable[[MetadataTranslator], str]
+        to_observation_id: Callable[[MetadataTranslator], str]
 
     @classmethod
     def defined_in_this_class(cls, name: str) -> Optional[bool]:
