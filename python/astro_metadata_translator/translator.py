@@ -11,6 +11,8 @@
 
 """Classes and support code for metadata translation"""
 
+from __future__ import annotations
+
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
 import importlib
@@ -19,12 +21,29 @@ import logging
 import math
 import warnings
 from abc import abstractmethod
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 import astropy.io.fits.card
 import astropy.units as u
 from astropy.coordinates import Angle
 
-from .properties import PROPERTIES
+from .properties import PROPERTIES, PropertyDefinition
 
 log = logging.getLogger(__name__)
 
@@ -32,10 +51,10 @@ log = logging.getLogger(__name__)
 CORRECTIONS_RESOURCE_ROOT = "corrections"
 
 """Cache of version strings indexed by class."""
-_VERSION_CACHE = dict()
+_VERSION_CACHE: Dict[Type, str] = dict()
 
 
-def cache_translation(func, method=None):
+def cache_translation(func: Callable, method: Optional[str] = None) -> Callable:
     """Decorator to cache the result of a translation method.
 
     Especially useful when a translation uses many other translation
@@ -57,7 +76,7 @@ def cache_translation(func, method=None):
     """
     name = func.__name__ if method is None else method
 
-    def func_wrapper(self):
+    def func_wrapper(self: MetadataTranslator) -> Any:
         if name not in self._translation_cache:
             self._translation_cache[name] = func(self)
         return self._translation_cache[name]
@@ -82,30 +101,36 @@ class MetadataTranslator:
     """
 
     # These are all deliberately empty in the base class.
-    default_search_path = None
+    name: Optional[str] = None
+    """The declared name of the translator."""
+
+    default_search_path: Optional[Sequence[str]] = None
     """Default search path to use to locate header correction files."""
 
     default_resource_package = __name__.split(".")[0]
     """Module name to use to locate the correction resources."""
 
-    default_resource_root = None
+    default_resource_root: Optional[str] = None
     """Default package resource path root to use to locate header correction
     files within the ``default_resource_package`` package."""
 
-    _trivial_map = {}
+    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = {}
     """Dict of one-to-one mappings for header translation from standard
     property to corresponding keyword."""
 
-    _const_map = {}
+    _const_map: Dict[str, Any] = {}
     """Dict defining a constant for specified standard properties."""
 
-    translators = dict()
+    translators: Dict[str, Type] = dict()
     """All registered metadata translation classes."""
 
-    supported_instrument = None
+    supported_instrument: Optional[str] = None
     """Name of instrument understood by this translation class."""
 
-    extensions = {}
+    all_properties: Dict[str, PropertyDefinition] = {}
+    """All the valid properties for this translator including extensions."""
+
+    extensions: Dict[str, PropertyDefinition] = {}
     """Extension properties (`str`: `PropertyDefinition`)
 
     Some instruments have important properties beyond the standard set; this is
@@ -118,7 +143,7 @@ class MetadataTranslator:
     """
 
     @classmethod
-    def defined_in_this_class(cls, name):
+    def defined_in_this_class(cls, name: str) -> Optional[bool]:
         """Report if the specified class attribute is defined specifically in
         this class.
 
@@ -166,7 +191,7 @@ class MetadataTranslator:
         return True
 
     @classmethod
-    def _make_const_mapping(cls, property_key, constant):
+    def _make_const_mapping(cls, property_key: str, constant: Any) -> Callable:
         """Make a translator method that returns a constant value.
 
         Parameters
@@ -182,14 +207,14 @@ class MetadataTranslator:
             Function returning the constant.
         """
 
-        def constant_translator(self):
+        def constant_translator(self: MetadataTranslator) -> Any:
             return constant
 
         if property_key in cls.all_properties:
             property_doc = cls.all_properties[property_key].doc
             return_type = cls.all_properties[property_key].py_type
         else:
-            return_type = type(constant).__name__
+            return_type = type(constant)
             property_doc = f"Returns constant value for '{property_key}' property"
 
         constant_translator.__doc__ = f"""{property_doc}
@@ -203,8 +228,15 @@ class MetadataTranslator:
 
     @classmethod
     def _make_trivial_mapping(
-        cls, property_key, header_key, default=None, minimum=None, maximum=None, unit=None, checker=None
-    ):
+        cls,
+        property_key: str,
+        header_key: Union[str, Sequence[str]],
+        default: Optional[Any] = None,
+        minimum: Optional[Any] = None,
+        maximum: Optional[Any] = None,
+        unit: Optional[astropy.unit.Unit] = None,
+        checker: Optional[Callable] = None,
+    ) -> Callable:
         """Make a translator method returning a header value.
 
         The header value can be converted to a `~astropy.units.Quantity`
@@ -253,7 +285,7 @@ class MetadataTranslator:
             return_type = "str` or `numbers.Number"
             property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
 
-        def trivial_translator(self):
+        def trivial_translator(self: MetadataTranslator) -> Any:
             if unit is not None:
                 q = self.quantity_from_card(
                     header_key, unit, default=default, minimum=minimum, maximum=maximum, checker=checker
@@ -277,10 +309,9 @@ class MetadataTranslator:
                 if checker is not None:
                     try:
                         checker(self)
-                        return default
                     except Exception:
                         raise KeyError(f"Could not find {keywords} in header")
-                    value = default
+                    return default
                 elif default is not None:
                     value = default
                 else:
@@ -308,7 +339,7 @@ class MetadataTranslator:
         return trivial_translator
 
     @classmethod
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Register all subclasses with the base class and create dynamic
         translator methods.
 
@@ -399,20 +430,20 @@ class MetadataTranslator:
             if property_key not in properties:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
 
-    def __init__(self, header, filename=None):
+    def __init__(self, header: Mapping[str, Any], filename: Optional[str] = None) -> None:
         self._header = header
         self.filename = filename
-        self._used_cards = set()
+        self._used_cards: Set[str] = set()
 
         # Prefix to use for warnings about failed translations
-        self._log_prefix_cache = None
+        self._log_prefix_cache: Optional[str] = None
 
         # Cache assumes header is read-only once stored in object
-        self._translation_cache = {}
+        self._translation_cache: Dict[str, Any] = {}
 
     @classmethod
     @abstractmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -432,7 +463,9 @@ class MetadataTranslator:
         raise NotImplementedError()
 
     @classmethod
-    def can_translate_with_options(cls, header, options, filename=None):
+    def can_translate_with_options(
+        cls, header: Mapping[str, Any], options: Dict[str, Any], filename: Optional[str] = None
+    ) -> bool:
         """Helper method for `can_translate` allowing options.
 
         Parameters
@@ -466,7 +499,9 @@ class MetadataTranslator:
         return False
 
     @classmethod
-    def determine_translator(cls, header, filename=None):
+    def determine_translator(
+        cls, header: Mapping[str, Any], filename: Optional[str] = None
+    ) -> Type[MetadataTranslator]:
         """Determine a translation class by examining the header
 
         Parameters
@@ -502,7 +537,7 @@ class MetadataTranslator:
             )
 
     @classmethod
-    def translator_version(cls):
+    def translator_version(cls) -> str:
         """Return the version string for this translator class.
 
         Returns
@@ -541,7 +576,9 @@ class MetadataTranslator:
         return version
 
     @classmethod
-    def fix_header(cls, header, instrument, obsid, filename=None):
+    def fix_header(
+        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: Optional[str] = None
+    ) -> bool:
         """Apply global fixes to a supplied header.
 
         Parameters
@@ -587,7 +624,7 @@ class MetadataTranslator:
         return False
 
     @staticmethod
-    def _construct_log_prefix(obsid, filename=None):
+    def _construct_log_prefix(obsid: str, filename: Optional[str] = None) -> str:
         """Construct a log prefix string from the obsid and filename.
 
         Parameters
@@ -603,7 +640,7 @@ class MetadataTranslator:
         return obsid
 
     @property
-    def _log_prefix(self):
+    def _log_prefix(self) -> str:
         """Standard prefix that can be used for log messages to report
         useful context.
 
@@ -626,7 +663,7 @@ class MetadataTranslator:
             self._log_prefix_cache = self._construct_log_prefix(obsid, self.filename)
         return self._log_prefix_cache
 
-    def _used_these_cards(self, *args):
+    def _used_these_cards(self, *args: str) -> None:
         """Indicate that the supplied cards have been used for translation.
 
         Parameters
@@ -636,7 +673,7 @@ class MetadataTranslator:
         """
         self._used_cards.update(set(args))
 
-    def cards_used(self):
+    def cards_used(self) -> FrozenSet[str]:
         """Cards used during metadata extraction.
 
         Returns
@@ -647,7 +684,9 @@ class MetadataTranslator:
         return frozenset(self._used_cards)
 
     @staticmethod
-    def validate_value(value, default, minimum=None, maximum=None):
+    def validate_value(
+        value: float, default: float, minimum: Optional[float] = None, maximum: Optional[float] = None
+    ) -> float:
         """Validate the supplied value, returning a new value if out of range
 
         Parameters
@@ -680,7 +719,7 @@ class MetadataTranslator:
         return value
 
     @staticmethod
-    def is_keyword_defined(header, keyword):
+    def is_keyword_defined(header: Mapping[str, Any], keyword: Optional[str]) -> bool:
         """Return `True` if the value associated with the named keyword is
         present in the supplied header and defined.
 
@@ -708,7 +747,7 @@ class MetadataTranslator:
 
         return True
 
-    def resource_root(self):
+    def resource_root(self) -> Tuple[Optional[str], Optional[str]]:
         """Package resource to use to locate correction resources within an
         installed package.
 
@@ -723,7 +762,7 @@ class MetadataTranslator:
         """
         return (self.default_resource_package, self.default_resource_root)
 
-    def search_paths(self):
+    def search_paths(self) -> List[str]:
         """Search paths to use when searching for header fix up correction
         files.
 
@@ -738,10 +777,10 @@ class MetadataTranslator:
         Uses the classes ``default_search_path`` property if defined.
         """
         if self.default_search_path is not None:
-            return [self.default_search_path]
+            return [p for p in self.default_search_path]
         return []
 
-    def is_key_ok(self, keyword):
+    def is_key_ok(self, keyword: Optional[str]) -> bool:
         """Return `True` if the value associated with the named keyword is
         present in this header and defined.
 
@@ -757,7 +796,7 @@ class MetadataTranslator:
         """
         return self.is_keyword_defined(self._header, keyword)
 
-    def are_keys_ok(self, keywords):
+    def are_keys_ok(self, keywords: Iterable[str]) -> bool:
         """Are the supplied keys all present and defined?
 
         Parameters
@@ -775,7 +814,15 @@ class MetadataTranslator:
                 return False
         return True
 
-    def quantity_from_card(self, keywords, unit, default=None, minimum=None, maximum=None, checker=None):
+    def quantity_from_card(
+        self,
+        keywords: Union[str, Sequence[str]],
+        unit: u.Unit,
+        default: Optional[float] = None,
+        minimum: Optional[float] = None,
+        maximum: Optional[float] = None,
+        checker: Optional[Callable] = None,
+    ) -> u.Quantity:
         """Calculate a Astropy Quantity from a header card and a unit.
 
         Parameters
@@ -812,8 +859,8 @@ class MetadataTranslator:
         KeyError
             The supplied header key is not present.
         """
-        keywords = keywords if isinstance(keywords, list) else [keywords]
-        for k in keywords:
+        keyword_list = [keywords] if isinstance(keywords, str) else list(keywords)
+        for k in keyword_list:
             if self.is_key_ok(k):
                 value = self._header[k]
                 keyword = k
@@ -838,7 +885,7 @@ class MetadataTranslator:
             value = self.validate_value(value, default, maximum=maximum, minimum=minimum)
         return u.Quantity(value, unit=unit)
 
-    def _join_keyword_values(self, keywords, delim="+"):
+    def _join_keyword_values(self, keywords: Iterable[str], delim: str = "+") -> str:
         """Join values of all defined keywords with the specified delimiter.
 
         Parameters
@@ -869,7 +916,7 @@ class MetadataTranslator:
         return joined
 
     @cache_translation
-    def to_detector_unique_name(self):
+    def to_detector_unique_name(self) -> str:
         """Return a unique name for the detector.
 
         Base class implementation attempts to combine ``detector_name`` with
@@ -901,7 +948,7 @@ class MetadataTranslator:
         return name
 
     @cache_translation
-    def to_exposure_group(self):
+    def to_exposure_group(self) -> Optional[str]:
         """Return the group label associated with this exposure.
 
         Base class implementation returns the ``exposure_id`` in string
@@ -914,12 +961,14 @@ class MetadataTranslator:
         """
         exposure_id = self.to_exposure_id()
         if exposure_id is None:
-            return None
+            # mypy does not think this can ever happen but play it safe
+            # with subclasses.
+            return None  # type: ignore
         else:
             return str(exposure_id)
 
     @cache_translation
-    def to_observation_reason(self):
+    def to_observation_reason(self) -> str:
         """Return the reason this observation was taken.
 
         Base class implementation returns the ``science`` if the
@@ -937,7 +986,7 @@ class MetadataTranslator:
         return "unknown"
 
     @cache_translation
-    def to_observing_day(self):
+    def to_observing_day(self) -> int:
         """Return the YYYYMMDD integer corresponding to the observing day.
 
         Base class implementation uses the TAI date of the start of the
@@ -957,7 +1006,7 @@ class MetadataTranslator:
         return int(datetime_begin.tai.strftime("%Y%m%d"))
 
     @cache_translation
-    def to_observation_counter(self):
+    def to_observation_counter(self) -> int:
         """Return an integer corresponding to how this observation relates
         to other observations.
 
@@ -975,7 +1024,9 @@ class MetadataTranslator:
         return 0
 
     @classmethod
-    def determine_translatable_headers(cls, filename, primary=None):
+    def determine_translatable_headers(
+        cls, filename: str, primary: Optional[MutableMapping[str, Any]] = None
+    ) -> Iterator[MutableMapping[str, Any]]:
         """Given a file return all the headers usable for metadata translation.
 
         This method can optionally be given a header from the file.  This
@@ -1036,10 +1087,14 @@ class MetadataTranslator:
             from .file_helpers import read_basic_metadata_from_file
 
             # Merge primary and secondary header if they exist.
-            yield read_basic_metadata_from_file(filename, -1)
+            header = read_basic_metadata_from_file(filename, -1)
+            assert header is not None  # for mypy since can_raise=True
+            yield header
 
 
-def _make_abstract_translator_method(property, doc, return_typedoc, return_type):
+def _make_abstract_translator_method(
+    property: str, doc: str, return_typedoc: str, return_type: Type
+) -> Callable:
     """Create a an abstract translation method for this property.
 
     Parameters
@@ -1059,7 +1114,7 @@ def _make_abstract_translator_method(property, doc, return_typedoc, return_type)
         Translator method for this property.
     """
 
-    def to_property(self):
+    def to_property(self: MetadataTranslator) -> None:
         raise NotImplementedError(f"Translator for '{property}' undefined.")
 
     to_property.__doc__ = f"""Return value of {property} from headers.
@@ -1117,7 +1172,9 @@ class StubTranslator(MetadataTranslator):
     pass
 
 
-def _make_forwarded_stub_translator_method(cls, property, doc, return_typedoc, return_type):
+def _make_forwarded_stub_translator_method(
+    cls: Type[MetadataTranslator], property: str, doc: str, return_typedoc: str, return_type: Type
+) -> Callable:
     """Create a stub translation method for this property that calls the
     base method and catches `NotImplementedError`.
 
@@ -1142,7 +1199,7 @@ def _make_forwarded_stub_translator_method(cls, property, doc, return_typedoc, r
     """
     method = f"to_{property}"
 
-    def to_stub(self):
+    def to_stub(self: MetadataTranslator) -> Any:
         parent = getattr(super(cls, self), method, None)
         try:
             if parent is not None:
@@ -1178,6 +1235,6 @@ for name, description in PROPERTIES.items():
         StubTranslator,
         f"to_{name}",
         _make_forwarded_stub_translator_method(
-            StubTranslator, name, definition.doc, definition.str_type, definition.py_type
+            StubTranslator, name, definition.doc, definition.str_type, definition.py_type  # type: ignore
         ),
     )

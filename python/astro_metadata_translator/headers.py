@@ -11,6 +11,8 @@
 
 """Code to support header manipulation operations."""
 
+from __future__ import annotations
+
 __all__ = ("merge_headers", "fix_header")
 
 import copy
@@ -21,6 +23,7 @@ import os
 import posixpath
 from collections import Counter
 from collections.abc import Mapping
+from typing import IO, Any, List, MutableMapping, Optional, Sequence, Tuple, Type, Union
 
 import pkg_resources
 import yaml
@@ -40,7 +43,13 @@ FIXUP_SENTINEL = HIERARCH + " MODIFIED"
 """Keyword to add to header when header has been fixed."""
 
 
-def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
+def merge_headers(
+    headers: Sequence[MutableMapping[str, Any]],
+    mode: str = "overwrite",
+    sort: bool = False,
+    first: Optional[Sequence[str]] = None,
+    last: Optional[Sequence[str]] = None,
+) -> MutableMapping[str, Any]:
     """Merge multiple headers into a single dict.
 
     Given a list of dict-like data headers, combine them following the
@@ -118,7 +127,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
 
     if sort:
 
-        def key_func(hdr):
+        def key_func(hdr: Mapping[str, Any]) -> Any:
             translator_class = None
             try:
                 translator_class = MetadataTranslator.determine_translator(hdr)
@@ -234,7 +243,11 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     #
     if mode != "append":
 
-        def retain_value(to_receive, to_retain, sources):
+        def retain_value(
+            to_receive: MutableMapping[str, Any],
+            to_retain: Optional[Sequence[str]],
+            sources: Tuple[Mapping[str, Any], ...],
+        ) -> None:
             if to_retain:
                 for k in to_retain:
                     # Look for values until we find one
@@ -250,7 +263,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     return merged
 
 
-def _read_yaml(fh, msg):
+def _read_yaml(fh: IO[bytes], msg: str) -> Optional[Mapping[str, Any]]:
     """Read YAML from file descriptor.
 
     Parameters
@@ -281,7 +294,9 @@ def _read_yaml(fh, msg):
     return content
 
 
-def _find_from_file(header, paths, target_file):
+def _find_from_file(
+    header: MutableMapping[str, Any], paths: Sequence[str], target_file: str
+) -> Optional[str]:
     """Search file system for matching correction files.
 
     Parameters
@@ -302,7 +317,7 @@ def _find_from_file(header, paths, target_file):
     for p in paths:
         correction_file = os.path.join(p, target_file)
         if os.path.exists(correction_file):
-            with open(correction_file) as fh:
+            with open(correction_file, "rb") as fh:
                 log.debug("Applying header corrections from file %s", correction_file)
                 corrections = _read_yaml(fh, f"file {correction_file}")
 
@@ -316,7 +331,9 @@ def _find_from_file(header, paths, target_file):
     return None
 
 
-def _find_from_resource(header, package, resource_root, target_file):
+def _find_from_resource(
+    header: MutableMapping[str, Any], package: Optional[str], resource_root: Optional[str], target_file: str
+) -> Optional[str]:
     """Search package resource for correction information.
 
     Parameters
@@ -351,7 +368,12 @@ def _find_from_resource(header, package, resource_root, target_file):
     return None
 
 
-def fix_header(header, search_path=None, translator_class=None, filename=None):
+def fix_header(
+    header: MutableMapping[str, Any],
+    search_path: Optional[Union[str, Sequence[str]]] = None,
+    translator_class: Optional[Type[MetadataTranslator]] = None,
+    filename: Optional[str] = None,
+) -> bool:
     """Update, in place, the supplied header with known corrections.
 
     Parameters
@@ -446,7 +468,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     log.debug("Checking for header correction file named %s", target_file)
 
     # Work out the search path
-    paths = []
+    paths: List[str] = []
     if search_path is not None:
         if isinstance(search_path, str):
             # Allow a single path to be given as a string

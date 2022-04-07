@@ -14,6 +14,8 @@
 Read file metadata from the specified files and report the translated content.
 """
 
+from __future__ import annotations
+
 __all__ = ("main", "process_files")
 
 import argparse
@@ -21,6 +23,7 @@ import importlib
 import logging
 import sys
 import traceback
+from typing import IO, List, Sequence, Tuple
 
 import yaml
 
@@ -58,7 +61,7 @@ TABLE_COLUMNS = (
 )
 
 
-def build_argparser():
+def build_argparser() -> argparse.ArgumentParser:
     """Construct an argument parser for the ``translate_header.py`` script.
 
     Returns
@@ -139,14 +142,14 @@ def build_argparser():
 
 
 def read_file(
-    file,
-    hdrnum,
-    print_trace,
-    outstream=sys.stdout,
-    errstream=sys.stderr,
-    output_mode="verbose",
-    write_heading=False,
-):
+    file: str,
+    hdrnum: int,
+    print_trace: bool,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+    output_mode: str = "verbose",
+    write_heading: bool = False,
+) -> bool:
     """Read the specified file and process it.
 
     Parameters
@@ -266,8 +269,14 @@ def read_file(
 
 
 def process_files(
-    files, regex, hdrnum, print_trace, outstream=sys.stdout, errstream=sys.stderr, output_mode="auto"
-):
+    files: Sequence[str],
+    regex: str,
+    hdrnum: int,
+    print_trace: bool,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+    output_mode: str = "auto",
+) -> Tuple[List[str], List[str]]:
     """Read and translate metadata from the specified files.
 
     Parameters
@@ -323,7 +332,7 @@ def process_files(
     return okay, failed
 
 
-def main():
+def main() -> int:
     """Read metadata from the supplied files and translate the content to
     standard form.
 

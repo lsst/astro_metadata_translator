@@ -11,6 +11,8 @@
 
 """Support functions for script implementations."""
 
+from __future__ import annotations
+
 __all__ = ("find_files", "read_basic_metadata_from_file", "read_file_info")
 
 import json
@@ -18,6 +20,7 @@ import os
 import re
 import sys
 import traceback
+from typing import IO, Any, Iterable, List, MutableMapping, Optional, Union
 
 from .headers import merge_headers
 from .observationInfo import ObservationInfo
@@ -26,9 +29,11 @@ from .tests import read_test_file
 # Prefer afw over Astropy
 try:
     import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
-    from lsst.afw.fits import readMetadata
+    from lsst.afw.fits import FitsError, readMetadata
 
-    def _read_fits_metadata(file, hdu, can_raise=False):
+    def _read_fits_metadata(
+        file: str, hdu: int, can_raise: bool = False
+    ) -> Optional[MutableMapping[str, Any]]:
         """Read a FITS header using afw.
 
         Parameters
@@ -54,7 +59,7 @@ try:
         """
         try:
             return readMetadata(file, hdu=hdu)
-        except lsst.afw.fits.FitsError as e:
+        except FitsError as e:
             if can_raise:
                 # Try to convert a basic fits error code
                 if "(104)" in str(e):
@@ -65,7 +70,9 @@ try:
 except ImportError:
     from astropy.io import fits
 
-    def _read_fits_metadata(file, hdu, can_raise=False):
+    def _read_fits_metadata(
+        file: str, hdu: int, can_raise: bool = False
+    ) -> Optional[MutableMapping[str, Any]]:
         """Read a FITS header using astropy."""
 
         # For detailed docstrings see the afw implementation above
@@ -83,7 +90,7 @@ except ImportError:
         return header
 
 
-def find_files(files, regex):
+def find_files(files: Iterable[str], regex: str) -> List[str]:
     """Find files for processing.
 
     Parameters
@@ -93,6 +100,11 @@ def find_files(files, regex):
     regex : `str`
         Regular expression string used to filter files when a directory is
         scanned.
+
+    Returns
+    -------
+    found_files : `list` of `str`
+        The files that were found.
     """
     file_regex = re.compile(regex)
     found_files = []
@@ -111,7 +123,9 @@ def find_files(files, regex):
     return found_files
 
 
-def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=True):
+def read_basic_metadata_from_file(
+    file: str, hdrnum: int, errstream: IO = sys.stderr, can_raise: bool = True
+) -> Optional[MutableMapping[str, Any]]:
     """Read a raw header from a file, merging if necessary
 
     Parameters
@@ -174,14 +188,14 @@ def read_basic_metadata_from_file(file, hdrnum, errstream=sys.stderr, can_raise=
 
 
 def read_file_info(
-    file,
-    hdrnum,
-    print_trace=None,
-    content_mode="translated",
-    content_type="simple",
-    outstream=sys.stdout,
-    errstream=sys.stderr,
-):
+    file: str,
+    hdrnum: int,
+    print_trace: Optional[bool] = None,
+    content_mode: str = "translated",
+    content_type: str = "simple",
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+) -> Optional[Union[str, MutableMapping[str, Any], ObservationInfo]]:
     """Read information from file
 
     Parameters

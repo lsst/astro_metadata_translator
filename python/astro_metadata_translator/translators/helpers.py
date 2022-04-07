@@ -22,6 +22,8 @@ translation classes without using `MetadataTranslator` properties.
 
 """
 
+from __future__ import annotations
+
 __all__ = (
     "to_location_via_telescope_name",
     "is_non_science",
@@ -30,14 +32,20 @@ __all__ = (
 )
 
 import logging
+from typing import TYPE_CHECKING, Optional, Sequence, Set, Tuple
 
 import astropy.units as u
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 
+if TYPE_CHECKING:
+    import astropy.units
+
+    from ..translator import MetadataTranslator
+
 log = logging.getLogger(__name__)
 
 
-def to_location_via_telescope_name(self):
+def to_location_via_telescope_name(self: MetadataTranslator) -> EarthLocation:
     """Calculate the observatory location via the telescope name.
 
     Returns
@@ -48,7 +56,7 @@ def to_location_via_telescope_name(self):
     return EarthLocation.of_site(self.to_telescope())
 
 
-def is_non_science(self):
+def is_non_science(self: MetadataTranslator) -> None:
     """Raise an exception if this is a science observation.
 
     Raises
@@ -61,7 +69,7 @@ def is_non_science(self):
     return
 
 
-def altitude_from_zenith_distance(zd):
+def altitude_from_zenith_distance(zd: astropy.units.Quantity) -> astropy.units.Quantity:
     """Convert zenith distance to altitude
 
     Parameters
@@ -77,7 +85,12 @@ def altitude_from_zenith_distance(zd):
     return 90.0 * u.deg - zd
 
 
-def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
+def tracking_from_degree_headers(
+    self: MetadataTranslator,
+    radecsys: Sequence[str],
+    radecpairs: Tuple[Tuple[str, str], ...],
+    unit: astropy.units.Unit = u.deg,
+) -> SkyCoord:
     """Calculate the tracking coordinates from lists of headers.
 
     Parameters
@@ -132,7 +145,12 @@ def tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg):
     return None
 
 
-def altaz_from_degree_headers(self, altazpairs, obstime, is_zd=None):
+def altaz_from_degree_headers(
+    self: MetadataTranslator,
+    altazpairs: Tuple[Tuple[str, str], ...],
+    obstime: astropy.time.Time,
+    is_zd: Optional[Set[str]] = None,
+) -> AltAz:
     """Calculate the altitude/azimuth coordinates from lists of headers.
 
     If the altitude is found but is greater than 90 deg, it will be returned

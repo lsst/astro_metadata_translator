@@ -11,9 +11,12 @@
 
 """Metadata translation code for SDSS FITS headers"""
 
+from __future__ import annotations
+
 __all__ = ("SdssTranslator",)
 
 import posixpath
+from typing import TYPE_CHECKING, Any, MutableMapping, Optional
 
 import astropy.units as u
 from astropy.coordinates import AltAz, Angle, EarthLocation
@@ -21,6 +24,10 @@ from astropy.coordinates import AltAz, Angle, EarthLocation
 from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
 from .helpers import tracking_from_degree_headers
+
+if TYPE_CHECKING:
+    import astropy.coordinates
+    import astropy.time
 
 
 class SdssTranslator(FitsTranslator):
@@ -98,7 +105,7 @@ class SdssTranslator(FitsTranslator):
     }
 
     @classmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -127,7 +134,7 @@ class SdssTranslator(FitsTranslator):
         return False
 
     @cache_translation
-    def to_detector_unique_name(self):
+    def to_detector_unique_name(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         if self.is_key_ok("CAMCOL"):
             return self.to_physical_filter() + str(self._header["CAMCOL"])
@@ -135,12 +142,12 @@ class SdssTranslator(FitsTranslator):
             raise ValueError(f"{self._log_prefix}: CAMCOL key is not definded")
 
     @cache_translation
-    def to_detector_num(self):
+    def to_detector_num(self) -> int:
         # Docstring will be inherited. Property defined in properties.py
         return self.detector_name_id_map[self.to_detector_unique_name()]
 
     @cache_translation
-    def to_observation_id(self):
+    def to_observation_id(self) -> str:
         """Calculate the observation ID.
 
         Returns
@@ -152,7 +159,7 @@ class SdssTranslator(FitsTranslator):
         return " ".join([str(self._header[el]) for el in ["RUN", "CAMCOL", "FILTER", "FRAME"]])
 
     @cache_translation
-    def to_datetime_begin(self):
+    def to_datetime_begin(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
         value = self._from_fits_date_string(
@@ -162,12 +169,12 @@ class SdssTranslator(FitsTranslator):
         return value
 
     @cache_translation
-    def to_datetime_end(self):
+    def to_datetime_end(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
         return self.to_datetime_begin() + self.to_exposure_time()
 
     @cache_translation
-    def to_location(self):
+    def to_location(self) -> EarthLocation:
         """Calculate the observatory location.
 
         Returns
@@ -182,7 +189,7 @@ class SdssTranslator(FitsTranslator):
         return value
 
     @cache_translation
-    def to_observation_type(self):
+    def to_observation_type(self) -> str:
         """Calculate the observation type.
 
         Returns
@@ -198,14 +205,14 @@ class SdssTranslator(FitsTranslator):
         return obstype
 
     @cache_translation
-    def to_tracking_radec(self):
+    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord:
         # Docstring will be inherited. Property defined in properties.py
         radecsys = ("RADECSYS",)
         radecpairs = (("RA", "DEC"),)
         return tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg)
 
     @cache_translation
-    def to_altaz_begin(self):
+    def to_altaz_begin(self) -> AltAz:
         # Docstring will be inherited. Property defined in properties.py
         try:
             az = self._header["AZ"]
@@ -225,14 +232,15 @@ class SdssTranslator(FitsTranslator):
             raise (e)
 
     @cache_translation
-    def to_boresight_airmass(self):
+    def to_boresight_airmass(self) -> Optional[float]:
         # Docstring will be inherited. Property defined in properties.py
         altaz = self.to_altaz_begin()
         if altaz is not None:
             return altaz.secz.value  # This is an estimate
+        return None
 
     @cache_translation
-    def to_detector_exposure_id(self):
+    def to_detector_exposure_id(self) -> Optional[int]:
         # Docstring will be inherited. Property defined in properties.py
         try:
             frame_field_map = dict(r=0, i=2, u=4, z=6, g=8)
@@ -249,7 +257,7 @@ class SdssTranslator(FitsTranslator):
         return ((int(run) * 10 + filter_id_map[filt]) * 10 + int(camcol)) * 10000 + int(field)
 
     @cache_translation
-    def to_detector_group(self):
+    def to_detector_group(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         if self.is_key_ok("CAMCOL"):
             return str(self._header["CAMCOL"])

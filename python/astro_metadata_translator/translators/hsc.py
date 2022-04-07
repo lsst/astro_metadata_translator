@@ -11,11 +11,14 @@
 
 """Metadata translation code for HSC FITS headers"""
 
+from __future__ import annotations
+
 __all__ = ("HscTranslator",)
 
 import logging
 import posixpath
 import re
+from typing import Any, MutableMapping, Optional
 
 import astropy.units as u
 from astropy.coordinates import Angle
@@ -175,7 +178,7 @@ class HscTranslator(SuprimeCamTranslator):
     ]
 
     @classmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -206,7 +209,7 @@ class HscTranslator(SuprimeCamTranslator):
         return False
 
     @cache_translation
-    def to_exposure_id(self):
+    def to_exposure_id(self) -> int:
         """Calculate unique exposure integer for this observation
 
         Returns
@@ -240,7 +243,7 @@ class HscTranslator(SuprimeCamTranslator):
         return visit + 1000000 * (ord(letter) - ord("A"))
 
     @cache_translation
-    def to_boresight_rotation_angle(self):
+    def to_boresight_rotation_angle(self) -> Angle:
         # Docstring will be inherited. Property defined in properties.py
         # Rotation angle formula determined empirically from visual inspection
         # of HSC images.  See DM-9111.
@@ -249,7 +252,7 @@ class HscTranslator(SuprimeCamTranslator):
         return angle
 
     @cache_translation
-    def to_detector_num(self):
+    def to_detector_num(self) -> int:
         """Calculate the detector number.
 
         Focus CCDs were numbered incorrectly in the readout software during
@@ -273,18 +276,18 @@ class HscTranslator(SuprimeCamTranslator):
         return ccd
 
     @cache_translation
-    def to_detector_exposure_id(self):
+    def to_detector_exposure_id(self) -> int:
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 200 + self.to_detector_num()
 
     @cache_translation
-    def to_detector_group(self):
+    def to_detector_group(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         unique = self.to_detector_unique_name()
         return unique.split("_")[0]
 
     @cache_translation
-    def to_detector_unique_name(self):
+    def to_detector_unique_name(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         # Mapping from number to unique name is defined solely in camera
         # geom files.
@@ -293,7 +296,7 @@ class HscTranslator(SuprimeCamTranslator):
         return self._DETECTOR_NUM_TO_UNIQUE_NAME[num]
 
     @cache_translation
-    def to_detector_name(self):
+    def to_detector_name(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         # Name is defined from unique name
         unique = self.to_detector_unique_name()

@@ -11,7 +11,11 @@
 
 """Metadata translation code for standard FITS headers"""
 
+from __future__ import annotations
+
 __all__ = ("FitsTranslator",)
+
+from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Union
 
 import astropy.units as u
 from astropy.coordinates import EarthLocation
@@ -33,10 +37,12 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _trivial_map = dict(instrument="INSTRUME", telescope="TELESCOP")
+    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = dict(
+        instrument="INSTRUME", telescope="TELESCOP"
+    )
 
     @classmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -70,7 +76,9 @@ class FitsTranslator(MetadataTranslator):
         return instrument == cls.supported_instrument
 
     @classmethod
-    def _from_fits_date_string(cls, date_str, scale="utc", time_str=None):
+    def _from_fits_date_string(
+        cls, date_str: str, scale: str = "utc", time_str: Optional[str] = None
+    ) -> Time:
         """Parse standard FITS ISO-style date string and return time object
 
         Parameters
@@ -96,7 +104,9 @@ class FitsTranslator(MetadataTranslator):
 
         return Time(date_str, format="isot", scale=scale)
 
-    def _from_fits_date(self, date_key, mjd_key=None, scale=None):
+    def _from_fits_date(
+        self, date_key: str, mjd_key: Optional[str] = None, scale: Optional[str] = None
+    ) -> Time:
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
@@ -136,6 +146,7 @@ class FitsTranslator(MetadataTranslator):
             value = self._from_fits_date_string(date_str, scale=scale)
             used.append(date_key)
         elif self.is_key_ok(mjd_key):
+            assert mjd_key is not None  # for mypy (is_key_ok checks this)
             value = Time(self._header[mjd_key], scale=scale, format="mjd")
             used.append(mjd_key)
         else:
@@ -144,7 +155,7 @@ class FitsTranslator(MetadataTranslator):
         return value
 
     @cache_translation
-    def to_datetime_begin(self):
+    def to_datetime_begin(self) -> Time:
         """Calculate start time of observation.
 
         Uses FITS standard ``MJD-OBS`` or ``DATE-OBS``, in conjunction
@@ -158,7 +169,7 @@ class FitsTranslator(MetadataTranslator):
         return self._from_fits_date("DATE-OBS", mjd_key="MJD-OBS")
 
     @cache_translation
-    def to_datetime_end(self):
+    def to_datetime_end(self) -> Time:
         """Calculate end time of observation.
 
         Uses FITS standard ``MJD-END`` or ``DATE-END``, in conjunction
@@ -172,7 +183,7 @@ class FitsTranslator(MetadataTranslator):
         return self._from_fits_date("DATE-END", mjd_key="MJD-END")
 
     @cache_translation
-    def to_location(self):
+    def to_location(self) -> EarthLocation:
         """Calculate the observatory location.
 
         Uses FITS standard ``OBSGEO-`` headers.

@@ -11,6 +11,8 @@
 
 """Metadata translation code for Subaru telescope"""
 
+from __future__ import annotations
+
 __all__ = ("SubaruTranslator",)
 
 from astropy.coordinates import EarthLocation
@@ -23,7 +25,7 @@ class SubaruTranslator(FitsTranslator):
     """Metadata translator for Subaru telescope headers."""
 
     @cache_translation
-    def to_location(self):
+    def to_location(self) -> EarthLocation:
         """Returns the location of the Subaru telescope on Mauna Kea.
 
         Hardcodes the location and does not look at any headers.
@@ -36,7 +38,7 @@ class SubaruTranslator(FitsTranslator):
         return EarthLocation.from_geodetic(-155.476667, 19.825556, 4139.0)
 
     @cache_translation
-    def to_observation_counter(self):
+    def to_observation_counter(self) -> int:
         """Return the lifetime exposure number.
 
         Returns

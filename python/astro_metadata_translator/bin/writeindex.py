@@ -9,12 +9,15 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+from __future__ import annotations
+
 __all__ = "write_index_files"
 
 import json
 import logging
 import os
 import sys
+from typing import IO, List, MutableMapping, Optional, Sequence, Tuple
 
 from ..file_helpers import find_files
 from ..indexing import index_files
@@ -23,15 +26,15 @@ log = logging.getLogger(__name__)
 
 
 def write_index_files(
-    files,
-    regex,
-    hdrnum,
-    print_trace,
-    content_mode="translated",
-    outpath=None,
-    outstream=sys.stdout,
-    errstream=sys.stderr,
-):
+    files: Sequence[str],
+    regex: str,
+    hdrnum: int,
+    print_trace: bool,
+    content_mode: str = "translated",
+    outpath: Optional[str] = None,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+) -> Tuple[List[str], List[str]]:
     """Process each file and create JSON index file.
 
     The index file will have common information in the toplevel.
@@ -87,7 +90,7 @@ def write_index_files(
 
     failed = []
     okay = []
-    files_per_directory = {}
+    files_per_directory: MutableMapping[str, List[str]] = {}
 
     # Group each file by directory if no explicit output path
     if outpath is None:

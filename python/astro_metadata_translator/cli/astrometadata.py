@@ -9,11 +9,14 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+from __future__ import annotations
+
 __all__ = ("main",)
 
 import importlib
 import logging
 import os
+from typing import Sequence
 
 import click
 
@@ -73,7 +76,7 @@ content_option = click.option(
     " python module names).",
 )
 @click.pass_context
-def main(ctx, log_level, traceback, packages):
+def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str]) -> None:
     ctx.ensure_object(dict)
 
     logging.basicConfig(level=log_level)
@@ -81,13 +84,13 @@ def main(ctx, log_level, traceback, packages):
     # Traceback needs to be known to subcommands
     ctx.obj["TRACEBACK"] = traceback
 
-    packages = set(packages)
+    packages_set = set(packages)
     if PACKAGES_VAR in os.environ:
         new_packages = os.environ[PACKAGES_VAR].split(":")
-        packages.update(new_packages)
+        packages_set.update(new_packages)
 
     # Process import requests
-    for m in packages:
+    for m in packages_set:
         try:
             importlib.import_module(m)
         except (ImportError, ModuleNotFoundError):
@@ -114,7 +117,9 @@ def main(ctx, log_level, traceback, packages):
 )
 @regex_option
 @click.pass_context
-def translate(ctx, files, quiet, hdrnum, mode, regex):
+def translate(
+    ctx: click.Context, files: Sequence[str], quiet: bool, hdrnum: int, mode: str, regex: str
+) -> None:
 
     # For quiet mode we want to translate everything but report nothing.
     if quiet:
@@ -147,7 +152,7 @@ def translate(ctx, files, quiet, hdrnum, mode, regex):
 )
 @regex_option
 @click.pass_context
-def dump(ctx, files, hdrnum, mode, regex):
+def dump(ctx: click.Context, files: Sequence[str], hdrnum: int, mode: str, regex: str) -> None:
 
     okay, failed = translate_header(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
 
@@ -167,7 +172,7 @@ def dump(ctx, files, hdrnum, mode, regex):
 @regex_option
 @content_option
 @click.pass_context
-def write_sidecar(ctx, files, hdrnum, regex, content):
+def write_sidecar(ctx: click.Context, files: Sequence[str], hdrnum: int, regex: str, content: str) -> None:
     okay, failed = write_sidecar_files(files, regex, hdrnum, content, ctx.obj["TRACEBACK"])
 
     if failed:
@@ -194,7 +199,9 @@ def write_sidecar(ctx, files, hdrnum, regex, content):
     " Default is to write one index per directory where files are located.",
 )
 @click.pass_context
-def write_index(ctx, files, hdrnum, regex, content, outpath):
+def write_index(
+    ctx: click.Context, files: Sequence[str], hdrnum: int, regex: str, content: str, outpath: str
+) -> None:
     okay, failed = write_index_files(
         files, regex, hdrnum, ctx.obj["TRACEBACK"], content_mode=content, outpath=outpath
     )
