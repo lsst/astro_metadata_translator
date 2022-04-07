@@ -47,7 +47,10 @@ class DummyTranslator(StubTranslator):
 class ExtensionsTestCase(unittest.TestCase):
     def setUp(self):
         self.header = dict(INSTRUME="dummy")
-        self.obsinfo = ObservationInfo(self.header)
+        # The test translator is incomplete so it will issue warnings
+        # about missing translations. Catch them.
+        with self.assertWarns(UserWarning):
+            self.obsinfo = ObservationInfo(self.header)
 
     def assert_observation_info(self, obsinfo):
         """Check that the `ObservationInfo` is as expected"""
