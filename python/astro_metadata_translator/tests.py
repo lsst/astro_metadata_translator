@@ -9,17 +9,20 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+from __future__ import annotations
+
 __all__ = ("read_test_file", "MetadataAssertHelper")
 
-import astropy.units as u
 import os
 import pickle
-import yaml
-from collections import OrderedDict
-from astropy.time import Time
-import astropy.utils.exceptions
 import warnings
+from typing import TYPE_CHECKING, Any, Dict, MutableMapping, NoReturn, Optional, Type
+
+import astropy.units as u
+import astropy.utils.exceptions
+import yaml
 from astropy.io.fits import Header
+from astropy.time import Time
 
 from astro_metadata_translator import ObservationInfo
 
@@ -32,16 +35,16 @@ except ImportError:
 
 # For YAML >= 5.1 need a different Loader for the constructor
 try:
-    Loader = yaml.FullLoader
+    Loader: Optional[Type] = yaml.FullLoader
 except AttributeError:
     Loader = yaml.Loader
 
 
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
 # we can use if daf_base is not available.
-def pl_constructor(loader, node):
+def pl_constructor(loader: yaml.Loader, node: yaml.Node) -> Any:
     """Construct an OrderedDict from a YAML file containing a PropertyList."""
-    pl = OrderedDict()
+    pl: Dict[str, Any] = {}
     yield pl
     state = loader.construct_sequence(node, deep=True)
     for key, dtype, value, comment in state:
@@ -56,10 +59,10 @@ def pl_constructor(loader, node):
 
 
 if daf_base is None:
-    yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor, Loader=Loader)
+    yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor, Loader=Loader)  # type: ignore
 
 
-def read_test_file(filename, dir=None):
+def read_test_file(filename: str, dir: Optional[str] = None) -> MutableMapping[str, Any]:
     """Read the named test file relative to the location of this helper
 
     Parameters
@@ -90,7 +93,38 @@ class MetadataAssertHelper:
     translations.
     """
 
-    def assertCoordinatesConsistent(self, obsinfo, max_sep=1.0, amdelta=0.01):  # noqa: N802
+    # This class is assumed to be combined with unittest.TestCase but mypy
+    # does not know this. We need to teach mypy about the APIs we are using.
+    if TYPE_CHECKING:
+
+        def assertAlmostEqual(  # noqa: N802
+            self,
+            a: float,
+            b: float,
+            places: Optional[int] = None,
+            msg: Optional[str] = None,
+            delta: Optional[float] = None,
+        ) -> None:
+            pass
+
+        def assertIsNotNone(self, a: Any) -> None:  # noqa: N802
+            pass
+
+        def assertEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+            pass
+
+        def assertLess(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+            pass
+
+        def assertLessEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+            pass
+
+        def fail(self, msg: str) -> NoReturn:
+            pass
+
+    def assertCoordinatesConsistent(  # noqa: N802
+        self, obsinfo: ObservationInfo, max_sep: float = 1.0, amdelta: float = 0.01
+    ) -> None:
         """Check that SkyCoord, AltAz, and airmass are self consistent.
 
         Parameters
@@ -125,8 +159,14 @@ class MetadataAssertHelper:
             sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
 
-    def assertObservationInfoFromYaml(self, file, dir=None, check_wcs=True,  # noqa: N802
-                                      wcs_params=None, **kwargs):
+    def assertObservationInfoFromYaml(  # noqa: N802
+        self,
+        file: str,
+        dir: Optional[str] = None,
+        check_wcs: bool = True,
+        wcs_params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
         """Check contents of an ObservationInfo.
 
         Parameters
@@ -161,14 +201,20 @@ class MetadataAssertHelper:
 
         for hdr in (header, astropy_header):
             try:
-                self.assertObservationInfo(header, filename=file, check_wcs=check_wcs,
-                                           wcs_params=wcs_params, **kwargs)
+                self.assertObservationInfo(
+                    header, filename=file, check_wcs=check_wcs, wcs_params=wcs_params, **kwargs
+                )
             except AssertionError as e:
-                raise AssertionError(f"ObservationInfo derived from {type(hdr)} "
-                                     "type is inconsistent.") from e
+                raise AssertionError(f"ObservationInfo derived from {type(hdr)} type is inconsistent.") from e
 
-    def assertObservationInfo(self, header, filename=None, check_wcs=True,  # noqa: N802
-                              wcs_params=None, **kwargs):
+    def assertObservationInfo(  # noqa: N802
+        self,
+        header: MutableMapping[str, Any],
+        filename: Optional[str] = None,
+        check_wcs: bool = True,
+        wcs_params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
         """Check contents of an ObservationInfo.
 
         Parameters
@@ -223,7 +269,7 @@ class MetadataAssertHelper:
         # to work around the fact that (as of astropy 3.1) adding 0.0 seconds
         # to a Time results in a new Time object that is a few picoseconds in
         # the past.
-        def _format_date_for_testing(date):
+        def _format_date_for_testing(date: Optional[Time]) -> Optional[Time]:
             if date is not None:
                 date.format = "isot"
                 date.precision = 9
@@ -237,8 +283,7 @@ class MetadataAssertHelper:
         self.assertLessEqual(datetime_begin, datetime_end)
 
         # Check that exposure time is not outside datetime_end
-        self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time,
-                             obsinfo.datetime_end)
+        self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time, obsinfo.datetime_end)
 
         # Check the WCS consistency
         if check_wcs and obsinfo.observation_type == "science":

@@ -9,6 +9,8 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+from __future__ import annotations
+
 __all__ = ("read_index", "calculate_index", "index_files", "process_index_data")
 
 """Functions to support file indexing."""
@@ -19,11 +21,12 @@ import logging
 import os
 import sys
 from copy import deepcopy
+from typing import IO, Any, List, MutableMapping, Optional, Sequence, Tuple, Union
 
-from .observationInfo import ObservationInfo
-from .observationGroup import ObservationGroup
-from .headers import merge_headers
 from .file_helpers import read_file_info
+from .headers import merge_headers
+from .observationGroup import ObservationGroup
+from .observationInfo import ObservationInfo
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +34,15 @@ COMMON_KEY = "__COMMON__"
 CONTENT_KEY = "__CONTENT__"
 
 
-def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout, errstream=sys.stderr):
+def index_files(
+    files: Sequence[str],
+    root: Optional[str],
+    hdrnum: int,
+    print_trace: bool,
+    content: str,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+) -> Tuple[MutableMapping[str, Union[str, MutableMapping[str, Any]]], List[str], List[str]]:
     """Create an index from the supplied files.
 
     No file is written. The Python structure returned is suitable
@@ -81,10 +92,10 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
     if content not in ("translated", "metadata"):
         raise ValueError("Unrecognized mode {mode}")
 
-    failed = []
-    okay = []
+    failed: List[str] = []
+    okay: List[str] = []
 
-    content_by_file = {}  # Mapping of path to file content
+    content_by_file: MutableMapping[str, MutableMapping[str, Any]] = {}  # Mapping of path to file content
     for file in sorted(files):
         if root is not None:
             path = os.path.join(root, file)
@@ -98,6 +109,11 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
             okay.append(path)
 
         # Store the information indexed by the filename within dir
+        # We may get a PropertyList here and can therefore not just
+        # assert Mapping for mypy. We therefore assert that it's not the
+        # other 2 options, which we were enforcing with the "simple" parameter
+        # in the call to read_file_info.
+        assert not isinstance(simple, (str, ObservationInfo))
         content_by_file[file] = simple
 
     output = calculate_index(content_by_file, content)
@@ -105,7 +121,9 @@ def index_files(files, root, hdrnum, print_trace, content, outstream=sys.stdout,
     return output, okay, failed
 
 
-def calculate_index(headers, content_mode):
+def calculate_index(
+    headers: MutableMapping[str, MutableMapping[str, Any]], content_mode: str
+) -> MutableMapping[str, Union[str, MutableMapping[str, Any]]]:
     """Calculate an index data structure from the supplied headers.
 
     Parameters
@@ -126,13 +144,14 @@ def calculate_index(headers, content_mode):
         raise ValueError(f"Unrecognized mode for index creation: {content_mode}")
 
     # Merge all the information into a primary plus diff
-    merged = merge_headers(headers.values(), mode="diff")
+    merged = merge_headers([hdr for hdr in headers.values()], mode="diff")
 
     # For a single file it is possible that the merged contents
     # are not a dict but are an LSST-style PropertyList. JSON needs
-    # dict though.
+    # dict though.  mypy can't know about PropertyList so we must ignore
+    # the type error.
     if not isinstance(merged, collections.abc.Mapping):
-        merged = dict(merged)
+        merged = dict(merged)  # type: ignore
 
     # The structure to write to file is intended to look like (in YAML):
     # __COMMON__:
@@ -149,14 +168,19 @@ def calculate_index(headers, content_mode):
 
     # Put the common headers first in the output.
     # Store the mode so that we can work out how to read the file in
-    output = {CONTENT_KEY: content_mode, COMMON_KEY: merged}
+    output: MutableMapping[str, Union[str, MutableMapping[str, Any]]] = {
+        CONTENT_KEY: content_mode,
+        COMMON_KEY: merged,
+    }
     for file, diff in zip(headers, diff_dict):
         output[file] = diff
 
     return output
 
 
-def read_index(path, force_dict=False):
+def read_index(
+    path: str, force_dict: bool = False
+) -> Union[ObservationGroup, MutableMapping[str, Union[str, MutableMapping[str, Any], ObservationInfo]]]:
     """Read an index file.
 
     Parameters
@@ -181,7 +205,9 @@ def read_index(path, force_dict=False):
     return process_index_data(content, force_dict=force_dict)
 
 
-def process_index_data(content, force_metadata=False, force_dict=False):
+def process_index_data(
+    content: MutableMapping[str, Any], force_metadata: bool = False, force_dict: bool = False
+) -> Union[ObservationGroup, MutableMapping[str, Union[str, MutableMapping[str, Any], ObservationInfo]]]:
     """Process the content read from a JSON index file.
 
     Parameters
@@ -223,7 +249,7 @@ def process_index_data(content, force_metadata=False, force_dict=False):
     content_mode = unpacked.pop(CONTENT_KEY, None)
     if force_metadata:
         content_mode = "metadata"
-    elif content is None:
+    elif content_mode is None:
         log.warning("No '%s' key in data structure, assuming 'metadata'", CONTENT_KEY)
         content_mode = "metadata"
 
@@ -237,8 +263,10 @@ def process_index_data(content, force_metadata=False, force_dict=False):
         # nothing more to be done
         return unpacked
 
-    obs_infos = []
-    by_file = {}
+    obs_infos: List[ObservationInfo] = []
+    # This type annotation is really MutableMapping[str, ObservationInfo]
+    # but mypy needs it to look like the function return value.
+    by_file: MutableMapping[str, Union[str, MutableMapping[str, Any], ObservationInfo]] = {}
     for file, hdr in unpacked.items():
         info = ObservationInfo.from_simple(hdr)
         info.filename = file
@@ -250,7 +278,7 @@ def process_index_data(content, force_metadata=False, force_dict=False):
     return ObservationGroup(obs_infos)
 
 
-def read_sidecar(path):
+def read_sidecar(path: str) -> Union[ObservationInfo, MutableMapping[str, MutableMapping[str, Any]]]:
     """Read a metadata sidecar file.
 
     Parameters
@@ -273,7 +301,9 @@ def read_sidecar(path):
     return process_sidecar_data(content)
 
 
-def process_sidecar_data(content, force_metadata=False):
+def process_sidecar_data(
+    content: MutableMapping[str, Any], force_metadata: bool = False
+) -> Union[ObservationInfo, MutableMapping[str, MutableMapping[str, Any]]]:
     """Process the content read from a JSON sidecar file.
 
     Parameters
@@ -304,11 +334,11 @@ def process_sidecar_data(content, force_metadata=False):
     content_mode = content.pop(CONTENT_KEY, None)
     if force_metadata:
         content_mode = "metadata"
-    elif content is None:
+    elif content_mode is None:
         # All ObservationInfo objects will have observation_id and instrument
         # so if they are there we can guess
         guessing = True
-        if "observation_id" in content and "instrument" in content_mode:
+        if "observation_id" in content and "instrument" in content:
             content_mode = "translated"
         else:
             content_mode = "metadata"

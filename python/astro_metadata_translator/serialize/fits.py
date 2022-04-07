@@ -10,11 +10,20 @@
 # license that can be found in the LICENSE file.
 
 """Transform ObservationInfo into "standard" FITS headers."""
+from __future__ import annotations
 
 __all__ = ("info_to_fits", "dates_to_fits", "group_to_fits")
 
+from typing import TYPE_CHECKING, Any, Dict, Tuple
 
-def dates_to_fits(date_begin, date_end):
+if TYPE_CHECKING:
+    import astropy.time
+
+    from ..observationGroup import ObservationGroup
+    from ..observationInfo import ObservationInfo
+
+
+def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) -> Dict[str, Any]:
     """Convert two dates into FITS form.
 
     Parameters
@@ -30,7 +39,7 @@ def dates_to_fits(date_begin, date_end):
         Header card keys and values following the FITS standard.
         If neither date is defined this may be empty.
     """
-    cards = {}
+    cards: Dict[str, Any] = {}
     if date_begin is None and date_end is None:
         # no date headers can be written
         return cards
@@ -39,7 +48,7 @@ def dates_to_fits(date_begin, date_end):
 
     date_avg = None
     if date_begin is not None and date_end is not None:
-        date_avg = date_begin + (date_end - date_begin)/2.0
+        date_avg = date_begin + (date_end - date_begin) / 2.0
 
     for fragment, date in (("OBS", date_begin), ("END", date_end), ("AVG", date_avg)):
         if date is not None:
@@ -50,7 +59,7 @@ def dates_to_fits(date_begin, date_end):
     return cards
 
 
-def info_to_fits(obs_info):
+def info_to_fits(obs_info: ObservationInfo) -> Tuple[Dict[str, Any], Dict[str, str]]:
     """Convert an `ObservationInfo` to something suitable for writing
     to a FITS file.
 
@@ -80,7 +89,7 @@ def info_to_fits(obs_info):
     return cards, comments
 
 
-def group_to_fits(obs_group):
+def group_to_fits(obs_group: ObservationGroup) -> Tuple[Dict[str, Any], Dict[str, str]]:
     """Convert an `ObservationGroup` to something suitable for writing
     to a FITS file.
 

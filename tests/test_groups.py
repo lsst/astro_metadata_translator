@@ -9,12 +9,12 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-import unittest
 import os.path
+import unittest
 
-from astro_metadata_translator.tests import read_test_file
 from astro_metadata_translator import ObservationGroup
 from astro_metadata_translator.serialize import group_to_fits, info_to_fits
+from astro_metadata_translator.tests import read_test_file
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,11 +23,12 @@ class ObservationGroupTestCase(unittest.TestCase):
     datadir = os.path.join(TESTDIR, "data")
 
     def setUp(self):
-        self.decam_files = ("fitsheader-decam.yaml",
-                            "fitsheader-decam-0160496.yaml",
-                            "fitsheader-decam-calexp-0412037_10.yaml")
-        self.hsc_files = ("fitsheader-hsc-HSCA04090107.yaml",
-                          "fitsheader-hsc.yaml")
+        self.decam_files = (
+            "fitsheader-decam.yaml",
+            "fitsheader-decam-0160496.yaml",
+            "fitsheader-decam-calexp-0412037_10.yaml",
+        )
+        self.hsc_files = ("fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml")
 
     def _files_to_headers(self, files):
         return [read_test_file(os.path.join(self.datadir, f)) for f in files]
@@ -37,9 +38,11 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         obs_group = ObservationGroup(headers)
         self.assertEqual(len(obs_group), 3)
-        self.assertEqual(str(obs_group),
-                         "[(DECam, 2013-09-01T06:02:55.754), (DECam, 2012-12-11T22:06:32.859),"
-                         " (DECam, 2015-02-20T00:47:21.127)]")
+        self.assertEqual(
+            str(obs_group),
+            "[(DECam, 2013-09-01T06:02:55.754), (DECam, 2012-12-11T22:06:32.859),"
+            " (DECam, 2015-02-20T00:47:21.127)]",
+        )
 
         sorted_group = ObservationGroup(sorted(obs_group))
         self.assertIsInstance(sorted_group, ObservationGroup)
@@ -80,14 +83,16 @@ class ObservationGroupTestCase(unittest.TestCase):
         obs_group = ObservationGroup(headers)
         cards, comments = group_to_fits(obs_group)
 
-        expected = {'INSTRUME': 'DECam',
-                    'TIMESYS': 'TAI',
-                    'DATE-OBS': '2012-12-11T22:07:07.859',
-                    'MJD-OBS': 56272.92161874134,
-                    'DATE-END': '2015-02-20T00:50:11.000',
-                    'MJD-END': 57073.034849537034,
-                    'DATE-AVG': '2014-01-15T23:28:39.430',
-                    'MJD-AVG': 56672.97823413919}
+        expected = {
+            "INSTRUME": "DECam",
+            "TIMESYS": "TAI",
+            "DATE-OBS": "2012-12-11T22:07:07.859",
+            "MJD-OBS": 56272.92161874134,
+            "DATE-END": "2015-02-20T00:50:11.000",
+            "MJD-END": 57073.034849537034,
+            "DATE-AVG": "2014-01-15T23:28:39.430",
+            "MJD-AVG": 56672.97823413919,
+        }
         self.assertEqual(cards, expected)
 
     def test_fits_info(self):
@@ -95,14 +100,16 @@ class ObservationGroupTestCase(unittest.TestCase):
         obs_group = ObservationGroup([header])
         cards, comments = info_to_fits(obs_group[0])
 
-        expected = {'INSTRUME': 'DECam',
-                    'TIMESYS': 'TAI',
-                    'MJD-AVG': 56536.25417681625,
-                    'MJD-END': 56536.25591435185,
-                    'MJD-OBS': 56536.25243928065,
-                    'DATE-OBS': '2013-09-01T06:03:30.754',
-                    'DATE-AVG': '2013-09-01T06:06:00.877',
-                    'DATE-END': '2013-09-01T06:08:31.000'}
+        expected = {
+            "INSTRUME": "DECam",
+            "TIMESYS": "TAI",
+            "MJD-AVG": 56536.25417681625,
+            "MJD-END": 56536.25591435185,
+            "MJD-OBS": 56536.25243928065,
+            "DATE-OBS": "2013-09-01T06:03:30.754",
+            "DATE-AVG": "2013-09-01T06:06:00.877",
+            "DATE-END": "2013-09-01T06:08:31.000",
+        }
         self.assertEqual(cards, expected)
 
 

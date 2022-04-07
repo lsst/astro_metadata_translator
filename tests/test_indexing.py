@@ -14,16 +14,15 @@ import json
 import os
 import unittest
 
-from astro_metadata_translator import ObservationInfo, ObservationGroup
-from astro_metadata_translator.indexing import index_files, process_index_data, process_sidecar_data
+from astro_metadata_translator import ObservationGroup, ObservationInfo
 from astro_metadata_translator.file_helpers import read_file_info
+from astro_metadata_translator.indexing import index_files, process_index_data, process_sidecar_data
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 TESTDATA = os.path.join(TESTDIR, "data")
 
 
 class IndexingTestCase(unittest.TestCase):
-
     def test_indexing(self):
         """Test that we can index two headers"""
         files = ["fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml"]

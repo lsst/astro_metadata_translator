@@ -9,12 +9,15 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-__all__ = ("write_index_files")
+from __future__ import annotations
 
-import logging
+__all__ = "write_index_files"
+
 import json
+import logging
 import os
 import sys
+from typing import IO, List, MutableMapping, Optional, Sequence, Tuple
 
 from ..file_helpers import find_files
 from ..indexing import index_files
@@ -22,8 +25,16 @@ from ..indexing import index_files
 log = logging.getLogger(__name__)
 
 
-def write_index_files(files, regex, hdrnum, print_trace, content_mode="translated",
-                      outpath=None, outstream=sys.stdout, errstream=sys.stderr):
+def write_index_files(
+    files: Sequence[str],
+    regex: str,
+    hdrnum: int,
+    print_trace: bool,
+    content_mode: str = "translated",
+    outpath: Optional[str] = None,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+) -> Tuple[List[str], List[str]]:
     """Process each file and create JSON index file.
 
     The index file will have common information in the toplevel.
@@ -79,7 +90,7 @@ def write_index_files(files, regex, hdrnum, print_trace, content_mode="translate
 
     failed = []
     okay = []
-    files_per_directory = {}
+    files_per_directory: MutableMapping[str, List[str]] = {}
 
     # Group each file by directory if no explicit output path
     if outpath is None:
@@ -91,8 +102,9 @@ def write_index_files(files, regex, hdrnum, print_trace, content_mode="translate
 
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in files_per_directory.items():
-        output, this_okay, this_failed = index_files(files_in_dir, directory, hdrnum, print_trace,
-                                                     content_mode, outstream, errstream)
+        output, this_okay, this_failed = index_files(
+            files_in_dir, directory, hdrnum, print_trace, content_mode, outstream, errstream
+        )
 
         failed.extend(this_failed)
         okay.extend(this_okay)

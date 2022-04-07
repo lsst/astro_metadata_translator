@@ -11,12 +11,8 @@
 
 import pickle
 import unittest
-from astro_metadata_translator import (
-    ObservationInfo,
-    StubTranslator,
-    makeObservationInfo,
-    PropertyDefinition
-)
+
+from astro_metadata_translator import ObservationInfo, PropertyDefinition, StubTranslator, makeObservationInfo
 
 """Test that extensions to the core set of properties works"""
 
@@ -47,7 +43,10 @@ class DummyTranslator(StubTranslator):
 class ExtensionsTestCase(unittest.TestCase):
     def setUp(self):
         self.header = dict(INSTRUME="dummy")
-        self.obsinfo = ObservationInfo(self.header)
+        # The test translator is incomplete so it will issue warnings
+        # about missing translations. Catch them.
+        with self.assertWarns(UserWarning):
+            self.obsinfo = ObservationInfo(self.header)
 
     def assert_observation_info(self, obsinfo):
         """Check that the `ObservationInfo` is as expected"""

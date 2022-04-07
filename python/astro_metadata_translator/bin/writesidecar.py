@@ -9,16 +9,19 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+from __future__ import annotations
+
 __all__ = ("write_sidecar_files", "write_sidecar_file")
 
 import os
 import sys
 import traceback
+from typing import IO, List, Sequence, Tuple
 
 from ..file_helpers import find_files, read_file_info
 
 
-def _split_ext(file):
+def _split_ext(file: str) -> Tuple[str, str]:
     """Split the extension from the file name and return it and the root.
 
     Special case handling of .gz and other compression extensions.
@@ -34,7 +37,14 @@ def _split_ext(file):
     return root, ext
 
 
-def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.stdout, errstream=sys.stderr):
+def write_sidecar_file(
+    file: str,
+    hdrnum: int,
+    content_mode: str,
+    print_trace: bool,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+) -> bool:
     """Write JSON summary to sidecar file.
 
     Parameters
@@ -71,8 +81,15 @@ def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.st
 
     try:
         # Calculate the JSON from the file
-        json_str = read_file_info(file, hdrnum, content_mode=content_mode, content_type="json",
-                                  print_trace=print_trace, outstream=outstream, errstream=errstream)
+        json_str = read_file_info(
+            file,
+            hdrnum,
+            content_mode=content_mode,
+            content_type="json",
+            print_trace=print_trace,
+            outstream=outstream,
+            errstream=errstream,
+        )
         if json_str is None:
             return False
 
@@ -95,8 +112,15 @@ def write_sidecar_file(file, hdrnum, content_mode, print_trace, outstream=sys.st
     return True
 
 
-def write_sidecar_files(files, regex, hdrnum, content_mode, print_trace,
-                        outstream=sys.stdout, errstream=sys.stderr):
+def write_sidecar_files(
+    files: Sequence[str],
+    regex: str,
+    hdrnum: int,
+    content_mode: str,
+    print_trace: bool,
+    outstream: IO = sys.stdout,
+    errstream: IO = sys.stderr,
+) -> Tuple[List[str], List[str]]:
     """Process each file and create sidecar file.
 
     Parameters

@@ -36,10 +36,10 @@ class ExplicitTranslator(TrivialTranslator):
 
 
 class TranslatorShadowing(unittest.TestCase):
-
     def test_shadowing(self):
 
         with self.assertLogs("astro_metadata_translator", level="WARN") as cm:
+
             class ShadowTranslator(StubTranslator):
                 _const_map = {"instrument": "InstrumentC"}
                 _trivial_map = {"instrument": "INSTRUME"}
@@ -54,6 +54,7 @@ class TranslatorShadowing(unittest.TestCase):
         self.assertEqual(s.to_instrument(), "InstrumentC")
 
         with self.assertLogs("astro_metadata_translator", level="WARN") as cm:
+
             class ShadowTranslator(StubTranslator):
                 _trivial_map = {"instrument": "INSTRUME"}
 

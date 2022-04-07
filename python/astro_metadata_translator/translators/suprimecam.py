@@ -11,25 +11,31 @@
 
 """Metadata translation code for SuprimeCam FITS headers"""
 
-__all__ = ("SuprimeCamTranslator", )
+from __future__ import annotations
 
-import re
+__all__ = ("SuprimeCamTranslator",)
+
 import logging
 import posixpath
+import re
+from typing import TYPE_CHECKING, Any, Dict, List, MutableMapping, Optional, Tuple, Union
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import Angle, SkyCoord
 
-from ..translator import cache_translation, CORRECTIONS_RESOURCE_ROOT
-from .subaru import SubaruTranslator
+from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .helpers import altaz_from_degree_headers
+from .subaru import SubaruTranslator
+
+if TYPE_CHECKING:
+    import astropy.coordinates
+    import astropy.time
 
 log = logging.getLogger(__name__)
 
 
 class SuprimeCamTranslator(SubaruTranslator):
-    """Metadata translator for HSC standard headers.
-    """
+    """Metadata translator for HSC standard headers."""
 
     name = "SuprimeCam"
     """Name of this translation class"""
@@ -40,29 +46,29 @@ class SuprimeCamTranslator(SubaruTranslator):
     default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "SuprimeCam")
     """Default resource path root to use to locate header correction files."""
 
-    _const_map = {"boresight_rotation_coord": "unknown",
-                  "detector_group": None}
+    _const_map = {"boresight_rotation_coord": "unknown", "detector_group": None}
     """Constant mappings"""
 
-    _trivial_map = {"observation_id": "EXP-ID",
-                    "object": "OBJECT",
-                    "science_program": "PROP-ID",
-                    "detector_num": "DET-ID",
-                    "detector_serial": "DETECTOR",  # DETECTOR is the "call name"
-                    "boresight_airmass": "AIRMASS",
-                    "relative_humidity": "OUT-HUM",
-                    "temperature": ("OUT-TMP", dict(unit=u.K)),
-                    "pressure": ("OUT-PRS", dict(unit=u.hPa)),
-                    "exposure_time": ("EXPTIME", dict(unit=u.s)),
-                    "dark_time": ("EXPTIME", dict(unit=u.s)),  # Assume same as exposure time
-                    }
+    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = {
+        "observation_id": "EXP-ID",
+        "object": "OBJECT",
+        "science_program": "PROP-ID",
+        "detector_num": "DET-ID",
+        "detector_serial": "DETECTOR",  # DETECTOR is the "call name"
+        "boresight_airmass": "AIRMASS",
+        "relative_humidity": "OUT-HUM",
+        "temperature": ("OUT-TMP", dict(unit=u.K)),
+        "pressure": ("OUT-PRS", dict(unit=u.hPa)),
+        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "dark_time": ("EXPTIME", dict(unit=u.s)),  # Assume same as exposure time
+    }
     """One-to-one mappings"""
 
     # Zero point for SuprimeCam dates: 2004-01-01
     _DAY0 = 53005
 
     @classmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -88,7 +94,7 @@ class SuprimeCamTranslator(SubaruTranslator):
                     return True
         return False
 
-    def _get_adjusted_mjd(self):
+    def _get_adjusted_mjd(self) -> int:
         """Calculate the modified julian date offset from reference day
 
         Returns
@@ -101,7 +107,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return int(mjd) - self._DAY0
 
     @cache_translation
-    def to_physical_filter(self):
+    def to_physical_filter(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         value = self._header["FILTER01"].strip().upper()
         self._used_these_cards("FILTER01")
@@ -113,20 +119,22 @@ class SuprimeCamTranslator(SubaruTranslator):
         return value
 
     @cache_translation
-    def to_datetime_begin(self):
+    def to_datetime_begin(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UT-STR"], scale="utc")
+        value = self._from_fits_date_string(
+            self._header["DATE-OBS"], time_str=self._header["UT-STR"], scale="utc"
+        )
         self._used_these_cards("DATE-OBS", "UT-STR")
         return value
 
     @cache_translation
-    def to_datetime_end(self):
+    def to_datetime_end(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(self._header["DATE-OBS"],
-                                            time_str=self._header["UT-END"], scale="utc")
+        value = self._from_fits_date_string(
+            self._header["DATE-OBS"], time_str=self._header["UT-END"], scale="utc"
+        )
         self._used_these_cards("DATE-OBS", "UT-END")
 
         # Sometimes the end time is less than the begin time plus the
@@ -140,7 +148,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return value
 
     @cache_translation
-    def to_exposure_id(self):
+    def to_exposure_id(self) -> int:
         """Calculate unique exposure integer for this observation
 
         Returns
@@ -164,7 +172,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return exposure
 
     @cache_translation
-    def to_visit_id(self):
+    def to_visit_id(self) -> int:
         """Calculate the unique integer ID for this visit.
 
         Assumed to be identical to the exposure ID in this implementation.
@@ -177,7 +185,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return self.to_exposure_id()
 
     @cache_translation
-    def to_observation_type(self):
+    def to_observation_type(self) -> str:
         """Calculate the observation type.
 
         Returns
@@ -192,34 +200,38 @@ class SuprimeCamTranslator(SubaruTranslator):
         return obstype
 
     @cache_translation
-    def to_tracking_radec(self):
+    def to_tracking_radec(self) -> SkyCoord:
         # Docstring will be inherited. Property defined in properties.py
-        radec = SkyCoord(self._header["RA2000"], self._header["DEC2000"],
-                         frame="icrs", unit=(u.hourangle, u.deg),
-                         obstime=self.to_datetime_begin(), location=self.to_location())
+        radec = SkyCoord(
+            self._header["RA2000"],
+            self._header["DEC2000"],
+            frame="icrs",
+            unit=(u.hourangle, u.deg),
+            obstime=self.to_datetime_begin(),
+            location=self.to_location(),
+        )
         self._used_these_cards("RA2000", "DEC2000")
         return radec
 
     @cache_translation
-    def to_altaz_begin(self):
+    def to_altaz_begin(self) -> astropy.coordinates.AltAz:
         # Docstring will be inherited. Property defined in properties.py
-        return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),),
-                                         self.to_datetime_begin())
+        return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),), self.to_datetime_begin())
 
     @cache_translation
-    def to_boresight_rotation_angle(self):
+    def to_boresight_rotation_angle(self) -> Angle:
         # Docstring will be inherited. Property defined in properties.py
         angle = Angle(self.quantity_from_card("INR-STR", u.deg))
         angle = angle.wrap_at("360d")
         return angle
 
     @cache_translation
-    def to_detector_exposure_id(self):
+    def to_detector_exposure_id(self) -> int:
         # Docstring will be inherited. Property defined in properties.py
         return self.to_exposure_id() * 10 + self.to_detector_num()
 
     @cache_translation
-    def to_detector_name(self):
+    def to_detector_name(self) -> str:
         # Docstring will be inherited. Property defined in properties.py
         # See https://subarutelescope.org/Observing/Instruments/SCam/ccd.html
         num = self.to_detector_num()

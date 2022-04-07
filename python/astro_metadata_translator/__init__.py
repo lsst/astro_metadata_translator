@@ -9,10 +9,10 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-from .observationInfo import *
+from .headers import *
 from .observationGroup import *
+from .observationInfo import *
+from .properties import *
 from .translator import *
 from .translators import *
-from .headers import *
 from .version import *
-from .properties import *

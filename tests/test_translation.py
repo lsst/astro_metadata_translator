@@ -11,9 +11,10 @@
 
 import os.path
 import unittest
+
 from astropy.time import Time
 
-from astro_metadata_translator import FitsTranslator, StubTranslator, ObservationInfo
+from astro_metadata_translator import FitsTranslator, ObservationInfo, StubTranslator
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -28,11 +29,13 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     supported_instrument = "SCUBA_test"
 
     # Some new mappings, including an override
-    _trivial_map = {"telescope": "TELCODE",
-                    "exposure_id": "EXPID",
-                    "relative_humidity": "HUMIDITY",
-                    "detector_name": "DETNAME",
-                    "observation_id": "OBSID"}
+    _trivial_map = {
+        "telescope": "TELCODE",
+        "exposure_id": "EXPID",
+        "relative_humidity": "HUMIDITY",
+        "detector_name": "DETNAME",
+        "observation_id": "OBSID",
+    }
 
     # Add translator method to test joining
     def to_physical_filter(self):
@@ -41,26 +44,28 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
 
 class MissingMethodsTranslator(FitsTranslator):
     """Translator class that does not implement all the methods."""
+
     pass
 
 
 class TranslatorTestCase(unittest.TestCase):
-
     def setUp(self):
         # Known simple header
-        self.header = {"TELESCOP": "JCMT",
-                       "TELCODE": "LSST",
-                       "INSTRUME": "SCUBA_test",
-                       "DATE-OBS": "2000-01-01T01:00:01.500",
-                       "DATE-END": "2000-01-01T02:00:01.500",
-                       "OBSGEO-X": "-5464588.84421314",
-                       "OBSGEO-Y": "-2493000.19137644",
-                       "OBSGEO-Z": "2150653.35350771",
-                       "OBSID": "20000101_00002",
-                       "EXPID": "22",  # Should cast to a number
-                       "DETNAME": 76,  # Should cast to a string
-                       "HUMIDITY": "55",  # Should cast to a float
-                       "BAZ": "bar"}
+        self.header = {
+            "TELESCOP": "JCMT",
+            "TELCODE": "LSST",
+            "INSTRUME": "SCUBA_test",
+            "DATE-OBS": "2000-01-01T01:00:01.500",
+            "DATE-END": "2000-01-01T02:00:01.500",
+            "OBSGEO-X": "-5464588.84421314",
+            "OBSGEO-Y": "-2493000.19137644",
+            "OBSGEO-Z": "2150653.35350771",
+            "OBSID": "20000101_00002",
+            "EXPID": "22",  # Should cast to a number
+            "DETNAME": 76,  # Should cast to a string
+            "HUMIDITY": "55",  # Should cast to a float
+            "BAZ": "bar",
+        }
 
     def test_manual_translation(self):
 
@@ -71,14 +76,15 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertFalse(FitsTranslator.can_translate(header))
         self.assertEqual(translator.to_telescope(), "JCMT")
         self.assertEqual(translator.to_instrument(), "SCUBA_test")
-        self.assertEqual(translator.to_datetime_begin(),
-                         Time(header["DATE-OBS"], format="isot"))
+        self.assertEqual(translator.to_datetime_begin(), Time(header["DATE-OBS"], format="isot"))
 
         # This class will issue warnings
         with self.assertLogs("astro_metadata_translator") as cm:
+
             class InstrumentTestTranslatorExtras(InstrumentTestTranslator):
                 """Version of InstrumentTestTranslator with unexpected
                 fields."""
+
                 name = "InstrumentTestTranslatorExtras"
                 _trivial_map = {"foobar": "BAZ"}
                 _const_map = {"format": "HDF5"}
@@ -137,8 +143,11 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertIn("datetime_begin", summary)
 
         # Create with a subset of properties
-        v2 = ObservationInfo(header, translator_class=InstrumentTestTranslator,
-                             subset={"telescope", "datetime_begin", "exposure_group"})
+        v2 = ObservationInfo(
+            header,
+            translator_class=InstrumentTestTranslator,
+            subset={"telescope", "datetime_begin", "exposure_group"},
+        )
 
         self.assertEqual(v2.telescope, v1.telescope)
         self.assertEqual(v2.datetime_begin, v2.datetime_begin)
@@ -153,8 +162,11 @@ class TranslatorTestCase(unittest.TestCase):
         # Specify a translation class
         with self.assertWarns(UserWarning):
             # Since the translator is incomplete it should issue warnings
-            v1 = ObservationInfo(header, translator_class=InstrumentTestTranslator,
-                                 search_path=[os.path.join(TESTDIR, "data", "corrections")])
+            v1 = ObservationInfo(
+                header,
+                translator_class=InstrumentTestTranslator,
+                search_path=[os.path.join(TESTDIR, "data", "corrections")],
+            )
 
         # These values should match the expected translation
         self.assertEqual(v1.instrument, "SCUBA_test")
@@ -174,12 +186,14 @@ class TranslatorTestCase(unittest.TestCase):
             ObservationInfo(header, translator_class=ObservationInfo)
 
         with self.assertRaises(ValueError):
-            ObservationInfo(header, translator_class=InstrumentTestTranslator,
-                            subset={"definitely_not_known"})
+            ObservationInfo(
+                header, translator_class=InstrumentTestTranslator, subset={"definitely_not_known"}
+            )
 
         with self.assertRaises(ValueError):
-            ObservationInfo(header, translator_class=InstrumentTestTranslator,
-                            required={"definitely_not_known"})
+            ObservationInfo(
+                header, translator_class=InstrumentTestTranslator, required={"definitely_not_known"}
+            )
 
         with self.assertLogs("astro_metadata_translator"):
             with self.assertWarns(UserWarning):
@@ -191,13 +205,15 @@ class TranslatorTestCase(unittest.TestCase):
 
         with self.assertLogs("astro_metadata_translator"):
             with self.assertWarns(UserWarning):
-                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False,
-                                filename="testfile1")
+                ObservationInfo(
+                    header, translator_class=InstrumentTestTranslator, pedantic=False, filename="testfile1"
+                )
 
         with self.assertRaises(KeyError):
             with self.assertWarns(UserWarning):
-                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=True,
-                                filename="testfile2")
+                ObservationInfo(
+                    header, translator_class=InstrumentTestTranslator, pedantic=True, filename="testfile2"
+                )
 
         with self.assertRaises(NotImplementedError):
             with self.assertLogs("astro_metadata_translator", level="WARN"):
@@ -206,8 +222,12 @@ class TranslatorTestCase(unittest.TestCase):
         with self.assertRaises(KeyError):
             with self.assertWarns(UserWarning):
                 with self.assertLogs("astro_metadata_translator", level="WARN"):
-                    ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False,
-                                    required={"boresight_airmass"})
+                    ObservationInfo(
+                        header,
+                        translator_class=InstrumentTestTranslator,
+                        pedantic=False,
+                        required={"boresight_airmass"},
+                    )
 
 
 if __name__ == "__main__":

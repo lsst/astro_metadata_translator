@@ -11,20 +11,39 @@
 
 """Represent standard metadata from instrument headers"""
 
+from __future__ import annotations
+
 __all__ = ("ObservationInfo", "makeObservationInfo")
 
-import itertools
-import logging
 import copy
+import itertools
 import json
+import logging
 import math
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+)
 
 import astropy.time
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import AltAz, SkyCoord
 
-from .translator import MetadataTranslator
-from .properties import PROPERTIES
 from .headers import fix_header
+from .properties import PROPERTIES, PropertyDefinition
+from .translator import MetadataTranslator
+
+if TYPE_CHECKING:
+    import astropy.coordinates
+    import astropy.units
 
 log = logging.getLogger(__name__)
 
@@ -94,11 +113,50 @@ class ObservationInfo:
     Values of the properties are read-only.
     """
 
-    def __init__(self, header, filename=None, translator_class=None, pedantic=False,
-                 search_path=None, required=None, subset=None):
+    # Static typing requires that we define the standard dynamic properties
+    # statically.
+    if TYPE_CHECKING:
+        telescope: int
+        instrument: str
+        location: astropy.coordinates.EarthLocation
+        exposure_id: int
+        visit_id: int
+        physical_filter: str
+        datetime_begin: astropy.time.Time
+        datetime_end: astropy.time.Time
+        exposure_time: astropy.units.Quantity
+        dark_time: astropy.units.Quantity
+        boresight_airmass: float
+        boresight_rotation_angle: astropy.units.Quantity
+        boresight_rotation_coord: str
+        detector_num: int
+        detector_name: str
+        detector_serial: str
+        detector_group: str
+        detector_exposure_id: int
+        object: str
+        temperature: astropy.units.Quantity
+        pressure: astropy.units.Quantity
+        relative_humidity: float
+        tracking_radec: astropy.coordinates.SkyCoord
+        altaz_begin: astropy.coordinates.AltAz
+        science_program: str
+        observation_type: str
+        observation_id: str
+
+    def __init__(
+        self,
+        header: Optional[MutableMapping[str, Any]],
+        filename: Optional[str] = None,
+        translator_class: Optional[Type[MetadataTranslator]] = None,
+        pedantic: bool = False,
+        search_path: Optional[Sequence[str]] = None,
+        required: Optional[Set[str]] = None,
+        subset: Optional[Set[str]] = None,
+    ) -> None:
 
         # Initialize the empty object
-        self._header = {}
+        self._header: MutableMapping[str, Any] = {}
         self.filename = filename
         self._translator = None
         self.translator_class_name = "<None>"
@@ -109,8 +167,7 @@ class ObservationInfo:
             return
 
         # Fix up the header (if required)
-        fix_header(header, translator_class=translator_class, filename=filename,
-                   search_path=search_path)
+        fix_header(header, translator_class=translator_class, filename=filename, search_path=search_path)
 
         # Store the supplied header for later stripping
         self._header = header
@@ -141,8 +198,9 @@ class ObservationInfo:
             if not subset:
                 raise ValueError("Cannot request no properties be calculated.")
             if not subset.issubset(full_set):
-                raise ValueError("Requested subset is not a subset of known properties. "
-                                 f"Got extra: {subset - full_set}")
+                raise ValueError(
+                    "Requested subset is not a subset of known properties. " f"Got extra: {subset - full_set}"
+                )
             properties = subset
         else:
             properties = full_set
@@ -151,8 +209,7 @@ class ObservationInfo:
             required = set()
         else:
             if not required.issubset(full_set):
-                raise ValueError("Requested required properties include unknowns: "
-                                 f"{required - full_set}")
+                raise ValueError("Requested required properties include unknowns: " f"{required - full_set}")
 
         # Loop over each property and request the translated form
         for t in properties:
@@ -163,11 +220,13 @@ class ObservationInfo:
             try:
                 value = getattr(translator, method)()
             except NotImplementedError as e:
-                raise NotImplementedError(f"No translation exists for property '{t}'"
-                                          f" using translator {translator.__class__}") from e
+                raise NotImplementedError(
+                    f"No translation exists for property '{t}'" f" using translator {translator.__class__}"
+                ) from e
             except KeyError as e:
-                err_msg = f"Error calculating property '{t}' using translator {translator.__class__}" \
-                    f"{file_info}"
+                err_msg = (
+                    f"Error calculating property '{t}' using translator {translator.__class__}" f"{file_info}"
+                )
                 if pedantic or t in required:
                     raise KeyError(err_msg) from e
                 else:
@@ -177,9 +236,11 @@ class ObservationInfo:
 
             definition = self.all_properties[t]
             if not self._is_property_ok(definition, value):
-                err_msg = f"Value calculated for property '{t}' is wrong type " \
-                    f"({type(value)} != {definition.str_type}) using translator {translator.__class__}" \
+                err_msg = (
+                    f"Value calculated for property '{t}' is wrong type "
+                    f"({type(value)} != {definition.str_type}) using translator {translator.__class__}"
                     f"{file_info}"
+                )
                 if pedantic or t in required:
                     raise TypeError(err_msg)
                 else:
@@ -192,7 +253,9 @@ class ObservationInfo:
             super().__setattr__(property, value)  # allows setting even write-protected extensions
 
     @staticmethod
-    def _get_all_properties(extensions=None):
+    def _get_all_properties(
+        extensions: Optional[Dict[str, PropertyDefinition]] = None
+    ) -> Dict[str, PropertyDefinition]:
         """Return the definitions of all properties
 
         Parameters
@@ -212,7 +275,7 @@ class ObservationInfo:
             properties.update({"ext_" + pp: dd for pp, dd in extensions.items()})
         return properties
 
-    def _declare_extensions(self, extensions):
+    def _declare_extensions(self, extensions: Optional[Dict[str, PropertyDefinition]]) -> None:
         """Declare and set up extension properties
 
         This should always be called internally as part of the creation of a
@@ -245,7 +308,7 @@ class ObservationInfo:
         self.extensions = extensions
         self.all_properties = self._get_all_properties(extensions)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> Any:
         """Set attribute
 
         This provides read-only protection for the extension properties. The
@@ -257,7 +320,7 @@ class ObservationInfo:
         return super().__setattr__(name, value)
 
     @classmethod
-    def _is_property_ok(cls, definition, value):
+    def _is_property_ok(cls, definition: PropertyDefinition, value: Any) -> bool:
         """Compare the supplied value against the expected type as defined
         for the corresponding property.
 
@@ -294,7 +357,7 @@ class ObservationInfo:
         return True
 
     @property
-    def cards_used(self):
+    def cards_used(self) -> FrozenSet[str]:
         """Header cards used for the translation.
 
         Returns
@@ -306,7 +369,7 @@ class ObservationInfo:
             return frozenset()
         return self._translator.cards_used()
 
-    def stripped_header(self):
+    def stripped_header(self) -> MutableMapping[str, Any]:
         """Return a copy of the supplied header with used keywords removed.
 
         Returns
@@ -321,7 +384,7 @@ class ObservationInfo:
             del hdr[c]
         return hdr
 
-    def __str__(self):
+    def __str__(self) -> str:
         # Put more interesting answers at front of list
         # and then do remainder
         priority = ("instrument", "telescope", "datetime_begin")
@@ -337,9 +400,8 @@ class ObservationInfo:
 
         return result
 
-    def __eq__(self, other):
-        """Compares equal if standard properties are equal
-        """
+    def __eq__(self, other: Any) -> bool:
+        """Compares equal if standard properties are equal"""
         if not isinstance(other, ObservationInfo):
             return NotImplemented
 
@@ -362,13 +424,17 @@ class ObservationInfo:
                 return False
         return True
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, ObservationInfo):
+            return NotImplemented
         return self.datetime_begin < other.datetime_begin
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any) -> bool:
+        if not isinstance(other, ObservationInfo):
+            return NotImplemented
         return self.datetime_begin > other.datetime_begin
 
-    def __getstate__(self):
+    def __getstate__(self) -> Tuple[Any, ...]:
         """Get pickleable state
 
         Returns the properties.  Deliberately does not preserve the full
@@ -386,7 +452,7 @@ class ObservationInfo:
 
         return state, self.extensions
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Tuple[Any, ...]) -> None:
         """Set object state from pickle
 
         Parameters
@@ -402,12 +468,13 @@ class ObservationInfo:
         self._declare_extensions(extensions)
         for p in self.all_properties:
             if p.startswith("ext_"):
-                super().__setattr__(p, state[p])  # allows setting even write-protected extensions
+                # allows setting even write-protected extensions
+                super().__setattr__(p, state[p])  # type: ignore
             else:
                 property = f"_{p}"
-                setattr(self, property, state[p])
+                setattr(self, property, state[p])  # type: ignore
 
-    def to_simple(self):
+    def to_simple(self) -> MutableMapping[str, Any]:
         """Convert the contents of this object to simple dict form.
 
         The keys of the dict are the standard properties but the values
@@ -452,7 +519,7 @@ class ObservationInfo:
 
         return simple
 
-    def to_json(self):
+    def to_json(self) -> str:
         """Serialize the object to JSON string.
 
         Returns
@@ -470,7 +537,7 @@ class ObservationInfo:
         return json.dumps(self.to_simple())
 
     @classmethod
-    def from_simple(cls, simple):
+    def from_simple(cls, simple: MutableMapping[str, Any]) -> ObservationInfo:
         """Convert the entity returned by `to_simple` back into an
         `ObservationInfo`.
 
@@ -500,7 +567,7 @@ class ObservationInfo:
 
         properties = cls._get_all_properties(extensions)
 
-        processed = {}
+        processed: Dict[str, Any] = {}
         for k, v in simple.items():
 
             if v is None:
@@ -517,7 +584,7 @@ class ObservationInfo:
         return cls.makeObservationInfo(extensions=extensions, **processed)
 
     @classmethod
-    def from_json(cls, json_str):
+    def from_json(cls, json_str: str) -> ObservationInfo:
         """Create `ObservationInfo` from JSON string.
 
         Parameters
@@ -541,7 +608,9 @@ class ObservationInfo:
         return cls.from_simple(simple)
 
     @classmethod
-    def makeObservationInfo(cls, *, extensions=None, **kwargs):  # noqa: N802
+    def makeObservationInfo(  # noqa: N802
+        cls, *, extensions: Optional[Dict[str, PropertyDefinition]] = None, **kwargs: Any
+    ) -> ObservationInfo:
         """Construct an `ObservationInfo` from the supplied parameters.
 
         Parameters
@@ -579,8 +648,10 @@ class ObservationInfo:
                 value = kwargs[p]
                 definition = obsinfo.all_properties[p]
                 if not cls._is_property_ok(definition, value):
-                    raise TypeError(f"Supplied value {value} for property {p} "
-                                    f"should be of class {definition.str_type} not {value.__class__}")
+                    raise TypeError(
+                        f"Supplied value {value} for property {p} "
+                        f"should be of class {definition.str_type} not {value.__class__}"
+                    )
                 super(cls, obsinfo).__setattr__(property, value)  # allows setting write-protected extensions
                 unused.remove(p)
 
@@ -592,7 +663,7 @@ class ObservationInfo:
 
 
 # Method to add the standard properties
-def _make_property(property, doc, return_typedoc, return_type):
+def _make_property(property: str, doc: str, return_typedoc: str, return_type: Type) -> Callable:
     """Create a getter method with associated docstring.
 
     Parameters
@@ -611,7 +682,8 @@ def _make_property(property, doc, return_typedoc, return_type):
     p : `function`
         Getter method for this property.
     """
-    def getter(self):
+
+    def getter(self: ObservationInfo) -> Any:
         return getattr(self, f"_{property}")
 
     getter.__doc__ = f"""{doc}
@@ -629,11 +701,16 @@ def _make_property(property, doc, return_typedoc, return_type):
 # python "property" wrapper.
 for name, definition in PROPERTIES.items():
     setattr(ObservationInfo, f"_{name}", None)
-    setattr(ObservationInfo, name, property(_make_property(name, definition.doc, definition.str_type,
-                                                           definition.py_type)))
+    setattr(
+        ObservationInfo,
+        name,
+        property(_make_property(name, definition.doc, definition.str_type, definition.py_type)),
+    )
 
 
-def makeObservationInfo(*, extensions=None, **kwargs):  # noqa: N802
+def makeObservationInfo(  # noqa: N802
+    *, extensions: Optional[Dict[str, PropertyDefinition]] = None, **kwargs: Any
+) -> ObservationInfo:
     """Construct an `ObservationInfo` from the supplied parameters.
 
     Parameters

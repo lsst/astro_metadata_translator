@@ -11,18 +11,22 @@
 
 """Code to support header manipulation operations."""
 
+from __future__ import annotations
+
 __all__ = ("merge_headers", "fix_header")
 
-import datetime
-import pkg_resources
-import posixpath
-import logging
-import itertools
 import copy
+import datetime
+import itertools
+import logging
 import os
-import yaml
-from collections.abc import Mapping
+import posixpath
 from collections import Counter
+from collections.abc import Mapping
+from typing import IO, Any, List, MutableMapping, Optional, Sequence, Tuple, Type, Union
+
+import pkg_resources
+import yaml
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
@@ -39,7 +43,13 @@ FIXUP_SENTINEL = HIERARCH + " MODIFIED"
 """Keyword to add to header when header has been fixed."""
 
 
-def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
+def merge_headers(
+    headers: Sequence[MutableMapping[str, Any]],
+    mode: str = "overwrite",
+    sort: bool = False,
+    first: Optional[Sequence[str]] = None,
+    last: Optional[Sequence[str]] = None,
+) -> MutableMapping[str, Any]:
     """Merge multiple headers into a single dict.
 
     Given a list of dict-like data headers, combine them following the
@@ -116,7 +126,8 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
         return copy.deepcopy(headers[0])
 
     if sort:
-        def key_func(hdr):
+
+        def key_func(hdr: Mapping[str, Any]) -> Any:
             translator_class = None
             try:
                 translator_class = MetadataTranslator.determine_translator(hdr)
@@ -223,8 +234,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
 
         # Fill the entries that have multiple differing values
         for key in fill:
-            merged[key] = [h[key] if key in h else None
-                           for h in itertools.chain([first_hdr], headers)]
+            merged[key] = [h[key] if key in h else None for h in itertools.chain([first_hdr], headers)]
 
     else:
         raise ValueError(f"Unsupported value of '{mode}' for mode parameter.")
@@ -232,7 +242,12 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     # Force the first and last values to be inserted
     #
     if mode != "append":
-        def retain_value(to_receive, to_retain, sources):
+
+        def retain_value(
+            to_receive: MutableMapping[str, Any],
+            to_retain: Optional[Sequence[str]],
+            sources: Tuple[Mapping[str, Any], ...],
+        ) -> None:
             if to_retain:
                 for k in to_retain:
                     # Look for values until we find one
@@ -248,7 +263,7 @@ def merge_headers(headers, mode="overwrite", sort=False, first=None, last=None):
     return merged
 
 
-def _read_yaml(fh, msg):
+def _read_yaml(fh: IO[bytes], msg: str) -> Optional[Mapping[str, Any]]:
     """Read YAML from file descriptor.
 
     Parameters
@@ -279,7 +294,9 @@ def _read_yaml(fh, msg):
     return content
 
 
-def _find_from_file(header, paths, target_file):
+def _find_from_file(
+    header: MutableMapping[str, Any], paths: Sequence[str], target_file: str
+) -> Optional[str]:
     """Search file system for matching correction files.
 
     Parameters
@@ -300,7 +317,7 @@ def _find_from_file(header, paths, target_file):
     for p in paths:
         correction_file = os.path.join(p, target_file)
         if os.path.exists(correction_file):
-            with open(correction_file) as fh:
+            with open(correction_file, "rb") as fh:
                 log.debug("Applying header corrections from file %s", correction_file)
                 corrections = _read_yaml(fh, f"file {correction_file}")
 
@@ -314,7 +331,9 @@ def _find_from_file(header, paths, target_file):
     return None
 
 
-def _find_from_resource(header, package, resource_root, target_file):
+def _find_from_resource(
+    header: MutableMapping[str, Any], package: Optional[str], resource_root: Optional[str], target_file: str
+) -> Optional[str]:
     """Search package resource for correction information.
 
     Parameters
@@ -349,7 +368,12 @@ def _find_from_resource(header, package, resource_root, target_file):
     return None
 
 
-def fix_header(header, search_path=None, translator_class=None, filename=None):
+def fix_header(
+    header: MutableMapping[str, Any],
+    search_path: Optional[Union[str, Sequence[str]]] = None,
+    translator_class: Optional[Type[MetadataTranslator]] = None,
+    filename: Optional[str] = None,
+) -> bool:
     """Update, in place, the supplied header with known corrections.
 
     Parameters
@@ -416,13 +440,15 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
 
     if translator_class is None:
         try:
-            translator_class = MetadataTranslator.determine_translator(header,
-                                                                       filename=filename)
+            translator_class = MetadataTranslator.determine_translator(header, filename=filename)
         except ValueError as e:
             # if the header is not recognized, we should not complain
             # and should not proceed further.
-            log.debug("Unable to determine translator class %s -- not fixing header: %e",
-                      f"for {filename}" if filename is not None else "", e)
+            log.debug(
+                "Unable to determine translator class %s -- not fixing header: %e",
+                f"for {filename}" if filename is not None else "",
+                e,
+            )
             return False
     elif not issubclass(translator_class, MetadataTranslator):
         raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
@@ -442,7 +468,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     log.debug("Checking for header correction file named %s", target_file)
 
     # Work out the search path
-    paths = []
+    paths: List[str] = []
     if search_path is not None:
         if isinstance(search_path, str):
             # Allow a single path to be given as a string
@@ -466,8 +492,7 @@ def fix_header(header, search_path=None, translator_class=None, filename=None):
     try:
         translator_modified = translator_class.fix_header(header, instrument, obsid, filename=filename)
     except Exception as e:
-        log.fatal("Ignoring translator header fixup of %s %s: %s",
-                  instrument, obsid, e)
+        log.fatal("Ignoring translator header fixup of %s %s: %s", instrument, obsid, e)
         translator_modified = False
 
     was_modified = (corrections_file is not None) or translator_modified
