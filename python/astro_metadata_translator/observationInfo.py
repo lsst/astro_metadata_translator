@@ -124,6 +124,7 @@ class ObservationInfo:
         physical_filter: str
         datetime_begin: astropy.time.Time
         datetime_end: astropy.time.Time
+        exposure_group: str
         exposure_time: astropy.units.Quantity
         dark_time: astropy.units.Quantity
         boresight_airmass: float
@@ -141,8 +142,11 @@ class ObservationInfo:
         tracking_radec: astropy.coordinates.SkyCoord
         altaz_begin: astropy.coordinates.AltAz
         science_program: str
+        observation_counter: int
+        observation_reason: str
         observation_type: str
         observation_id: str
+        observing_day: int
 
     def __init__(
         self,
