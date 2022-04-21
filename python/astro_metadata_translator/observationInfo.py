@@ -147,6 +147,9 @@ class ObservationInfo:
         observation_type: str
         observation_id: str
         observing_day: int
+        group_counter_start: int
+        group_counter_end: int
+        has_simulated_content: bool
 
     def __init__(
         self,
@@ -658,6 +661,16 @@ class ObservationInfo:
                     )
                 super(cls, obsinfo).__setattr__(property, value)  # allows setting write-protected extensions
                 unused.remove(p)
+
+        # Recent additions to ObservationInfo may not be present in
+        # serializations. In theory they can be derived from other
+        # values in the default case. This might not be the right thing
+        # to do.
+        for k in ("group_counter_start", "group_counter_end"):
+            if k not in kwargs and "observation_counter" in kwargs:
+                super(cls, obsinfo).__setattr__(f"_{k}", obsinfo.observation_counter)
+        if (k := "has_simulated_content") not in kwargs:
+            super(cls, obsinfo).__setattr__(f"_{k}", False)
 
         if unused:
             n = len(unused)
