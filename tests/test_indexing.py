@@ -184,6 +184,21 @@ class IndexingTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             read_index(bad_file)
 
+    def test_obs_info_sidecar(self):
+        """Test reading of older files with missing content."""
+
+        # First with a real header (but YAML)
+        file = os.path.join(TESTDATA, "fitsheader-hsc.yaml")
+        info = read_file_info(file, 1, None, "translated", content_type="native")
+        self.assertIsInstance(info, ObservationInfo)
+        self.assertEqual(info.instrument, "HSC")
+
+        # With translated metadata sidecar that lacks the group_counter_start.
+        json_file = os.path.splitext(file)[0] + ".json"
+        json_info = read_sidecar(json_file)
+        self.assertIsInstance(json_info, ObservationInfo)
+        self.assertEqual(json_info, info)
+
 
 if __name__ == "__main__":
     unittest.main()
