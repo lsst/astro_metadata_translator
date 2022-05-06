@@ -53,7 +53,7 @@ def pl_constructor(loader: yaml.Loader, node: yaml.Node) -> Any:
         elif dtype == "Int":
             pl[key] = int(value)
         elif dtype == "Bool":
-            pl[key] = True if value == "true" else False
+            pl[key] = value
         else:
             pl[key] = value
 
