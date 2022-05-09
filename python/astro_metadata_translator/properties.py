@@ -336,4 +336,25 @@ may not be.""",
         "int",
         int,
     ),
+    "has_simulated_content": PropertyDefinition(
+        "Boolean indicating whether any part of this observation was simulated.", "bool", bool, None, None
+    ),
+    "group_counter_start": PropertyDefinition(
+        "Observation counter for the start of the exposure group."
+        "Depending on the instrument the relevant group may be "
+        "visit_id or exposure_group.",
+        "int",
+        int,
+        None,
+        None,
+    ),
+    "group_counter_end": PropertyDefinition(
+        "Observation counter for the end of the exposure group. "
+        "Depending on the instrument the relevant group may be "
+        "visit_id or exposure_group.",
+        "int",
+        int,
+        None,
+        None,
+    ),
 }

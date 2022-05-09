@@ -124,6 +124,7 @@ class ObservationInfo:
         physical_filter: str
         datetime_begin: astropy.time.Time
         datetime_end: astropy.time.Time
+        exposure_group: str
         exposure_time: astropy.units.Quantity
         dark_time: astropy.units.Quantity
         boresight_airmass: float
@@ -141,8 +142,14 @@ class ObservationInfo:
         tracking_radec: astropy.coordinates.SkyCoord
         altaz_begin: astropy.coordinates.AltAz
         science_program: str
+        observation_counter: int
+        observation_reason: str
         observation_type: str
         observation_id: str
+        observing_day: int
+        group_counter_start: int
+        group_counter_end: int
+        has_simulated_content: bool
 
     def __init__(
         self,
@@ -654,6 +661,16 @@ class ObservationInfo:
                     )
                 super(cls, obsinfo).__setattr__(property, value)  # allows setting write-protected extensions
                 unused.remove(p)
+
+        # Recent additions to ObservationInfo may not be present in
+        # serializations. In theory they can be derived from other
+        # values in the default case. This might not be the right thing
+        # to do.
+        for k in ("group_counter_start", "group_counter_end"):
+            if k not in kwargs and "observation_counter" in kwargs:
+                super(cls, obsinfo).__setattr__(f"_{k}", obsinfo.observation_counter)
+        if (k := "has_simulated_content") not in kwargs:
+            super(cls, obsinfo).__setattr__(f"_{k}", False)
 
         if unused:
             n = len(unused)

@@ -12,11 +12,18 @@
 import io
 import json
 import os
+import tempfile
 import unittest
 
 from astro_metadata_translator import ObservationGroup, ObservationInfo
 from astro_metadata_translator.file_helpers import read_file_info
-from astro_metadata_translator.indexing import index_files, process_index_data, process_sidecar_data
+from astro_metadata_translator.indexing import (
+    index_files,
+    process_index_data,
+    process_sidecar_data,
+    read_index,
+    read_sidecar,
+)
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 TESTDATA = os.path.join(TESTDIR, "data")
@@ -36,6 +43,12 @@ class IndexingTestCase(unittest.TestCase):
         self.assertIn("__COMMON__", index)
         self.assertIn("instrument", index["__COMMON__"])
 
+        # Write the index and check we can read it back.
+        with tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as temp:
+            print(json.dumps(index), file=temp)
+            temp.flush()
+            externally_processed = read_index(temp.name)
+
         # Convert to an ObservationGroup. Filenames are now stored in the
         # corresponding ObservationInfo.
         obs_group = process_index_data(index)
@@ -43,6 +56,7 @@ class IndexingTestCase(unittest.TestCase):
         self.assertEqual(len(obs_group), 2)
         self.assertEqual(obs_group[0].instrument, "HSC")
         self.assertEqual(set([obs_group[0].filename, obs_group[1].filename]), set(files))
+        self.assertEqual(externally_processed, obs_group)
 
         metadata = process_index_data(index, force_metadata=True)
         self.assertEqual(len(metadata), 2)
@@ -75,6 +89,16 @@ class IndexingTestCase(unittest.TestCase):
         file = os.path.join(TESTDATA, "fitsheader-hsc-HSCA04090107.yaml")
         info = read_file_info(file, 1, None, "metadata", content_type="simple")
         self.assertEqual(info["PROP-ID"], "o15426")
+
+        # With metadata sidecar.
+        json_file = os.path.splitext(file)[0] + ".json"
+        json_info = read_sidecar(json_file)
+        # Need to remove the COMMENT fields to avoid confusion between
+        # PropertyList and the fallback code with multiple entries.
+        json_info.pop("COMMENT", None)
+        dict_info = dict(info)  # it may be a PropertyList
+        dict_info.pop("COMMENT", None)
+        self.assertEqual(json_info, dict_info)
 
         info = read_file_info(file, 1, None, "translated", content_type="native")
         self.assertIsInstance(info, ObservationInfo)
@@ -147,6 +171,33 @@ class IndexingTestCase(unittest.TestCase):
                 lines = out.readlines()
                 self.assertGreater(len(lines), 4)
                 self.assertIn("ValueError", lines[-1])
+
+        # A sidecar file that is not a dict.
+        not_dict = os.path.join(TESTDATA, "bad-sidecar.json")
+        with self.assertRaises(ValueError):
+            read_sidecar(not_dict)
+
+        with self.assertRaises(ValueError):
+            read_index(not_dict)
+
+        # index file that is not JSON.
+        with self.assertRaises(ValueError):
+            read_index(bad_file)
+
+    def test_obs_info_sidecar(self):
+        """Test reading of older files with missing content."""
+
+        # First with a real header (but YAML)
+        file = os.path.join(TESTDATA, "fitsheader-hsc.yaml")
+        info = read_file_info(file, 1, None, "translated", content_type="native")
+        self.assertIsInstance(info, ObservationInfo)
+        self.assertEqual(info.instrument, "HSC")
+
+        # With translated metadata sidecar that lacks the group_counter_start.
+        json_file = os.path.splitext(file)[0] + ".json"
+        json_info = read_sidecar(json_file)
+        self.assertIsInstance(json_info, ObservationInfo)
+        self.assertEqual(json_info, info)
 
 
 if __name__ == "__main__":
