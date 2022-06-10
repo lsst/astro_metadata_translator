@@ -135,6 +135,7 @@ class ObservationInfo:
         detector_serial: str
         detector_group: str
         detector_exposure_id: int
+        focus_z: astropy.units.Quantity
         object: str
         temperature: astropy.units.Quantity
         pressure: astropy.units.Quantity

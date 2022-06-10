@@ -168,6 +168,7 @@ class MetadataTranslator:
         to_detector_serial: Callable[[MetadataTranslator], str]
         to_detector_group: Callable[[MetadataTranslator], Optional[str]]
         to_detector_exposure_id: Callable[[MetadataTranslator], int]
+        to_focus_z: Callable[[MetadataTranslator], u.Quantity]
         to_object: Callable[[MetadataTranslator], str]
         to_temperature: Callable[[MetadataTranslator], u.Quantity]
         to_pressure: Callable[[MetadataTranslator], u.Quantity]
