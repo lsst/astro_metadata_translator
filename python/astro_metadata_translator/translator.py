@@ -168,7 +168,6 @@ class MetadataTranslator:
         to_detector_serial: Callable[[MetadataTranslator], str]
         to_detector_group: Callable[[MetadataTranslator], Optional[str]]
         to_detector_exposure_id: Callable[[MetadataTranslator], int]
-        to_focus_z: Callable[[MetadataTranslator], u.Quantity]
         to_object: Callable[[MetadataTranslator], str]
         to_temperature: Callable[[MetadataTranslator], u.Quantity]
         to_pressure: Callable[[MetadataTranslator], u.Quantity]
@@ -1113,6 +1112,19 @@ class MetadataTranslator:
             implementation always returns `False`.
         """
         return False
+
+    @cache_translation
+    def to_focus_z(self) -> u.Quantity:
+        """Return a default defocal distance of 0.0 mm if there is no
+        keyword for defocal distance in the header. The default
+        keyword for defocal distance is ``FOCUSZ``.
+
+        Returns
+        -------
+        focus_z: `astropy.units.Quantity`
+            The defocal distance from header or the 0.0mm default
+        """
+        return 0.0 * u.mm
 
     @classmethod
     def determine_translatable_headers(
