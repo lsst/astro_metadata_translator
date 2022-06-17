@@ -56,7 +56,7 @@ jobs:
         run: package-docs build
 
       - name: Landing page upload
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && matrix.python-version == '3.10' }}
         env:
           LTD_PASSWORD: ${{ secrets.LTD_PASSWORD }}
           LTD_USERNAME: ${{ secrets.LTD_USERNAME }}
