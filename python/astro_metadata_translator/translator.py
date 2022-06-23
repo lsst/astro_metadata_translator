@@ -1113,6 +1113,19 @@ class MetadataTranslator:
         """
         return False
 
+    @cache_translation
+    def to_focus_z(self) -> u.Quantity:
+        """Return a default defocal distance of 0.0 mm if there is no
+        keyword for defocal distance in the header. The default
+        keyword for defocal distance is ``FOCUSZ``.
+
+        Returns
+        -------
+        focus_z: `astropy.units.Quantity`
+            The defocal distance from header or the 0.0mm default
+        """
+        return 0.0 * u.mm
+
     @classmethod
     def determine_translatable_headers(
         cls, filename: str, primary: Optional[MutableMapping[str, Any]] = None

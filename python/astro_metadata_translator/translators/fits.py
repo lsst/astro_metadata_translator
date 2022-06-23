@@ -38,7 +38,8 @@ class FitsTranslator(MetadataTranslator):
 
     # Direct translation from header key to standard form
     _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = dict(
-        instrument="INSTRUME", telescope="TELESCOP"
+        instrument="INSTRUME",
+        telescope="TELESCOP",
     )
 
     @classmethod

@@ -314,6 +314,14 @@ class DecamTranslator(FitsTranslator):
         name = self.to_detector_unique_name()
         return name[1:]
 
+    @cache_translation
+    def to_focus_z(self) -> u.Quantity:
+        # Docstring will be inherited. Property defined in properties.py
+        # ``TELFOCUS`` is a comma-separated string with six focus offsets
+        # (fx, fy, fz, tx, ty, tz) recorded in units of microns.
+        tel_focus_list = self._header["TELFOCUS"].split(",")
+        return float(tel_focus_list[2]) * u.um
+
     @classmethod
     def fix_header(
         cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: Optional[str] = None

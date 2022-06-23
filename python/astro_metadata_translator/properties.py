@@ -103,6 +103,16 @@ def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
     return astropy.coordinates.Angle(simple * astropy.units.deg)
 
 
+def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
+    """Convert focusz to meters."""
+    return focusz.to_value(astropy.units.m)
+
+
+def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
+    """Convert simple form back to Quantity."""
+    return simple * astropy.units.m
+
+
 def temperature_to_simple(temp: astropy.units.Quantity) -> float:
     """Convert temperature to kelvin."""
     return temp.to(astropy.units.K, equivalencies=astropy.units.temperature()).to_value()
@@ -273,6 +283,13 @@ may not be.""",
         "Unique integer identifier for this detector in this exposure.",
         "int",
         int,
+    ),
+    "focus_z": PropertyDefinition(
+        "Defocal distance.",
+        "astropy.units.Quantity",
+        astropy.units.Quantity,
+        focusz_to_simple,
+        simple_to_focusz,
     ),
     "object": PropertyDefinition("Object of interest or field name.", "str", str),
     "temperature": PropertyDefinition(

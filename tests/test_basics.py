@@ -44,6 +44,7 @@ class BasicTestCase(unittest.TestCase):
 
         reference = dict(
             boresight_airmass=1.5,
+            focus_z=1.0 * u.mm,
             temperature=15 * u.deg_C,
             observation_type="bias",
             exposure_time=5 * u.ks,

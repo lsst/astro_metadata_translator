@@ -301,3 +301,9 @@ class HscTranslator(SuprimeCamTranslator):
         # Name is defined from unique name
         unique = self.to_detector_unique_name()
         return unique.split("_")[1]
+
+    @cache_translation
+    def to_focus_z(self) -> u.Quantity:
+        # Docstring will be inherited. Property defined in properties.py
+        foc_val = self._header["FOC-VAL"]
+        return foc_val * u.mm
