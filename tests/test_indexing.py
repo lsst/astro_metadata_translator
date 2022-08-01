@@ -153,8 +153,10 @@ class IndexingTestCase(unittest.TestCase):
         # different errors
         bad_file = os.path.join(TESTDATA, "corrections", "SCUBA_test-20000101_00002.yaml")
 
-        with self.assertRaises(ValueError):
-            read_file_info(bad_file, 1)
+        with self.assertLogs(level="DEBUG") as cm:
+            with self.assertRaises(ValueError):
+                read_file_info(bad_file, 1)
+        self.assertIn("Unable to determine translator class", "\n".join(cm.output))
 
         with io.StringIO() as out:
             with io.StringIO() as err:

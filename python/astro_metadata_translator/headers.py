@@ -445,7 +445,7 @@ def fix_header(
             # if the header is not recognized, we should not complain
             # and should not proceed further.
             log.debug(
-                "Unable to determine translator class %s -- not fixing header: %e",
+                "Unable to determine translator class %s -- not fixing header: %s",
                 f"for {filename}" if filename is not None else "",
                 e,
             )
