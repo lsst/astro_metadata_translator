@@ -203,6 +203,20 @@ class TranslatorTestCase(unittest.TestCase):
             with self.assertWarns(UserWarning):
                 ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=True)
 
+        # Pass in header where the key does exist but the value is bad.
+        bad_header = {
+            "OBSGEO-X": "not-float",
+            "OBSGEO-Y": "not-float",
+            "OBSGEO-Z": "not-float",
+            "TELESCOP": "JCMT",
+            "TELCODE": "LSST",
+            "INSTRUME": "SCUBA_test",
+        }
+
+        with self.assertLogs("astro_metadata_translator"):
+            with self.assertWarns(UserWarning):
+                ObservationInfo(bad_header, translator_class=InstrumentTestTranslator, pedantic=False)
+
         with self.assertLogs("astro_metadata_translator"):
             with self.assertWarns(UserWarning):
                 ObservationInfo(
