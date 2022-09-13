@@ -34,8 +34,7 @@
 - [EXCLUDED, String, '', DECam components not used for this frame]
 - [HEX, Int, 347, DES Hex number]
 - [TILING, Int, 22, DES Tiling number]
-- [SEQID, String, 'SN-S1 enqueued on 2013-09-01 05:28:59Z by SupernovaDeadmanTactician',
-  '']
+- [SEQID, String, 'SN-S1 enqueued on 2013-09-01 05:28:59Z by SupernovaDeadmanTactician', '']
 - [SEQNUM, Int, 6, Number of image in sequence]
 - [SEQTOT, Int, 6, Total number of images in sequence]
 - [AOS, Bool, true, AOS data available if true]
@@ -93,8 +92,7 @@
 - [DONUTFS4, String, '[1.28,1.31,-8.89,-0.29,0.15,0.05,0.28,-0.14,-0.45,]', Mean Wavefront]
 - [DONUTFS3, String, '[-0.11,0.86,8.75,-0.34,0.06,0.10,0.39,0.07,-0.59,]', Mean Wavefront]
 - [DONUTFS2, String, '[0.80,0.13,-8.73,-0.24,0.16,-0.04,0.39,0.28,-0.13,]', Mean Wavefront]
-- [DONUTFS1, String, '[1.58,1.91,8.98,0.37,-0.64,-0.03,0.24,0.41,0.23,]', Mean Wavefront
-    f]
+- [DONUTFS1, String, '[1.58,1.91,8.98,0.37,-0.64,-0.03,0.24,0.41,0.23,]', Mean Wavefront]
 - [G-FLXVAR, Double, 199017264.953, '[arcsec] Guider mean guide star flux variances']
 - [G-MEANXY, Double, 0.002628, '[arcsec2] Guider (xy) 2nd moment mean offset']
 - [DONUTFN1, String, '[0.23,0.42,-8.82,-0.42,-0.23,-0.06,0.02,0.20,-0.37,]', Mean
@@ -284,4 +282,3 @@
 - [CHECKVER, String, COMPLEMENT, ' FITS checksum version']
 - [CHECKSUM, String, YcOHabLGTbLGYbLG, ' ASCII 1''s complement checksum']
 - [DATASUM, String, '3971077447', ' checksum of data records']
-

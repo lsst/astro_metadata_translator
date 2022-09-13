@@ -228,4 +228,3 @@
 - [CHECKVER, String, COMPLEMENT, ' FITS checksum version']
 - [CHECKSUM, String, UnBAXm98UmAAUm95, ' ASCII 1''s complement checksum']
 - [DATASUM, String, '3472101470', ' checksum of data records']
-

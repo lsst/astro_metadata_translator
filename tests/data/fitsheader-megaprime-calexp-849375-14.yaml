@@ -4,71 +4,9 @@
 - - COMMENT
   - String
   - ['  FITS (Flexible Image Transport System) format is defined in ''Astronomy',
-    '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H', '  FITS
-      (Flexible Image Transport System) format is defined in ''Astronomy', '  and
-      Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H', Observation
-      Summary, '-------------------', 'file 849375o29, raster FULL, etype OBJECT,
-      etime 300, filter filter_name', ' Fully Characterized and Analysed by Elixir
-      @ CFHT', 'Unique amplifier IDs for MegaCam:', -- -- 00 01 02 03 04 05 06 07
-      08 09 10 11 12 13 14 15 16 17 -- --, 72 73 18 19 20 21 22 23 24 25 26 27 28
-      29 30 31 32 33 34 35 74 75, 76 77 36 37 38 39 40 41 42 43 44 45 46 47 48 49
-      50 51 52 53 78 79, -- -- 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70
-      71 -- --, Detector, '--------', Telescope, '---------', RA/DEC are current telescope
-      position, including handset corrections, OBJxxx are original target position,
-    plus proper motion and precession, Processing Pipeline, '-------------------',
-    'Unique detector IDs for MegaCam (North on top, East to the left)', '   --------------------------',
-    '   ba ba ba ba ba ba ba ba ba', '   00 01 02 03 04 05 06 07 08', '--------------------------------',
-    ba ba ba ba ba ba ba ba ba ba ba, 36 09 10 11 12 13 14 15 16 17 37, '--------------------------------',
-    38 18 19 20 21 22 23 24 25 26 39, ab ab ab ab ab ab ab ab ab ab ab, '--------------------------------',
-    '   27 28 29 30 31 32 33 34 35', '   ab ab ab ab ab ab ab ab ab', '   __________________________',
-    'The two upper rows of CCDs are flipped, a=A amp, b=B amp', 'imred: Elixir / Flips2
-      flatten.flips', ' --------------- Elixir Analysis ---------------', ' Elixir:
-      processing performed @ CFHT, version 2.0', ' Elixir: version: 2.0', ' Elixir:
-      processing date: 2006-06-09T14:02:18', ' Elixir: website: http://www.cfht.hawaii.edu/Instruments/Elixir',
-    ' Elixir: email: elixir@cfht.hawaii.edu', ' Elixir: team: Eugene Magnier & Jean-Charles
-      Cuillandre', '  Formula for Photometry, based on keywords given in this header:',
-    '  m = -2.5*log(DN) + 2.5*log(EXPTIME)', '  M = m + PHOT_C + PHOT_K*(AIRMASS -
-      1) + PHOT_X*(PHOT_C1 - PHOT_C2)', ' --------------- Elixir Analysis (end) ---------------',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.', ' Reserved space.  This line can be used to
-      add a new FITS card.', ' Reserved space.  This line can be used to add a new
-      FITS card.', ' Reserved space.  This line can be used to add a new FITS card.',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.', ' Reserved space.  This line can be used to
-      add a new FITS card.', ' Reserved space.  This line can be used to add a new
-      FITS card.', ' Reserved space.  This line can be used to add a new FITS card.',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.', ' Reserved space.  This line can be used to
-      add a new FITS card.', ' Reserved space.  This line can be used to add a new
-      FITS card.', ' Reserved space.  This line can be used to add a new FITS card.',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.', ' Reserved space.  This line can be used to
-      add a new FITS card.', ' Reserved space.  This line can be used to add a new
-      FITS card.', ' Reserved space.  This line can be used to add a new FITS card.',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.', ' Reserved space.  This line can be used to
-      add a new FITS card.', ' Reserved space.  This line can be used to add a new
-      FITS card.', ' Reserved space.  This line can be used to add a new FITS card.',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.', ' Reserved space.  This line can be used to
-      add a new FITS card.', ' Reserved space.  This line can be used to add a new
-      FITS card.', ' Reserved space.  This line can be used to add a new FITS card.',
-    ' Reserved space.  This line can be used to add a new FITS card.', ' Reserved
-      space.  This line can be used to add a new FITS card.', ' Reserved space.  This
-      line can be used to add a new FITS card.', ' Reserved space.  This line can
-      be used to add a new FITS card.']
+     '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H',
+     '  FITS (Flexible Image Transport System) format is defined in ''Astronomy',
+     '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H']
   - ''
 - [ZNAME1, String, BLOCKSIZE, compression block size]
 - [ZVAL1, Int, 32, pixels per block]
@@ -316,35 +254,37 @@
 - [CRUNID, String, 06Am04, Elixir camera run ID]
 - - HISTORY
   - String
-  - ['imsplice: FLIPS ver 3.0 - Elixir by CFHT - Sat May 20 2006 -  2:10:48', 'imsplice:
-      Splicing the two readouts (A&B) per CCD into a unique image', 'imsplice: Splicing
-      results in all detectors as if read from A amplifier', 'imsplice: NEXTEND keyword
-      updated (/2) = number of CCDs vs. amplifiers', 'imsplice: EXTNAME keyword becomes
-      `ccdxx` instead of `ampxx`', 'imsplice: AMPNAME keyword now covers both amplifiers
-      (eg `29a + 29b'')', 'imsplice: keyword {GAIN, RDNOISE, MAXLIN} replaced by two
-      keywords [A,B]', 'imsplice: DATASEC and DETSEC keywords now reflect the entire
-      CCD', 'imsplice: BIASSEC becomes irrelevant -> replaced by BSECA & BSECB', 'imsplice:
-      New keywords are DETSECA, DETSECB, DSECA, DSECB, TSECA, TSECB', 'imsplice: New
-      keywords are ASECA, ASECB, CSECA, CSECB', 'imred: FLIPS ver 3.0 - Elixir by
-      CFHT - Fri Jun 9 2006 - 13:59:20', 'imred: Input image:  849375o.fits[ccd14]',
-    'imred: Output image: 849375p14', 'imred: Camera offset correction with overscan
-      level subtraction', 'imred: Overscan A amp computed from [1:32,1:4644]      =
-      1186 ADU', 'imred: Overscan B amp computed from [2081:2112,1:4644] = 1165 ADU',
-    'imred: Overscan model: 1D median Y axis vector in bias section', 'imred: Mask
-      bad pixels: * 2003A.mask.0.36.01.fits[ccd14]', 'imred: Bias structures: - 06Am04.bias.0.36.00.fits[ccd14]
-      (mode A_amp=0', 'imred: Flat-fielding: * 1.0 / 06Am04.flat.r.36.01.fits[ccd14]',
-    'imred: Normalized flat-field (ref. scaling factor= 1.1)', 'imred: Preserving
-      dynamic: stretching 65K ADU range by 1.051 (BSCALe)', 'Image was compressed
-      by CFITSIO using scaled integer quantization:', '  q = 4.000000 / quantized
-      level scaling parameter', '''SUBTRACTIVE_DITHER_2'' / Pixel Quantization Algorithm']
+  - ['imsplice: FLIPS ver 3.0 - Elixir by CFHT - Sat May 20 2006 -  2:10:48',
+     'imsplice: Splicing the two readouts (A&B) per CCD into a unique image',
+     'imsplice: Splicing results in all detectors as if read from A amplifier',
+     'imsplice: NEXTEND keyword updated (/2) = number of CCDs vs. amplifiers',
+     'imsplice: EXTNAME keyword becomes `ccdxx` instead of `ampxx`',
+     'imsplice: AMPNAME keyword now covers both amplifiers (eg `29a + 29b'')',
+     'imsplice: keyword {GAIN, RDNOISE, MAXLIN} replaced by two keywords [A,B]',
+     'imsplice: DATASEC and DETSEC keywords now reflect the entire CCD',
+     'imsplice: BIASSEC becomes irrelevant -> replaced by BSECA & BSECB',
+     'imsplice: New keywords are DETSECA, DETSECB, DSECA, DSECB, TSECA, TSECB',
+     'imsplice: New keywords are ASECA, ASECB, CSECA, CSECB',
+     'imred: FLIPS ver 3.0 - Elixir by CFHT - Fri Jun 9 2006 - 13:59:20',
+     'imred: Input image:  849375o.fits[ccd14]',
+     'imred: Output image: 849375p14', 'imred: Camera offset correction with overscan level subtraction',
+     'imred: Overscan A amp computed from [1:32,1:4644]      = 1186 ADU',
+     'imred: Overscan B amp computed from [2081:2112,1:4644] = 1165 ADU',
+     'imred: Overscan model: 1D median Y axis vector in bias section',
+     'imred: Mask bad pixels: * 2003A.mask.0.36.01.fits[ccd14]',
+     'imred: Bias structures: - 06Am04.bias.0.36.00.fits[ccd14] (mode A_amp=0',
+     'imred: Flat-fielding: * 1.0 / 06Am04.flat.r.36.01.fits[ccd14]',
+     'imred: Normalized flat-field (ref. scaling factor= 1.1)',
+     'imred: Preserving dynamic: stretching 65K ADU range by 1.051 (BSCALe)',
+     'Image was compressed by CFITSIO using scaled integer quantization:',
+     '  q = 4.000000 / quantized level scaling parameter',
+     '''SUBTRACTIVE_DITHER_2'' / Pixel Quantization Algorithm']
   - ''
-- [IMRED_DT, String, 'FLIPS ver 3.0 - Elixir by CFHT - Fri Jun 9 2006 - 13:59:20',
-  Date]
+- [IMRED_DT, String, 'FLIPS ver 3.0 - Elixir by CFHT - Fri Jun 9 2006 - 13:59:20', Date]
 - [IMRED_IF, String, '849375o.fits[ccd14]', Input file to process by imred]
 - [IMRED_OF, String, 849375p14, Output file resulting from the process by imred]
 - [IMRED_OP, String, MASK_BP + OVERSCAN + BIAS + FLAT-FIELD, Operation(s)]
-- [IMRED_MK, String, '2003A.mask.0.36.01.fits[ccd14]', Mask of bad pixels (0/1) input
-    file]
+- [IMRED_MK, String, '2003A.mask.0.36.01.fits[ccd14]', Mask of bad pixels (0/1) input file]
 - [IMRED_OV, String, 1DYMODEL_OVERSCAN, Type of overscan level correction]
 - [IMRED_BS, String, '06Am04.bias.0.36.00.fits[ccd14]', Bias frame input file]
 - [IMRED_FF, String, '06Am04.flat.r.36.01.fits[ccd14]', Flat-field frame input file]
@@ -503,4 +443,3 @@
 - [TFORM4, String, 1PB(164887), format of field]
 - [CHECKSUM, String, NJfKN9eJNGeJN9eJ, 'HDU checksum updated 2017-10-16T04:20:03']
 - [DATASUM, String, '2988287531', 'data unit checksum updated 2017-10-16T04:20:03']
-

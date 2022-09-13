@@ -231,7 +231,7 @@ class ObservationInfo:
                 raise NotImplementedError(
                     f"No translation exists for property '{t}'" f" using translator {translator.__class__}"
                 ) from e
-            except KeyError as e:
+            except Exception as e:
                 err_msg = (
                     f"Error calculating property '{t}' using translator {translator.__class__}" f"{file_info}"
                 )

@@ -4,11 +4,14 @@
 - - COMMENT
   - String
   - ['  FITS (Flexible Image Transport System) format is defined in ''Astronomy',
-    '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H', '-------------------------------------------------------------',
-    '--------------- PARAMETERS FOR SUPRIME_CAM ------------------', '-------------------------------------------------------------',
-    '-------------------------------------------------------------', '------------   SMOKA
-      (http://smoka.nao.ac.jp)   -------------', '-------------------------------------------------------------',
-    ' This file is provided by SMOKA Ver.3.7 at Fri Feb 19 18:16:05 JST 2016.']
+     '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H',
+     '-------------------------------------------------------------',
+     '--------------- PARAMETERS FOR SUPRIME_CAM ------------------',
+     '-------------------------------------------------------------',
+     '-------------------------------------------------------------',
+     '------------   SMOKA (http://smoka.nao.ac.jp)   -------------',
+     '-------------------------------------------------------------',
+     ' This file is provided by SMOKA Ver.3.7 at Fri Feb 19 18:16:05 JST 2016.']
   - ''
 - [BUNIT, String, ADU, Unit of original pixel value]
 - [BLANK, Int, -32768, Value used for NULL pixels]
@@ -181,4 +184,3 @@
 - [CTYPE2A, String, LINEAR, Type of projection]
 - [CUNIT1A, String, PIXEL, Column unit]
 - [CUNIT2A, String, PIXEL, Row unit]
-

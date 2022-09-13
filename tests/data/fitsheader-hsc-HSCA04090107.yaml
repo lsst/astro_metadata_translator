@@ -162,4 +162,3 @@
 - [T_OSMX42, Int, 4241, MAX pixel of y-overscan region for ch4]
 - [T_EFMN42, Int, 50, MIN pixel of y-effective range for ch4]
 - [T_EFMX42, Int, 4225, MAX pixel of y-effective range for ch4]
-
