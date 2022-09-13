@@ -4,7 +4,7 @@
 - - COMMENT
   - String
   - ['  FITS (Flexible Image Transport System) format is defined in ''Astronomy',
-    '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H']
+     '  and Astrophysics'', volume 376, page 359; bibcode: 2001A&A...376..359H']
   - ''
 - [OBJECT, String, Blind15A_03, Name of the object observed]
 - [PROCTYPE, String, InstCal, Data processing level]
@@ -27,8 +27,7 @@
 - [EXPNUM, Int, 412037, DECam exposure number]
 - [OBSTYPE, String, object, Observation type]
 - [CAMSHUT, String, Open, Camera shutter at exposure start]
-- [PROGRAM, String, 'HITS: HIgh cadence Transient Survey, real-time detection of stellar
-    explosions&', Current observing orogram]
+- [PROGRAM, String, 'HITS: HIgh cadence Transient Survey, real-time detection of stellar explosions&', Current observing orogram]
 - [OBSERVER, String, 'Galbany, de Jaeger, Martinez', Observer name(s)]
 - [PROPOSER, String, Forster, Proposal Principle Investigator]
 - [DTPI, String, Forster, ' Principal Investigator']
@@ -52,8 +51,7 @@
 - [ZD, Double, 53.22, '[deg] Telescope zenith distance']
 - [AZ, Double, 67.9464, '[deg] Telescope azimuth angle']
 - [DOMEAZ, Double, 70.3, '[deg] Dome azimuth angle']
-- [TELFOCUS, String, '-3044.11,-2671.73,2828.00,66.75,-223.95,-0.00', DECam hexapod
-    settin]
+- [TELFOCUS, String, '-3044.11,-2671.73,2828.00,66.75,-223.95,-0.00', DECam hexapod settin]
 - [VSUB, Bool, true, True if CCD substrate voltage is on]
 - [GSKYPHOT, Bool, false, RASICAM global sky clear flag]
 - [LSKYPHOT, Bool, true, RASICAM local sky clear flag]
@@ -87,20 +85,16 @@
 - [DOMEFLOR, Double, 10.8, '[deg C] Dome floor temperature']
 - [G-MEANX, Double, -0.0597, '[arcsec] Guider x-axis mean offset']
 - [G-MEANY, Double, 0.0118, '[arcsec] Guider y-axis mean offset']
-- [DONUTFS4, String, '[1.89,0.38,-8.98,0.32,-0.19,-0.05,-0.12,0.05,-0.38,]', Mean
-    Wavefron]
+- [DONUTFS4, String, '[1.89,0.38,-8.98,0.32,-0.19,-0.05,-0.12,0.05,-0.38,]', Mean Wavefron]
 - [DONUTFS3, String, '[0.52,1.80,8.89,0.14,-0.31,0.11,-0.16,0.11,-0.31,]', Mean Wavefront]
 - [DONUTFS2, String, '[1.66,0.40,-8.92,0.56,-0.16,-0.07,-0.12,0.44,0.13,]', Mean Wavefront]
-- [DONUTFS1, String, '[1.04,1.71,8.84,0.49,0.01,0.19,-0.13,0.27,0.15,]', Mean Wavefront
-    fo]
+- [DONUTFS1, String, '[1.04,1.71,8.84,0.49,0.01,0.19,-0.13,0.27,0.15,]', Mean Wavefront fo]
 - [G-FLXVAR, Double, 2917578.721, '[arcsec] Guider mean guide star flux variances']
 - [G-MEANXY, Double, -0.006947, '[arcsec2] Guider (xy) 2nd moment mean offset']
 - [DONUTFN1, String, '[1.42,-0.00,-8.95,0.31,-0.01,0.01,0.03,0.33,-0.17,]', Mean Wavefront]
-- [DONUTFN2, String, '[1.79,1.05,9.06,0.06,-0.22,0.16,0.05,0.30,0.05,]', Mean Wavefront
-    fo]
+- [DONUTFN2, String, '[1.79,1.05,9.06,0.06,-0.22,0.16,0.05,0.30,0.05,]', Mean Wavefront fo]
 - [DONUTFN3, String, '[0.98,0.59,-8.91,0.42,-0.11,-0.05,-0.01,0.10,0.40,]', Mean Wavefront]
-- [DONUTFN4, String, '[1.74,1.85,8.84,0.45,-0.32,0.11,0.06,-0.07,0.32,]', Mean Wavefront
-    f]
+- [DONUTFN4, String, '[1.74,1.85,8.84,0.45,-0.32,0.11,0.06,-0.07,0.32,]', Mean Wavefront f]
 - [time_recorded, String, '2015-02-20T00:49:09.181634', '']
 - [G-FEEDBK, String, '10, 5', '[%] Guider feedback (HA, dec)']
 - [G-CCDNUM, Int, 4, Number of guide CCDs that remained active]
@@ -141,8 +135,7 @@
 - [DTCOPYRI, String, AURA, ' copyright holder of data']
 - [DTACQUIS, String, pipeline3.ctio.noao.edu, ' host name of data acquisition computer']
 - [DTACCOUN, String, sispi, ' observing account name']
-- [DTACQNAM, String, /data_local/images/DTS/2015A-0608/DECam_00412037.fits.fz, ' file
-    na']
+- [DTACQNAM, String, /data_local/images/DTS/2015A-0608/DECam_00412037.fits.fz, ' file na']
 - [DTNSANAM, String, c4d_150220_004936_ori.fits, ' file name in NOAO Science Archive']
 - [DT_RTNAM, String, c4d_150220_004936_ori, ' NSA root name']
 - [DTQUEUE, String, decam, ' DTS queue (73256)']
@@ -174,29 +167,38 @@
 - [XTALKFIL, String, xtalk_20130606.txt, Crosstalk file]
 - - HISTORY
   - String
-  - ['DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/DECam_crosstalk /data/s', haredfs/deccp/Archive/DEC15A/src/57072g/src/dec275994.fits
-      /data/sharedf, s/deccp/Archive/DEC15A/red/20150222113456_57072g/raw/dec275994/dec275994,
-    ' -verbose 3 -crosstalk /data/sharedfs/deccp/Archive/CAL/cal/DECamMasterC', al_56475/xtalk/xtalk_20130606.txt
-      -postsatmask -replace /data/sharedfs/d, eccp/Archive/CAL/cal/DECamMasterCal_56475/hfix/hfix_20130628.txt
-      -photfl, ag 0 -overscansample 1 -overscanfunction 0 -overscanorder 1 -overscantri,
-    m 5, 'DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/imcorrect /data/sharedf',
-    t -output /data/sharedfs/deccp/Archive/DEC15A/red/20150222113456_57072g/, edfs/deccp/Archive/CAL/cal/DECamMasterCal_56475/linearity/linearity_tabl,
-    e_v0.4.fits -bias /data/sharedfs/deccp/Archive/CAL/cal/20150222103855_57, en /data/sharedfs/deccp/Archive/CAL/cal/20150222111617_57072gF/flatcor/D,
-    ta/sharedfs/deccp/Archive/CAL/cal/DECamMasterCal_56876/starflat/DECam_Ma, rbose
-      3 -interpolate_col 2.0 -fast -noisemode FULL, 'DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/mkbleedmask
-      -i -b 5 -f', 1.0 -l 7 -n 7 -r 5 -s 40 -t 20 -v 3 -y 1.0 -E 5 /data/sharedfs/deccp/Arc,
-    ata/sharedfs/deccp/Archive/DEC15A/red/20150222113456_57072g/red/dec27599, 'DESDM:
-      /data/sharedfs/deccp/CP_INSTALL/cp223/bin/maskcosmics /data/share', dfs/deccp/Archive/DEC15A/red/20150222113456_57072g/red/dec275994/dec2759,
-    s/deccp/Archive/DEC15A/red/20150222113456_57072g/aux/detrend_in_0063.lis, aux/detrend_out_0063.list
-      -bpm /data/sharedfs/deccp/Archive/CAL/cal/DECa, mMasterCal_56475/bpm/DECam_Master_20130716_cd_01.fits
-      -linear /data/shar, 072Z/biascor/DEC15A_20150216_87dcde8-Z-20150219T192328_ci_01.fits
-      -flatt, EC15A_20150216_87dcde8-gF-20150219T201049_ci_g_01.fits -illumination
-      /da, ster_20130829v3-gI_ci_g_01.fits -variancetype WEIGHT -updatesky -MEF -ve,
-    hive/DEC15A/red/20150222113456_57072g/red/dec275994/dec275994_01.fits /d, 4/dec275994_01.fits,
-    94_01.fits -crays -crfract 0.20 -crsig2 2.00 -lowsig 15.00 -lowwt 0.0001, 'Image
-      was compressed by CFITSIO using scaled integer quantization:', '  q = 4.000000
-      / quantized level scaling parameter', '''SUBTRACTIVE_DITHER_1'' / Pixel Quantization
-      Algorithm']
+  - ['DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/DECam_crosstalk /data/s',
+     'haredfs/deccp/Archive/DEC15A/src/57072g/src/dec275994.fits /data/sharedf',
+     's/deccp/Archive/DEC15A/red/20150222113456_57072g/raw/dec275994/dec275994',
+     ' -verbose 3 -crosstalk /data/sharedfs/deccp/Archive/CAL/cal/DECamMasterC',
+     al_56475/xtalk/xtalk_20130606.txt -postsatmask -replace /data/sharedfs/d,
+     eccp/Archive/CAL/cal/DECamMasterCal_56475/hfix/hfix_20130628.txt -photfl,
+     ag 0 -overscansample 1 -overscanfunction 0 -overscanorder 1 -overscantri,
+     m 5,
+     'DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/imcorrect /data/sharedf',
+     t -output /data/sharedfs/deccp/Archive/DEC15A/red/20150222113456_57072g/,
+     edfs/deccp/Archive/CAL/cal/DECamMasterCal_56475/linearity/linearity_tabl,
+     e_v0.4.fits -bias /data/sharedfs/deccp/Archive/CAL/cal/20150222103855_57,
+     en /data/sharedfs/deccp/Archive/CAL/cal/20150222111617_57072gF/flatcor/D,
+     ta/sharedfs/deccp/Archive/CAL/cal/DECamMasterCal_56876/starflat/DECam_Ma,
+     rbose 3 -interpolate_col 2.0 -fast -noisemode FULL,
+     'DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/mkbleedmask-i -b 5 -f',
+     1.0 -l 7 -n 7 -r 5 -s 40 -t 20 -v 3 -y 1.0 -E 5 /data/sharedfs/deccp/Arc,
+     ata/sharedfs/deccp/Archive/DEC15A/red/20150222113456_57072g/red/dec27599,
+     'DESDM: /data/sharedfs/deccp/CP_INSTALL/cp223/bin/maskcosmics /data/share',
+     dfs/deccp/Archive/DEC15A/red/20150222113456_57072g/red/dec275994/dec2759,
+     s/deccp/Archive/DEC15A/red/20150222113456_57072g/aux/detrend_in_0063.lis,
+     aux/detrend_out_0063.list-bpm /data/sharedfs/deccp/Archive/CAL/cal/DECa,
+     mMasterCal_56475/bpm/DECam_Master_20130716_cd_01.fits-linear /data/shar,
+     072Z/biascor/DEC15A_20150216_87dcde8-Z-20150219T192328_ci_01.fits-flatt,
+     EC15A_20150216_87dcde8-gF-20150219T201049_ci_g_01.fits -illumination /da,
+     ster_20130829v3-gI_ci_g_01.fits -variancetype WEIGHT -updatesky -MEF -ve,
+     hive/DEC15A/red/20150222113456_57072g/red/dec275994/dec275994_01.fits /d,
+     4/dec275994_01.fits,
+     94_01.fits -crays -crfract 0.20 -crsig2 2.00 -lowsig 15.00 -lowwt 0.0001,
+     'Image was compressed by CFITSIO using scaled integer quantization:',
+     '  q = 4.000000 / quantized level scaling parameter',
+     '''SUBTRACTIVE_DITHER_1'' / Pixel Quantization Algorithm']
   - ''
 - [DES_EXT, String, IMAGE, Image extension]
 - [SCAMPCHI, Double, 4.1, chi2 value from SCAMP]
@@ -244,8 +246,7 @@
 - [SLOT03, String, CCD12 29 4.080000, Monsoon module]
 - [SLOT04, String, CCD12 15 4.080000, Monsoon module]
 - [SLOT05, String, CCD12 28 4.080000, Monsoon module]
-- [DESDCXTK, String, 'Sun Feb 22 11:38:54 2015', DECam image conversion and crosstalk
-    corr]
+- [DESDCXTK, String, 'Sun Feb 22 11:38:54 2015', DECam image conversion and crosstalk corr]
 - [DESOSCN, String, 'Sun Feb 22 11:38:54 2015', overscan corrected]
 - [DESSAT, String, 'Sun Feb 22 11:38:54 2015', saturated pixels flagged]
 - [NSATPIX, Int, 454, Number of saturated pixels]
