@@ -25,6 +25,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Dict,
     FrozenSet,
     Iterable,
@@ -150,33 +151,33 @@ class MetadataTranslator:
     # Static typing requires that we define the standard dynamic properties
     # statically.
     if TYPE_CHECKING:
-        to_telescope: Callable[[MetadataTranslator], str]
-        to_instrument: Callable[[MetadataTranslator], str]
-        to_location: Callable[[MetadataTranslator], astropy.coordinates.EarthLocation]
-        to_exposure_id: Callable[[MetadataTranslator], int]
-        to_visit_id: Callable[[MetadataTranslator], int]
-        to_physical_filter: Callable[[MetadataTranslator], str]
-        to_datetime_begin: Callable[[MetadataTranslator], astropy.time.Time]
-        to_datetime_end: Callable[[MetadataTranslator], astropy.time.Time]
-        to_exposure_time: Callable[[MetadataTranslator], u.Quantity]
-        to_dark_time: Callable[[MetadataTranslator], u.Quantity]
-        to_boresight_airmass: Callable[[MetadataTranslator], float]
-        to_boresight_rotation_angle: Callable[[MetadataTranslator], u.Quantity]
-        to_boresight_rotation_coord: Callable[[MetadataTranslator], str]
-        to_detector_num: Callable[[MetadataTranslator], int]
-        to_detector_name: Callable[[MetadataTranslator], str]
-        to_detector_serial: Callable[[MetadataTranslator], str]
-        to_detector_group: Callable[[MetadataTranslator], Optional[str]]
-        to_detector_exposure_id: Callable[[MetadataTranslator], int]
-        to_object: Callable[[MetadataTranslator], str]
-        to_temperature: Callable[[MetadataTranslator], u.Quantity]
-        to_pressure: Callable[[MetadataTranslator], u.Quantity]
-        to_relative_humidity: Callable[[MetadataTranslator], float]
-        to_tracking_radec: Callable[[MetadataTranslator], astropy.coordinates.SkyCoord]
-        to_altaz_begin: Callable[[MetadataTranslator], astropy.coordinates.AltAz]
-        to_science_program: Callable[[MetadataTranslator], str]
-        to_observation_type: Callable[[MetadataTranslator], str]
-        to_observation_id: Callable[[MetadataTranslator], str]
+        to_telescope: ClassVar[Callable[[MetadataTranslator], str]]
+        to_instrument: ClassVar[Callable[[MetadataTranslator], str]]
+        to_location: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.EarthLocation]]
+        to_exposure_id: ClassVar[Callable[[MetadataTranslator], int]]
+        to_visit_id: ClassVar[Callable[[MetadataTranslator], int]]
+        to_physical_filter: ClassVar[Callable[[MetadataTranslator], str]]
+        to_datetime_begin: ClassVar[Callable[[MetadataTranslator], astropy.time.Time]]
+        to_datetime_end: ClassVar[Callable[[MetadataTranslator], astropy.time.Time]]
+        to_exposure_time: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_dark_time: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_boresight_airmass: ClassVar[Callable[[MetadataTranslator], float]]
+        to_boresight_rotation_angle: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_boresight_rotation_coord: ClassVar[Callable[[MetadataTranslator], str]]
+        to_detector_num: ClassVar[Callable[[MetadataTranslator], int]]
+        to_detector_name: ClassVar[Callable[[MetadataTranslator], str]]
+        to_detector_serial: ClassVar[Callable[[MetadataTranslator], str]]
+        to_detector_group: ClassVar[Callable[[MetadataTranslator], Optional[str]]]
+        to_detector_exposure_id: ClassVar[Callable[[MetadataTranslator], int]]
+        to_object: ClassVar[Callable[[MetadataTranslator], str]]
+        to_temperature: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_pressure: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_relative_humidity: ClassVar[Callable[[MetadataTranslator], float]]
+        to_tracking_radec: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.SkyCoord]]
+        to_altaz_begin: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.AltAz]]
+        to_science_program: ClassVar[Callable[[MetadataTranslator], str]]
+        to_observation_type: ClassVar[Callable[[MetadataTranslator], str]]
+        to_observation_id: ClassVar[Callable[[MetadataTranslator], str]]
 
     @classmethod
     def defined_in_this_class(cls, name: str) -> Optional[bool]:
