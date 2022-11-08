@@ -42,7 +42,7 @@ except AttributeError:
 
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
 # we can use if daf_base is not available.
-def pl_constructor(loader: yaml.Loader, node: yaml.Node) -> Any:
+def pl_constructor(loader: yaml.Loader, node: yaml.SequenceNode) -> Any:
     """Construct an OrderedDict from a YAML file containing a PropertyList."""
     pl: Dict[str, Any] = {}
     yield pl
