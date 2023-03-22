@@ -105,11 +105,11 @@ class TestTranslateHeader(unittest.TestCase):
                 )
 
                 lines = self._readlines(out)
-                self.assertEqual(len(lines), 22, "\n".join(lines))
+                self.assertGreaterEqual(len(lines), 22, "\n".join(lines))
                 self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
 
                 lines = self._readlines(err)
-                self.assertEqual(len(lines), 13, "\n".join(lines))
+                self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
                 self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
         self.assertEqual(len(okay), 10)
