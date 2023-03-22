@@ -34,8 +34,9 @@ except ImportError:
 
 
 # For YAML >= 5.1 need a different Loader for the constructor
+Loader: Type[yaml.Loader] | Type[yaml.FullLoader]
 try:
-    Loader: Optional[Type] = yaml.FullLoader
+    Loader = yaml.FullLoader
 except AttributeError:
     Loader = yaml.Loader
 
