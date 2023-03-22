@@ -165,6 +165,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                     temperature=15.1 * u.deg_C,
                     visit_id=845291,
                     wcs_params=dict(max_sep=5.0),
+                    check_altaz=True,
                 ),
             ),
         )

@@ -107,7 +107,7 @@ class MetadataAssertHelper:
         ) -> None:
             pass
 
-        def assertIsNotNone(self, a: Any) -> None:  # noqa: N802
+        def assertIsNotNone(self, a: Any, msg: str | None = None) -> None:  # noqa: N802
             pass
 
         def assertEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
@@ -165,6 +165,7 @@ class MetadataAssertHelper:
         dir: Optional[str] = None,
         check_wcs: bool = True,
         wcs_params: Optional[Dict[str, Any]] = None,
+        check_altaz: bool = False,
         **kwargs: Any,
     ) -> None:
         """Check contents of an ObservationInfo.
@@ -179,6 +180,8 @@ class MetadataAssertHelper:
             Check the consistency of the RA/Dec and AltAz values.
         wcs_params : `dict`, optional
             Parameters to pass to `assertCoordinatesConsistent`.
+        check_altaz : `bool`, optional
+            Check that an alt/az value has been calculated.
         kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
@@ -202,10 +205,17 @@ class MetadataAssertHelper:
         for hdr in (header, astropy_header):
             try:
                 self.assertObservationInfo(
-                    header, filename=file, check_wcs=check_wcs, wcs_params=wcs_params, **kwargs
+                    header,
+                    filename=file,
+                    check_wcs=check_wcs,
+                    wcs_params=wcs_params,
+                    check_altaz=check_altaz,
+                    **kwargs,
                 )
             except AssertionError as e:
-                raise AssertionError(f"ObservationInfo derived from {type(hdr)} type is inconsistent.") from e
+                raise AssertionError(
+                    f"ObservationInfo derived from {type(hdr)} type is inconsistent: {e}"
+                ) from e
 
     def assertObservationInfo(  # noqa: N802
         self,
@@ -213,6 +223,7 @@ class MetadataAssertHelper:
         filename: Optional[str] = None,
         check_wcs: bool = True,
         wcs_params: Optional[Dict[str, Any]] = None,
+        check_altaz: bool = False,
         **kwargs: Any,
     ) -> None:
         """Check contents of an ObservationInfo.
@@ -229,6 +240,8 @@ class MetadataAssertHelper:
             not appear to be "science".
         wcs_params : `dict`, optional
             Parameters to pass to `assertCoordinatesConsistent`.
+        check_altaz : `bool`, optional
+            Check that an alt/az value has been calculated.
         kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
@@ -284,6 +297,10 @@ class MetadataAssertHelper:
 
         # Check that exposure time is not outside datetime_end
         self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time, obsinfo.datetime_end)
+
+        # Do we expect an AltAz value or not.
+        if check_altaz:
+            self.assertIsNotNone(obsinfo.altaz_begin, "altaz_begin is None but should have a value")
 
         # Check the WCS consistency
         if check_wcs and obsinfo.observation_type == "science":
