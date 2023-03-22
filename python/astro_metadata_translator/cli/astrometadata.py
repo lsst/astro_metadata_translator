@@ -120,7 +120,6 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
 def translate(
     ctx: click.Context, files: Sequence[str], quiet: bool, hdrnum: int, mode: str, regex: str
 ) -> None:
-
     # For quiet mode we want to translate everything but report nothing.
     if quiet:
         mode = "none"
@@ -153,7 +152,6 @@ def translate(
 @regex_option
 @click.pass_context
 def dump(ctx: click.Context, files: Sequence[str], hdrnum: int, mode: str, regex: str) -> None:
-
     okay, failed = translate_header(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
 
     if failed:

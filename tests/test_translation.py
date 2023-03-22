@@ -68,7 +68,6 @@ class TranslatorTestCase(unittest.TestCase):
         }
 
     def test_manual_translation(self):
-
         header = self.header
         translator = FitsTranslator(header)
 
