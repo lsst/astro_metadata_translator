@@ -208,7 +208,6 @@ def read_file(
             md = {k: v for k, v in md.items()}
 
         if output_mode in ("yaml", "fixed"):
-
             if output_mode == "fixed":
                 fix_header(md, filename=file)
 

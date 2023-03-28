@@ -37,7 +37,6 @@ class ExplicitTranslator(TrivialTranslator):
 
 class TranslatorShadowing(unittest.TestCase):
     def test_shadowing(self):
-
         with self.assertLogs("astro_metadata_translator", level="WARN") as cm:
 
             class ShadowTranslator(StubTranslator):

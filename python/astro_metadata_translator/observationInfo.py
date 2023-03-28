@@ -162,7 +162,6 @@ class ObservationInfo:
         required: Optional[Set[str]] = None,
         subset: Optional[Set[str]] = None,
     ) -> None:
-
         # Initialize the empty object
         self._header: MutableMapping[str, Any] = {}
         self.filename = filename
@@ -577,7 +576,6 @@ class ObservationInfo:
 
         processed: Dict[str, Any] = {}
         for k, v in simple.items():
-
             if v is None:
                 continue
 
