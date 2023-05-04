@@ -23,13 +23,17 @@ import os
 import posixpath
 from collections import Counter
 from collections.abc import Mapping, MutableMapping, Sequence
-from typing import IO, Any
+from typing import IO, TYPE_CHECKING, Any
 
 import yaml
 from lsst.resources import ResourcePath
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
+
+if TYPE_CHECKING:
+    from lsst.resources import ResourceHandleProtocol
+
 
 log = logging.getLogger(__name__)
 
@@ -263,7 +267,7 @@ def merge_headers(
     return merged
 
 
-def _read_yaml(fh: IO[bytes], msg: str) -> Mapping[str, Any] | None:
+def _read_yaml(fh: IO[bytes] | ResourceHandleProtocol, msg: str) -> Mapping[str, Any] | None:
     """Read YAML from file descriptor.
 
     Parameters
