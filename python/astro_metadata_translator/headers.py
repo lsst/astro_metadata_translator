@@ -25,8 +25,8 @@ from collections import Counter
 from collections.abc import Mapping, MutableMapping, Sequence
 from typing import IO, Any
 
-import pkg_resources
 import yaml
+from lsst.resources import ResourcePath
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
@@ -352,17 +352,19 @@ def _find_from_resource(
     """
     if package is not None and resource_root is not None:
         resource_name = posixpath.join(resource_root, target_file)
-        if pkg_resources.resource_exists(package, resource_name):
-            log.debug("Applying header corrections from package resource %s:%s", package, resource_name)
-            with pkg_resources.resource_stream(package, resource_name) as fh:
-                corrections = _read_yaml(fh, f"package resource {package}:{resource_name}")
+        uri_str = f"resource://{package}/{resource_name}"
+        uri = ResourcePath(uri_str)
+        if uri.exists():
+            log.debug("Applying header corrections from package resource %s", uri)
+            with uri.open("r") as fh:
+                corrections = _read_yaml(fh, f"package resource {uri_str}")
 
             if corrections is None:
                 return None
 
             header.update(corrections)
 
-            return f"{package}:{resource_name}"
+            return uri_str
     return None
 
 
