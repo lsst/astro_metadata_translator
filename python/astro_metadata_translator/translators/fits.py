@@ -30,7 +30,7 @@ class FitsTranslator(MetadataTranslator):
 
     Understands:
 
-    - DATE-OBS
+    - DATE-OBS/MJD-OBS or DATE-BEG/MJD-BEG (-BEG is preferred).
     - INSTRUME
     - TELESCOP
     - OBSGEO-[X,Y,Z]
@@ -104,7 +104,9 @@ class FitsTranslator(MetadataTranslator):
 
         return Time(date_str, format="isot", scale=scale)
 
-    def _from_fits_date(self, date_key: str, mjd_key: str | None = None, scale: str | None = None) -> Time:
+    def _from_fits_date(
+        self, date_key: str, mjd_key: str | None = None, scale: str | None = None
+    ) -> Time | None:
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
@@ -153,18 +155,26 @@ class FitsTranslator(MetadataTranslator):
         return value
 
     @cache_translation
-    def to_datetime_begin(self) -> Time:
+    def to_datetime_begin(self) -> Time | None:
         """Calculate start time of observation.
 
-        Uses FITS standard ``MJD-OBS`` or ``DATE-OBS``, in conjunction
-        with the ``TIMESYS`` header.
+        Uses FITS standard ``MJD-BEG`` or ``DATE-BEG``, in conjunction
+        with the ``TIMESYS`` header. Will fallback to using ``MJD-OBS``
+        or ``DATE-OBS`` if the ``-BEG`` variants are not found.
 
         Returns
         -------
-        start_time : `astropy.time.Time`
-            Time corresponding to the start of the observation.
+        start_time : `astropy.time.Time` or `None`
+            Time corresponding to the start of the observation. Returns
+            `None` if no date can be found.
         """
-        return self._from_fits_date("DATE-OBS", mjd_key="MJD-OBS")
+        # Prefer -BEG over -OBS
+        begin = None
+        for suffix in ("BEG", "OBS"):
+            begin = self._from_fits_date(f"DATE-{suffix}", mjd_key=f"MJD-{suffix}")
+            if begin is not None:
+                break
+        return begin
 
     @cache_translation
     def to_datetime_end(self) -> Time:
