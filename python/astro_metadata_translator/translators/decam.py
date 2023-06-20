@@ -301,7 +301,7 @@ class DecamTranslator(FitsTranslator):
         exposure_id = self.to_exposure_id()
         if exposure_id is None:
             return None
-        return int("{:07d}{:02d}".format(exposure_id, self.to_detector_num()))
+        return int(f"{exposure_id:07d}{self.to_detector_num():02d}")
 
     @cache_translation
     def to_detector_group(self) -> str:

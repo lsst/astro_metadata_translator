@@ -100,7 +100,7 @@ class FitsTranslator(MetadataTranslator):
             `~astropy.time.Time` representation of the date.
         """
         if time_str is not None:
-            date_str = "{}T{}".format(date_str[:10], time_str)
+            date_str = f"{date_str[:10]}T{time_str}"
 
         return Time(date_str, format="isot", scale=scale)
 
