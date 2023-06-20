@@ -50,7 +50,7 @@ def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) ->
     if date_begin is not None and date_end is not None:
         date_avg = date_begin + (date_end - date_begin) / 2.0
 
-    for fragment, date in (("OBS", date_begin), ("END", date_end), ("AVG", date_avg)):
+    for fragment, date in (("OBS", date_begin), ("BEG", date_begin), ("END", date_end), ("AVG", date_avg)):
         if date is not None:
             tai = date.tai
             cards[f"DATE-{fragment}"] = tai.isot

@@ -88,6 +88,8 @@ class ObservationGroupTestCase(unittest.TestCase):
             "TIMESYS": "TAI",
             "DATE-OBS": "2012-12-11T22:07:07.859",
             "MJD-OBS": 56272.92161874134,
+            "DATE-BEG": "2012-12-11T22:07:07.859",
+            "MJD-BEG": 56272.92161874134,
             "DATE-END": "2015-02-20T00:50:11.000",
             "MJD-END": 57073.034849537034,
             "DATE-AVG": "2014-01-15T23:28:39.430",
@@ -106,7 +108,9 @@ class ObservationGroupTestCase(unittest.TestCase):
             "MJD-AVG": 56536.25417681625,
             "MJD-END": 56536.25591435185,
             "MJD-OBS": 56536.25243928065,
+            "MJD-BEG": 56536.25243928065,
             "DATE-OBS": "2013-09-01T06:03:30.754",
+            "DATE-BEG": "2013-09-01T06:03:30.754",
             "DATE-AVG": "2013-09-01T06:06:00.877",
             "DATE-END": "2013-09-01T06:08:31.000",
         }
