@@ -235,4 +235,4 @@ class ObservationGroup(MutableSequence):
         group : `ObservationGroup`
             Reconstructed group.
         """
-        return cls((ObservationInfo.from_simple(o) for o in simple))
+        return cls(ObservationInfo.from_simple(o) for o in simple)
