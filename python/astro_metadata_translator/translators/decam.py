@@ -293,7 +293,7 @@ class DecamTranslator(FitsTranslator):
     @cache_translation
     def to_altaz_begin(self) -> astropy.coordinates.AltAz:
         # Docstring will be inherited. Property defined in properties.py
-        return altaz_from_degree_headers(self, (("ZD", "AZ"),), self.to_datetime_begin(), is_zd=set(["ZD"]))
+        return altaz_from_degree_headers(self, (("ZD", "AZ"),), self.to_datetime_begin(), is_zd={"ZD"})
 
     @cache_translation
     def to_detector_exposure_id(self) -> int | None:

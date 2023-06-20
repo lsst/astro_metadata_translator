@@ -422,7 +422,7 @@ class MetadataTranslator:
                     "%s: %s is defined explicitly but will be replaced %s", cls.__name__, name, location
                 )
 
-        properties = set(PROPERTIES) | set(("ext_" + pp for pp in cls.extensions))
+        properties = set(PROPERTIES) | {"ext_" + pp for pp in cls.extensions}
         cls.all_properties = dict(PROPERTIES)
         cls.all_properties.update(cls.extensions)
 
