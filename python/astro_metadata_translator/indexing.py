@@ -225,7 +225,7 @@ def read_index(
     if not path.endswith(".json"):
         raise ValueError(f"Index files must be in .json format; got {path}")
 
-    with open(path, "r") as fd:
+    with open(path) as fd:
         content: MutableMapping[str, Any] = json.loads(fd.read())
 
     if not isinstance(content, MutableMapping):
@@ -351,7 +351,7 @@ def read_sidecar(path: str) -> ObservationInfo | MutableMapping[str, Any]:
     if not path.endswith(".json"):
         raise ValueError(f"Sidecar files must be in .json format; got {path}")
 
-    with open(path, "r") as fd:
+    with open(path) as fd:
         content: MutableMapping[str, Any] = json.loads(fd.read())
 
     if not isinstance(content, MutableMapping):
