@@ -15,7 +15,8 @@ from __future__ import annotations
 
 __all__ = ("FitsTranslator",)
 
-from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Union
+from collections.abc import Mapping
+from typing import Any
 
 import astropy.units as u
 from astropy.coordinates import EarthLocation
@@ -37,13 +38,13 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = dict(
+    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = dict(
         instrument="INSTRUME",
         telescope="TELESCOP",
     )
 
     @classmethod
-    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -77,9 +78,7 @@ class FitsTranslator(MetadataTranslator):
         return instrument == cls.supported_instrument
 
     @classmethod
-    def _from_fits_date_string(
-        cls, date_str: str, scale: str = "utc", time_str: Optional[str] = None
-    ) -> Time:
+    def _from_fits_date_string(cls, date_str: str, scale: str = "utc", time_str: str | None = None) -> Time:
         """Parse standard FITS ISO-style date string and return time object
 
         Parameters
@@ -105,9 +104,7 @@ class FitsTranslator(MetadataTranslator):
 
         return Time(date_str, format="isot", scale=scale)
 
-    def _from_fits_date(
-        self, date_key: str, mjd_key: Optional[str] = None, scale: Optional[str] = None
-    ) -> Time:
+    def _from_fits_date(self, date_key: str, mjd_key: str | None = None, scale: str | None = None) -> Time:
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,

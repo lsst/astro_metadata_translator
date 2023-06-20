@@ -16,12 +16,13 @@ __all__ = ("write_sidecar_files", "write_sidecar_file")
 import os
 import sys
 import traceback
-from typing import IO, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import IO
 
 from ..file_helpers import find_files, read_file_info
 
 
-def _split_ext(file: str) -> Tuple[str, str]:
+def _split_ext(file: str) -> tuple[str, str]:
     """Split the extension from the file name and return it and the root.
 
     Special case handling of .gz and other compression extensions.
@@ -120,7 +121,7 @@ def write_sidecar_files(
     print_trace: bool,
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """Process each file and create sidecar file.
 
     Parameters

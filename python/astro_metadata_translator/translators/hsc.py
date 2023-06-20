@@ -18,7 +18,8 @@ __all__ = ("HscTranslator",)
 import logging
 import posixpath
 import re
-from typing import Any, MutableMapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 import astropy.units as u
 from astropy.coordinates import Angle
@@ -178,7 +179,7 @@ class HscTranslator(SuprimeCamTranslator):
     ]
 
     @classmethod
-    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 

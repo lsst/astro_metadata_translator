@@ -14,7 +14,7 @@ from __future__ import annotations
 
 __all__ = ("info_to_fits", "dates_to_fits", "group_to_fits")
 
-from typing import TYPE_CHECKING, Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import astropy.time
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from ..observationInfo import ObservationInfo
 
 
-def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) -> Dict[str, Any]:
+def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) -> dict[str, Any]:
     """Convert two dates into FITS form.
 
     Parameters
@@ -39,7 +39,7 @@ def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) ->
         Header card keys and values following the FITS standard.
         If neither date is defined this may be empty.
     """
-    cards: Dict[str, Any] = {}
+    cards: dict[str, Any] = {}
     if date_begin is None and date_end is None:
         # no date headers can be written
         return cards
@@ -59,7 +59,7 @@ def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) ->
     return cards
 
 
-def info_to_fits(obs_info: ObservationInfo) -> Tuple[Dict[str, Any], Dict[str, str]]:
+def info_to_fits(obs_info: ObservationInfo) -> tuple[dict[str, Any], dict[str, str]]:
     """Convert an `ObservationInfo` to something suitable for writing
     to a FITS file.
 
@@ -89,7 +89,7 @@ def info_to_fits(obs_info: ObservationInfo) -> Tuple[Dict[str, Any], Dict[str, s
     return cards, comments
 
 
-def group_to_fits(obs_group: ObservationGroup) -> Tuple[Dict[str, Any], Dict[str, str]]:
+def group_to_fits(obs_group: ObservationGroup) -> tuple[dict[str, Any], dict[str, str]]:
     """Convert an `ObservationGroup` to something suitable for writing
     to a FITS file.
 

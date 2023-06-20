@@ -18,7 +18,8 @@ __all__ = ("DecamTranslator",)
 import logging
 import posixpath
 import re
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, MutableMapping, Optional, Tuple, Union
+from collections.abc import Iterator, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 import astropy.units as u
 from astropy.coordinates import Angle, EarthLocation
@@ -54,7 +55,7 @@ class DecamTranslator(FitsTranslator):
         "boresight_rotation_coord": "sky",
     }
 
-    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = {
+    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
         "exposure_time": ("EXPTIME", dict(unit=u.s)),
         "dark_time": ("DARKTIME", dict(unit=u.s)),
         "boresight_airmass": ("AIRMASS", dict(checker=is_non_science)),
@@ -143,7 +144,7 @@ class DecamTranslator(FitsTranslator):
     }
 
     @classmethod
-    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -224,7 +225,7 @@ class DecamTranslator(FitsTranslator):
         return match.groups()[0]
 
     @cache_translation
-    def to_physical_filter(self) -> Optional[str]:
+    def to_physical_filter(self) -> str | None:
         """Calculate physical filter.
 
         Return `None` if the keyword FILTER does not exist in the header,
@@ -295,7 +296,7 @@ class DecamTranslator(FitsTranslator):
         return altaz_from_degree_headers(self, (("ZD", "AZ"),), self.to_datetime_begin(), is_zd=set(["ZD"]))
 
     @cache_translation
-    def to_detector_exposure_id(self) -> Optional[int]:
+    def to_detector_exposure_id(self) -> int | None:
         # Docstring will be inherited. Property defined in properties.py
         exposure_id = self.to_exposure_id()
         if exposure_id is None:
@@ -324,7 +325,7 @@ class DecamTranslator(FitsTranslator):
 
     @classmethod
     def fix_header(
-        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: Optional[str] = None
+        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: str | None = None
     ) -> bool:
         """Fix DECam headers.
 
@@ -371,7 +372,7 @@ class DecamTranslator(FitsTranslator):
 
     @classmethod
     def determine_translatable_headers(
-        cls, filename: str, primary: Optional[MutableMapping[str, Any]] = None
+        cls, filename: str, primary: MutableMapping[str, Any] | None = None
     ) -> Iterator[MutableMapping[str, Any]]:
         """Given a file return all the headers usable for metadata translation.
 

@@ -16,22 +16,8 @@ from __future__ import annotations
 __all__ = ("ObservationGroup",)
 
 import logging
-from collections.abc import MutableSequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    MutableMapping,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+from collections.abc import Callable, Iterable, Iterator, MutableMapping, MutableSequence
+from typing import TYPE_CHECKING, Any
 
 from .observationInfo import ObservationInfo
 
@@ -63,16 +49,16 @@ class ObservationGroup(MutableSequence):
 
     def __init__(
         self,
-        members: Iterable[Union[ObservationInfo, MutableMapping[str, Any]]],
-        translator_class: Optional[Type[MetadataTranslator]] = None,
-        pedantic: Optional[bool] = None,
+        members: Iterable[ObservationInfo | MutableMapping[str, Any]],
+        translator_class: type[MetadataTranslator] | None = None,
+        pedantic: bool | None = None,
     ) -> None:
         self._members = [
             self._coerce_value(m, translator_class=translator_class, pedantic=pedantic) for m in members
         ]
 
         # Cache of members in time order
-        self._sorted: Optional[List[ObservationInfo]] = None
+        self._sorted: list[ObservationInfo] | None = None
 
     def __len__(self) -> int:
         return len(self._members)
@@ -92,9 +78,9 @@ class ObservationGroup(MutableSequence):
 
     def _coerce_value(
         self,
-        value: Union[ObservationInfo, MutableMapping[str, Any]],
-        translator_class: Optional[Type[MetadataTranslator]] = None,
-        pedantic: Optional[bool] = None,
+        value: ObservationInfo | MutableMapping[str, Any],
+        translator_class: type[MetadataTranslator] | None = None,
+        pedantic: bool | None = None,
     ) -> ObservationInfo:
         """Given a value, ensure it is an `ObservationInfo`.
 
@@ -124,7 +110,7 @@ class ObservationGroup(MutableSequence):
 
         if not isinstance(value, ObservationInfo):
             try:
-                kwargs: Dict[str, Any] = {"translator_class": translator_class}
+                kwargs: dict[str, Any] = {"translator_class": translator_class}
                 if pedantic is not None:
                     kwargs["pedantic"] = pedantic
                 value = ObservationInfo(value, **kwargs)
@@ -147,7 +133,7 @@ class ObservationGroup(MutableSequence):
         return True
 
     def __setitem__(  # type: ignore
-        self, index: int, value: Union[ObservationInfo, MutableMapping[str, Any]]
+        self, index: int, value: ObservationInfo | MutableMapping[str, Any]
     ) -> None:
         """Store item in group.
 
@@ -158,7 +144,7 @@ class ObservationGroup(MutableSequence):
         self._members[index] = value
         self._sorted = None
 
-    def insert(self, index: int, value: Union[ObservationInfo, MutableMapping[str, Any]]) -> None:
+    def insert(self, index: int, value: ObservationInfo | MutableMapping[str, Any]) -> None:
         value = self._coerce_value(value)
         self._members.insert(index, value)
         self._sorted = None
@@ -166,13 +152,13 @@ class ObservationGroup(MutableSequence):
     def reverse(self) -> None:
         self._members.reverse()
 
-    def sort(self, key: Optional[Callable] = None, reverse: bool = False) -> None:
+    def sort(self, key: Callable | None = None, reverse: bool = False) -> None:
         self._members.sort(key=key, reverse=reverse)
         if key is None and not reverse and self._sorted is None:
             # Store sorted order in cache
             self._sorted = self._members.copy()
 
-    def extremes(self) -> Tuple[ObservationInfo, ObservationInfo]:
+    def extremes(self) -> tuple[ObservationInfo, ObservationInfo]:
         """Return the oldest observation in the group and the newest.
 
         If there is only one member of the group, the newest and oldest
@@ -209,7 +195,7 @@ class ObservationGroup(MutableSequence):
         """
         return self.extremes()[0]
 
-    def property_values(self, property: str) -> Set[Any]:
+    def property_values(self, property: str) -> set[Any]:
         """Return a set of values associated with the specified property.
 
         Parameters
@@ -224,7 +210,7 @@ class ObservationGroup(MutableSequence):
         """
         return {getattr(obs_info, property) for obs_info in self}
 
-    def to_simple(self) -> List[MutableMapping[str, Any]]:
+    def to_simple(self) -> list[MutableMapping[str, Any]]:
         """Convert the group to simplified form.
 
         Returns
@@ -236,7 +222,7 @@ class ObservationGroup(MutableSequence):
         return [obsinfo.to_simple() for obsinfo in self]
 
     @classmethod
-    def from_simple(cls, simple: List[Dict[str, Any]]) -> ObservationGroup:
+    def from_simple(cls, simple: list[dict[str, Any]]) -> ObservationGroup:
         """Convert simplified form back to `ObservationGroup`
 
         Parameters

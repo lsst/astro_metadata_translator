@@ -17,7 +17,8 @@ import json
 import logging
 import os
 import sys
-from typing import IO, List, MutableMapping, Optional, Sequence, Tuple
+from collections.abc import MutableMapping, Sequence
+from typing import IO
 
 from ..file_helpers import find_files
 from ..indexing import index_files
@@ -31,10 +32,10 @@ def write_index_files(
     hdrnum: int,
     print_trace: bool,
     content_mode: str = "translated",
-    outpath: Optional[str] = None,
+    outpath: str | None = None,
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """Process each file and create JSON index file.
 
     The index file will have common information in the toplevel.
@@ -90,7 +91,7 @@ def write_index_files(
 
     failed = []
     okay = []
-    files_per_directory: MutableMapping[str, List[str]] = {}
+    files_per_directory: MutableMapping[str, list[str]] = {}
 
     # Group each file by directory if no explicit output path
     if outpath is None:

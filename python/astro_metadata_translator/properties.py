@@ -25,8 +25,9 @@ __all__ = (
     "PROPERTIES",
 )
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Tuple
+from typing import Any
 
 import astropy.coordinates
 import astropy.time
@@ -39,7 +40,7 @@ import astropy.units
 # All assume the supplied parameter is not None.
 
 
-def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> Tuple[float, ...]:
+def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tuple[float, ...]:
     """Convert EarthLocation to tuple.
 
     Parameters
@@ -56,12 +57,12 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> Tupl
     return tuple(c.to_value(astropy.units.m) for c in geocentric)
 
 
-def simple_to_earthlocation(simple: Tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
+def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
     """Convert simple form back to EarthLocation."""
     return astropy.coordinates.EarthLocation.from_geocentric(*simple, unit=astropy.units.m)
 
 
-def datetime_to_simple(datetime: astropy.time.Time) -> Tuple[float, float]:
+def datetime_to_simple(datetime: astropy.time.Time) -> tuple[float, float]:
     """Convert Time to tuple.
 
     Parameters
@@ -78,7 +79,7 @@ def datetime_to_simple(datetime: astropy.time.Time) -> Tuple[float, float]:
     return (tai.jd1, tai.jd2)
 
 
-def simple_to_datetime(simple: Tuple[float, float], **kwargs: Any) -> astropy.time.Time:
+def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.time.Time:
     """Convert simple form back to astropy.time.Time"""
     return astropy.time.Time(*simple, format="jd", scale="tai")
 
@@ -133,18 +134,18 @@ def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
     return simple * astropy.units.hPa
 
 
-def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> Tuple[float, float]:
+def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, float]:
     """Convert SkyCoord to ICRS RA/Dec tuple"""
     icrs = skycoord.icrs
     return (icrs.ra.to_value(astropy.units.deg), icrs.dec.to_value(astropy.units.deg))
 
 
-def simple_to_skycoord(simple: Tuple[float, float], **kwargs: Any) -> astropy.coordinates.SkyCoord:
+def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.SkyCoord:
     """Convert ICRS tuple to SkyCoord."""
     return astropy.coordinates.SkyCoord(*simple, unit=astropy.units.deg)
 
 
-def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> Tuple[float, float]:
+def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
     """Convert AltAz to Alt/Az tuple.
 
     Do not include obstime or location in simplification. It is assumed
@@ -153,7 +154,7 @@ def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> Tuple[float, float]:
     return (altaz.az.to_value(astropy.units.deg), altaz.alt.to_value(astropy.units.deg))
 
 
-def simple_to_altaz(simple: Tuple[float, float], **kwargs: Any) -> astropy.coordinates.AltAz:
+def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.AltAz:
     """Convert simple altaz tuple to AltAz.
 
     Will look for location and datetime_begin in kwargs.
@@ -179,10 +180,10 @@ class PropertyDefinition:
     py_type: type
     """Actual python type."""
 
-    to_simple: Optional[Callable[[Any], Any]] = None
+    to_simple: Callable[[Any], Any] | None = None
     """Function to convert value to simple form (can be ``None``)."""
 
-    from_simple: Optional[Callable[[Any], Any]] = None
+    from_simple: Callable[[Any], Any] | None = None
     """Function to convert from simple form back to required type (can be
     ``None``)."""
 
