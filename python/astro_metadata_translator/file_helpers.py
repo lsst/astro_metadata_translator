@@ -20,7 +20,8 @@ import os
 import re
 import sys
 import traceback
-from typing import IO, Any, Iterable, List, MutableMapping, Optional, Union
+from collections.abc import Iterable, MutableMapping
+from typing import IO, Any
 
 from .headers import merge_headers
 from .observationInfo import ObservationInfo
@@ -31,9 +32,7 @@ try:
     import lsst.daf.base  # noqa: F401 need PropertyBase for readMetadata
     from lsst.afw.fits import FitsError, readMetadata
 
-    def _read_fits_metadata(
-        file: str, hdu: int, can_raise: bool = False
-    ) -> Optional[MutableMapping[str, Any]]:
+    def _read_fits_metadata(file: str, hdu: int, can_raise: bool = False) -> MutableMapping[str, Any] | None:
         """Read a FITS header using afw.
 
         Parameters
@@ -70,9 +69,7 @@ try:
 except ImportError:
     from astropy.io import fits
 
-    def _read_fits_metadata(
-        file: str, hdu: int, can_raise: bool = False
-    ) -> Optional[MutableMapping[str, Any]]:
+    def _read_fits_metadata(file: str, hdu: int, can_raise: bool = False) -> MutableMapping[str, Any] | None:
         """Read a FITS header using astropy."""
 
         # For detailed docstrings see the afw implementation above
@@ -90,7 +87,7 @@ except ImportError:
         return header
 
 
-def find_files(files: Iterable[str], regex: str) -> List[str]:
+def find_files(files: Iterable[str], regex: str) -> list[str]:
     """Find files for processing.
 
     Parameters
@@ -125,7 +122,7 @@ def find_files(files: Iterable[str], regex: str) -> List[str]:
 
 def read_basic_metadata_from_file(
     file: str, hdrnum: int, errstream: IO = sys.stderr, can_raise: bool = True
-) -> Optional[MutableMapping[str, Any]]:
+) -> MutableMapping[str, Any] | None:
     """Read a raw header from a file, merging if necessary
 
     Parameters
@@ -190,12 +187,12 @@ def read_basic_metadata_from_file(
 def read_file_info(
     file: str,
     hdrnum: int,
-    print_trace: Optional[bool] = None,
+    print_trace: bool | None = None,
     content_mode: str = "translated",
     content_type: str = "simple",
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
-) -> Optional[Union[str, MutableMapping[str, Any], ObservationInfo]]:
+) -> str | MutableMapping[str, Any] | ObservationInfo | None:
     """Read information from file
 
     Parameters

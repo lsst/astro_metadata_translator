@@ -27,8 +27,9 @@ import json
 import logging
 import os
 import sys
+from collections.abc import MutableMapping, Sequence
 from copy import deepcopy
-from typing import IO, Any, List, Literal, MutableMapping, Optional, Sequence, Tuple, Union, overload
+from typing import IO, Any, Literal, overload
 
 from .file_helpers import read_file_info
 from .headers import merge_headers
@@ -43,13 +44,13 @@ CONTENT_KEY = "__CONTENT__"
 
 def index_files(
     files: Sequence[str],
-    root: Optional[str],
+    root: str | None,
     hdrnum: int,
     print_trace: bool,
     content: str,
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
-) -> Tuple[MutableMapping[str, Union[str, MutableMapping[str, Any]]], List[str], List[str]]:
+) -> tuple[MutableMapping[str, str | MutableMapping[str, Any]], list[str], list[str]]:
     """Create an index from the supplied files.
 
     No file is written. The Python structure returned is suitable
@@ -99,8 +100,8 @@ def index_files(
     if content not in ("translated", "metadata"):
         raise ValueError("Unrecognized mode {mode}")
 
-    failed: List[str] = []
-    okay: List[str] = []
+    failed: list[str] = []
+    okay: list[str] = []
 
     content_by_file: MutableMapping[str, MutableMapping[str, Any]] = {}  # Mapping of path to file content
     for file in sorted(files):
@@ -130,7 +131,7 @@ def index_files(
 
 def calculate_index(
     headers: MutableMapping[str, MutableMapping[str, Any]], content_mode: str
-) -> MutableMapping[str, Union[str, MutableMapping[str, Any]]]:
+) -> MutableMapping[str, str | MutableMapping[str, Any]]:
     """Calculate an index data structure from the supplied headers.
 
     Parameters
@@ -175,7 +176,7 @@ def calculate_index(
 
     # Put the common headers first in the output.
     # Store the mode so that we can work out how to read the file in
-    output: MutableMapping[str, Union[str, MutableMapping[str, Any]]] = {
+    output: MutableMapping[str, str | MutableMapping[str, Any]] = {
         CONTENT_KEY: content_mode,
         COMMON_KEY: merged,
     }
@@ -190,7 +191,7 @@ def read_index(
     path: str,
     *,
     force_dict: Literal[True],
-) -> MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]]:
+) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
     ...
 
 
@@ -199,13 +200,13 @@ def read_index(
     path: str,
     *,
     force_dict: Literal[False],
-) -> Union[ObservationGroup, MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]]]:
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
     ...
 
 
 def read_index(
     path: str, force_dict: bool = False
-) -> Union[ObservationGroup, MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]]]:
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
     """Read an index file.
 
     Parameters
@@ -224,7 +225,7 @@ def read_index(
     if not path.endswith(".json"):
         raise ValueError(f"Index files must be in .json format; got {path}")
 
-    with open(path, "r") as fd:
+    with open(path) as fd:
         content: MutableMapping[str, Any] = json.loads(fd.read())
 
     if not isinstance(content, MutableMapping):
@@ -249,20 +250,20 @@ def process_index_data(
     *,
     force_metadata: Literal[False],
     force_dict: Literal[True],
-) -> MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]]:
+) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
     ...
 
 
 @overload
 def process_index_data(
     content: MutableMapping[str, Any], *, force_metadata: bool = False, force_dict: bool = False
-) -> Union[ObservationGroup, MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]]]:
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
     ...
 
 
 def process_index_data(
     content: MutableMapping[str, Any], *, force_metadata: bool = False, force_dict: bool = False
-) -> Union[ObservationGroup, MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]]]:
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
     """Process the content read from a JSON index file.
 
     Parameters
@@ -318,10 +319,10 @@ def process_index_data(
         # nothing more to be done
         return unpacked
 
-    obs_infos: List[ObservationInfo] = []
+    obs_infos: list[ObservationInfo] = []
     # This type annotation is really MutableMapping[str, ObservationInfo]
     # but mypy needs it to look like the function return value.
-    by_file: MutableMapping[str, Union[MutableMapping[str, Any], ObservationInfo]] = {}
+    by_file: MutableMapping[str, MutableMapping[str, Any] | ObservationInfo] = {}
     for file, hdr in unpacked.items():
         info = ObservationInfo.from_simple(hdr)
         info.filename = file
@@ -333,7 +334,7 @@ def process_index_data(
     return ObservationGroup(obs_infos)
 
 
-def read_sidecar(path: str) -> Union[ObservationInfo, MutableMapping[str, Any]]:
+def read_sidecar(path: str) -> ObservationInfo | MutableMapping[str, Any]:
     """Read a metadata sidecar file.
 
     Parameters
@@ -350,7 +351,7 @@ def read_sidecar(path: str) -> Union[ObservationInfo, MutableMapping[str, Any]]:
     if not path.endswith(".json"):
         raise ValueError(f"Sidecar files must be in .json format; got {path}")
 
-    with open(path, "r") as fd:
+    with open(path) as fd:
         content: MutableMapping[str, Any] = json.loads(fd.read())
 
     if not isinstance(content, MutableMapping):
@@ -362,7 +363,7 @@ def read_sidecar(path: str) -> Union[ObservationInfo, MutableMapping[str, Any]]:
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any],
-) -> Union[ObservationInfo, MutableMapping[str, Any]]:
+) -> ObservationInfo | MutableMapping[str, Any]:
     ...
 
 
@@ -376,13 +377,13 @@ def process_sidecar_data(
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any], force_metadata: Literal[False]
-) -> Union[ObservationInfo, MutableMapping[str, Any]]:
+) -> ObservationInfo | MutableMapping[str, Any]:
     ...
 
 
 def process_sidecar_data(
     content: MutableMapping[str, Any], force_metadata: bool = False
-) -> Union[ObservationInfo, MutableMapping[str, Any]]:
+) -> ObservationInfo | MutableMapping[str, Any]:
     """Process the content read from a JSON sidecar file.
 
     Parameters

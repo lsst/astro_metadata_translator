@@ -16,7 +16,8 @@ __all__ = ("read_test_file", "MetadataAssertHelper")
 import os
 import pickle
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, MutableMapping, NoReturn, Optional, Type
+from collections.abc import MutableMapping
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import astropy.units as u
 import astropy.utils.exceptions
@@ -34,7 +35,7 @@ except ImportError:
 
 
 # For YAML >= 5.1 need a different Loader for the constructor
-Loader: Type[yaml.Loader] | Type[yaml.FullLoader]
+Loader: type[yaml.Loader] | type[yaml.FullLoader]
 try:
     Loader = yaml.FullLoader
 except AttributeError:
@@ -45,7 +46,7 @@ except AttributeError:
 # we can use if daf_base is not available.
 def pl_constructor(loader: yaml.Loader, node: yaml.SequenceNode) -> Any:
     """Construct an OrderedDict from a YAML file containing a PropertyList."""
-    pl: Dict[str, Any] = {}
+    pl: dict[str, Any] = {}
     yield pl
     state = loader.construct_sequence(node, deep=True)
     for key, dtype, value, comment in state:
@@ -63,7 +64,7 @@ if daf_base is None:
     yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor, Loader=Loader)  # type: ignore
 
 
-def read_test_file(filename: str, dir: Optional[str] = None) -> MutableMapping[str, Any]:
+def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str, Any]:
     """Read the named test file relative to the location of this helper
 
     Parameters
@@ -102,22 +103,22 @@ class MetadataAssertHelper:
             self,
             a: float,
             b: float,
-            places: Optional[int] = None,
-            msg: Optional[str] = None,
-            delta: Optional[float] = None,
+            places: int | None = None,
+            msg: str | None = None,
+            delta: float | None = None,
         ) -> None:
             pass
 
         def assertIsNotNone(self, a: Any, msg: str | None = None) -> None:  # noqa: N802
             pass
 
-        def assertEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+        def assertEqual(self, a: Any, b: Any, msg: str | None = None) -> None:  # noqa: N802
             pass
 
-        def assertLess(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+        def assertLess(self, a: Any, b: Any, msg: str | None = None) -> None:  # noqa: N802
             pass
 
-        def assertLessEqual(self, a: Any, b: Any, msg: Optional[str] = None) -> None:  # noqa: N802
+        def assertLessEqual(self, a: Any, b: Any, msg: str | None = None) -> None:  # noqa: N802
             pass
 
         def fail(self, msg: str) -> NoReturn:
@@ -163,9 +164,9 @@ class MetadataAssertHelper:
     def assertObservationInfoFromYaml(  # noqa: N802
         self,
         file: str,
-        dir: Optional[str] = None,
+        dir: str | None = None,
         check_wcs: bool = True,
-        wcs_params: Optional[Dict[str, Any]] = None,
+        wcs_params: dict[str, Any] | None = None,
         check_altaz: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -221,9 +222,9 @@ class MetadataAssertHelper:
     def assertObservationInfo(  # noqa: N802
         self,
         header: MutableMapping[str, Any],
-        filename: Optional[str] = None,
+        filename: str | None = None,
         check_wcs: bool = True,
-        wcs_params: Optional[Dict[str, Any]] = None,
+        wcs_params: dict[str, Any] | None = None,
         check_altaz: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -283,7 +284,7 @@ class MetadataAssertHelper:
         # to work around the fact that (as of astropy 3.1) adding 0.0 seconds
         # to a Time results in a new Time object that is a few picoseconds in
         # the past.
-        def _format_date_for_testing(date: Optional[Time]) -> Optional[Time]:
+        def _format_date_for_testing(date: Time | None) -> Time | None:
             if date is not None:
                 date.format = "isot"
                 date.precision = 9

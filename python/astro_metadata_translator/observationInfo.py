@@ -20,19 +20,8 @@ import itertools
 import json
 import logging
 import math
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    FrozenSet,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-)
+from collections.abc import Callable, MutableMapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 import astropy.time
 from astropy.coordinates import AltAz, SkyCoord
@@ -154,13 +143,13 @@ class ObservationInfo:
 
     def __init__(
         self,
-        header: Optional[MutableMapping[str, Any]],
-        filename: Optional[str] = None,
-        translator_class: Optional[Type[MetadataTranslator]] = None,
+        header: MutableMapping[str, Any] | None,
+        filename: str | None = None,
+        translator_class: type[MetadataTranslator] | None = None,
         pedantic: bool = False,
-        search_path: Optional[Sequence[str]] = None,
-        required: Optional[Set[str]] = None,
-        subset: Optional[Set[str]] = None,
+        search_path: Sequence[str] | None = None,
+        required: set[str] | None = None,
+        subset: set[str] | None = None,
     ) -> None:
         # Initialize the empty object
         self._header: MutableMapping[str, Any] = {}
@@ -261,8 +250,8 @@ class ObservationInfo:
 
     @staticmethod
     def _get_all_properties(
-        extensions: Optional[Dict[str, PropertyDefinition]] = None
-    ) -> Dict[str, PropertyDefinition]:
+        extensions: dict[str, PropertyDefinition] | None = None
+    ) -> dict[str, PropertyDefinition]:
         """Return the definitions of all properties
 
         Parameters
@@ -282,7 +271,7 @@ class ObservationInfo:
             properties.update({"ext_" + pp: dd for pp, dd in extensions.items()})
         return properties
 
-    def _declare_extensions(self, extensions: Optional[Dict[str, PropertyDefinition]]) -> None:
+    def _declare_extensions(self, extensions: dict[str, PropertyDefinition] | None) -> None:
         """Declare and set up extension properties
 
         This should always be called internally as part of the creation of a
@@ -364,7 +353,7 @@ class ObservationInfo:
         return True
 
     @property
-    def cards_used(self) -> FrozenSet[str]:
+    def cards_used(self) -> frozenset[str]:
         """Header cards used for the translation.
 
         Returns
@@ -441,7 +430,7 @@ class ObservationInfo:
             return NotImplemented
         return self.datetime_begin > other.datetime_begin
 
-    def __getstate__(self) -> Tuple[Any, ...]:
+    def __getstate__(self) -> tuple[Any, ...]:
         """Get pickleable state
 
         Returns the properties.  Deliberately does not preserve the full
@@ -459,7 +448,7 @@ class ObservationInfo:
 
         return state, self.extensions
 
-    def __setstate__(self, state: Tuple[Any, ...]) -> None:
+    def __setstate__(self, state: tuple[Any, ...]) -> None:
         """Set object state from pickle
 
         Parameters
@@ -574,7 +563,7 @@ class ObservationInfo:
 
         properties = cls._get_all_properties(extensions)
 
-        processed: Dict[str, Any] = {}
+        processed: dict[str, Any] = {}
         for k, v in simple.items():
             if v is None:
                 continue
@@ -615,7 +604,7 @@ class ObservationInfo:
 
     @classmethod
     def makeObservationInfo(  # noqa: N802
-        cls, *, extensions: Optional[Dict[str, PropertyDefinition]] = None, **kwargs: Any
+        cls, *, extensions: dict[str, PropertyDefinition] | None = None, **kwargs: Any
     ) -> ObservationInfo:
         """Construct an `ObservationInfo` from the supplied parameters.
 
@@ -679,7 +668,7 @@ class ObservationInfo:
 
 
 # Method to add the standard properties
-def _make_property(property: str, doc: str, return_typedoc: str, return_type: Type) -> Callable:
+def _make_property(property: str, doc: str, return_typedoc: str, return_type: type) -> Callable:
     """Create a getter method with associated docstring.
 
     Parameters
@@ -725,7 +714,7 @@ for name, definition in PROPERTIES.items():
 
 
 def makeObservationInfo(  # noqa: N802
-    *, extensions: Optional[Dict[str, PropertyDefinition]] = None, **kwargs: Any
+    *, extensions: dict[str, PropertyDefinition] | None = None, **kwargs: Any
 ) -> ObservationInfo:
     """Construct an `ObservationInfo` from the supplied parameters.
 

@@ -18,7 +18,8 @@ __all__ = ("SuprimeCamTranslator",)
 import logging
 import posixpath
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, MutableMapping, Optional, Tuple, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 import astropy.units as u
 from astropy.coordinates import Angle, SkyCoord
@@ -49,7 +50,7 @@ class SuprimeCamTranslator(SubaruTranslator):
     _const_map = {"boresight_rotation_coord": "unknown", "detector_group": None}
     """Constant mappings"""
 
-    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = {
+    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
         "observation_id": "EXP-ID",
         "object": "OBJECT",
         "science_program": "PROP-ID",
@@ -68,7 +69,7 @@ class SuprimeCamTranslator(SubaruTranslator):
     _DAY0 = 53005
 
     @classmethod
-    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 

@@ -17,7 +17,8 @@ __all__ = ("MegaPrimeTranslator",)
 
 import posixpath
 import re
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, MutableMapping, Optional, Tuple, Union
+from collections.abc import Iterator, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 import astropy.units as u
 from astropy.coordinates import Angle, EarthLocation
@@ -53,7 +54,7 @@ class MegaPrimeTranslator(FitsTranslator):
         "detector_group": None,
     }
 
-    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = {
+    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
         "physical_filter": "FILTER",
         "dark_time": ("DARKTIME", dict(unit=u.s)),
         "exposure_time": ("EXPTIME", dict(unit=u.s)),
@@ -202,7 +203,7 @@ class MegaPrimeTranslator(FitsTranslator):
 
     @classmethod
     def determine_translatable_headers(
-        cls, filename: str, primary: Optional[MutableMapping[str, Any]] = None
+        cls, filename: str, primary: MutableMapping[str, Any] | None = None
     ) -> Iterator[MutableMapping[str, Any]]:
         """Given a file return all the headers usable for metadata translation.
 

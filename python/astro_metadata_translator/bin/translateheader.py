@@ -23,7 +23,8 @@ import importlib
 import logging
 import sys
 import traceback
-from typing import IO, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import IO
 
 import yaml
 
@@ -275,7 +276,7 @@ def process_files(
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
     output_mode: str = "auto",
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """Read and translate metadata from the specified files.
 
     Parameters

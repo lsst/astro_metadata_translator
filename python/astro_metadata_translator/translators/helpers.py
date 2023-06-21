@@ -32,7 +32,8 @@ __all__ = (
 )
 
 import logging
-from typing import TYPE_CHECKING, Optional, Sequence, Set, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import astropy.units as u
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
@@ -88,7 +89,7 @@ def altitude_from_zenith_distance(zd: astropy.units.Quantity) -> astropy.units.Q
 def tracking_from_degree_headers(
     self: MetadataTranslator,
     radecsys: Sequence[str],
-    radecpairs: Tuple[Tuple[str, str], ...],
+    radecpairs: tuple[tuple[str, str], ...],
     unit: astropy.units.Unit = u.deg,
 ) -> SkyCoord:
     """Calculate the tracking coordinates from lists of headers.
@@ -147,9 +148,9 @@ def tracking_from_degree_headers(
 
 def altaz_from_degree_headers(
     self: MetadataTranslator,
-    altazpairs: Tuple[Tuple[str, str], ...],
+    altazpairs: tuple[tuple[str, str], ...],
     obstime: astropy.time.Time,
-    is_zd: Optional[Set[str]] = None,
+    is_zd: set[str] | None = None,
 ) -> AltAz:
     """Calculate the altitude/azimuth coordinates from lists of headers.
 

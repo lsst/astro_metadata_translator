@@ -16,7 +16,8 @@ from __future__ import annotations
 __all__ = ("SdssTranslator",)
 
 import posixpath
-from typing import TYPE_CHECKING, Any, MutableMapping, Optional
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 import astropy.units as u
 from astropy.coordinates import AltAz, Angle, EarthLocation
@@ -105,7 +106,7 @@ class SdssTranslator(FitsTranslator):
     }
 
     @classmethod
-    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -232,7 +233,7 @@ class SdssTranslator(FitsTranslator):
             raise (e)
 
     @cache_translation
-    def to_boresight_airmass(self) -> Optional[float]:
+    def to_boresight_airmass(self) -> float | None:
         # Docstring will be inherited. Property defined in properties.py
         altaz = self.to_altaz_begin()
         if altaz is not None:
@@ -240,7 +241,7 @@ class SdssTranslator(FitsTranslator):
         return None
 
     @cache_translation
-    def to_detector_exposure_id(self) -> Optional[int]:
+    def to_detector_exposure_id(self) -> int | None:
         # Docstring will be inherited. Property defined in properties.py
         try:
             frame_field_map = dict(r=0, i=2, u=4, z=6, g=8)

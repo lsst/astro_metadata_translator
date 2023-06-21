@@ -22,8 +22,8 @@ import logging
 import os
 import posixpath
 from collections import Counter
-from collections.abc import Mapping
-from typing import IO, Any, List, MutableMapping, Optional, Sequence, Tuple, Type, Union
+from collections.abc import Mapping, MutableMapping, Sequence
+from typing import IO, Any
 
 import pkg_resources
 import yaml
@@ -47,8 +47,8 @@ def merge_headers(
     headers: Sequence[MutableMapping[str, Any]],
     mode: str = "overwrite",
     sort: bool = False,
-    first: Optional[Sequence[str]] = None,
-    last: Optional[Sequence[str]] = None,
+    first: Sequence[str] | None = None,
+    last: Sequence[str] | None = None,
 ) -> MutableMapping[str, Any]:
     """Merge multiple headers into a single dict.
 
@@ -245,8 +245,8 @@ def merge_headers(
 
         def retain_value(
             to_receive: MutableMapping[str, Any],
-            to_retain: Optional[Sequence[str]],
-            sources: Tuple[Mapping[str, Any], ...],
+            to_retain: Sequence[str] | None,
+            sources: tuple[Mapping[str, Any], ...],
         ) -> None:
             if to_retain:
                 for k in to_retain:
@@ -263,7 +263,7 @@ def merge_headers(
     return merged
 
 
-def _read_yaml(fh: IO[bytes], msg: str) -> Optional[Mapping[str, Any]]:
+def _read_yaml(fh: IO[bytes], msg: str) -> Mapping[str, Any] | None:
     """Read YAML from file descriptor.
 
     Parameters
@@ -294,9 +294,7 @@ def _read_yaml(fh: IO[bytes], msg: str) -> Optional[Mapping[str, Any]]:
     return content
 
 
-def _find_from_file(
-    header: MutableMapping[str, Any], paths: Sequence[str], target_file: str
-) -> Optional[str]:
+def _find_from_file(header: MutableMapping[str, Any], paths: Sequence[str], target_file: str) -> str | None:
     """Search file system for matching correction files.
 
     Parameters
@@ -332,8 +330,8 @@ def _find_from_file(
 
 
 def _find_from_resource(
-    header: MutableMapping[str, Any], package: Optional[str], resource_root: Optional[str], target_file: str
-) -> Optional[str]:
+    header: MutableMapping[str, Any], package: str | None, resource_root: str | None, target_file: str
+) -> str | None:
     """Search package resource for correction information.
 
     Parameters
@@ -370,9 +368,9 @@ def _find_from_resource(
 
 def fix_header(
     header: MutableMapping[str, Any],
-    search_path: Optional[Union[str, Sequence[str]]] = None,
-    translator_class: Optional[Type[MetadataTranslator]] = None,
-    filename: Optional[str] = None,
+    search_path: str | Sequence[str] | None = None,
+    translator_class: type[MetadataTranslator] | None = None,
+    filename: str | None = None,
 ) -> bool:
     """Update, in place, the supplied header with known corrections.
 
@@ -468,7 +466,7 @@ def fix_header(
     log.debug("Checking for header correction file named %s", target_file)
 
     # Work out the search path
-    paths: List[str] = []
+    paths: list[str] = []
     if search_path is not None:
         if isinstance(search_path, str):
             # Allow a single path to be given as a string

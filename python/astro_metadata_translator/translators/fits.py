@@ -15,7 +15,8 @@ from __future__ import annotations
 
 __all__ = ("FitsTranslator",)
 
-from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Union
+from collections.abc import Mapping
+from typing import Any
 
 import astropy.units as u
 from astropy.coordinates import EarthLocation
@@ -29,7 +30,7 @@ class FitsTranslator(MetadataTranslator):
 
     Understands:
 
-    - DATE-OBS
+    - DATE-OBS/MJD-OBS or DATE-BEG/MJD-BEG (-BEG is preferred).
     - INSTRUME
     - TELESCOP
     - OBSGEO-[X,Y,Z]
@@ -37,13 +38,13 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _trivial_map: Dict[str, Union[str, List[str], Tuple[Any, ...]]] = dict(
+    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = dict(
         instrument="INSTRUME",
         telescope="TELESCOP",
     )
 
     @classmethod
-    def can_translate(cls, header: MutableMapping[str, Any], filename: Optional[str] = None) -> bool:
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         """Indicate whether this translation class can translate the
         supplied header.
 
@@ -77,9 +78,7 @@ class FitsTranslator(MetadataTranslator):
         return instrument == cls.supported_instrument
 
     @classmethod
-    def _from_fits_date_string(
-        cls, date_str: str, scale: str = "utc", time_str: Optional[str] = None
-    ) -> Time:
+    def _from_fits_date_string(cls, date_str: str, scale: str = "utc", time_str: str | None = None) -> Time:
         """Parse standard FITS ISO-style date string and return time object
 
         Parameters
@@ -101,13 +100,13 @@ class FitsTranslator(MetadataTranslator):
             `~astropy.time.Time` representation of the date.
         """
         if time_str is not None:
-            date_str = "{}T{}".format(date_str[:10], time_str)
+            date_str = f"{date_str[:10]}T{time_str}"
 
         return Time(date_str, format="isot", scale=scale)
 
     def _from_fits_date(
-        self, date_key: str, mjd_key: Optional[str] = None, scale: Optional[str] = None
-    ) -> Time:
+        self, date_key: str, mjd_key: str | None = None, scale: str | None = None
+    ) -> Time | None:
         """Calculate a date object from the named FITS header
 
         Uses the TIMESYS header if present to determine the time scale,
@@ -156,18 +155,26 @@ class FitsTranslator(MetadataTranslator):
         return value
 
     @cache_translation
-    def to_datetime_begin(self) -> Time:
+    def to_datetime_begin(self) -> Time | None:
         """Calculate start time of observation.
 
-        Uses FITS standard ``MJD-OBS`` or ``DATE-OBS``, in conjunction
-        with the ``TIMESYS`` header.
+        Uses FITS standard ``MJD-BEG`` or ``DATE-BEG``, in conjunction
+        with the ``TIMESYS`` header. Will fallback to using ``MJD-OBS``
+        or ``DATE-OBS`` if the ``-BEG`` variants are not found.
 
         Returns
         -------
-        start_time : `astropy.time.Time`
-            Time corresponding to the start of the observation.
+        start_time : `astropy.time.Time` or `None`
+            Time corresponding to the start of the observation. Returns
+            `None` if no date can be found.
         """
-        return self._from_fits_date("DATE-OBS", mjd_key="MJD-OBS")
+        # Prefer -BEG over -OBS
+        begin = None
+        for suffix in ("BEG", "OBS"):
+            begin = self._from_fits_date(f"DATE-{suffix}", mjd_key=f"MJD-{suffix}")
+            if begin is not None:
+                break
+        return begin
 
     @cache_translation
     def to_datetime_end(self) -> Time:
