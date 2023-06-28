@@ -295,7 +295,6 @@ def process_index_data(
     -----
     File keys will be relative to the location of the index file.
     """
-
     if COMMON_KEY not in content:
         raise ValueError(f"No '{COMMON_KEY}' key found in dict. Does not look like an index data structure.")
 
@@ -404,7 +403,6 @@ def process_sidecar_data(
         can be overridden using the ``force_metadata`` parameter in which
         case a `dict` will always be returned.
     """
-
     if not isinstance(content, dict):
         raise TypeError(f"Content of sidecar must be a dict, not {type(content)}")
 

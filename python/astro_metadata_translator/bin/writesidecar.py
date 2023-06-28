@@ -76,7 +76,6 @@ def write_sidecar_file(
         `True` if the file was handled successfully, `False` if the file
         could not be processed.
     """
-
     if content_mode not in ("metadata", "translated"):
         raise ValueError(f"Specified content mode '{content_mode}' is not understood.")
 

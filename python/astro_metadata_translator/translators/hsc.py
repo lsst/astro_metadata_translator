@@ -264,7 +264,6 @@ class HscTranslator(SuprimeCamTranslator):
         num : `int`
             Detector number.
         """
-
         ccd = super().to_detector_num()
         try:
             tjd = self._get_adjusted_mjd()

@@ -76,7 +76,6 @@ def info_to_fits(obs_info: ObservationInfo) -> tuple[dict[str, Any], dict[str, s
         Suitable comment string.  There will be at most one entry for each key
         in ``cards``.
     """
-
     cards = {}
     comments = {}
 
@@ -107,7 +106,6 @@ def group_to_fits(obs_group: ObservationGroup) -> tuple[dict[str, Any], dict[str
         Suitable comment string.  There will be at most one entry for each key
         in ``cards``.
     """
-
     cards = {}
     comments = {}
 

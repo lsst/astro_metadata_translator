@@ -631,7 +631,6 @@ class ObservationInfo:
             Raised if a supplied value does not match the expected type
             of the property.
         """
-
         obsinfo = cls(None)
         obsinfo._declare_extensions(extensions)
 

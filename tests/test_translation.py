@@ -82,7 +82,8 @@ class TranslatorTestCase(unittest.TestCase):
 
             class InstrumentTestTranslatorExtras(InstrumentTestTranslator):
                 """Version of InstrumentTestTranslator with unexpected
-                fields."""
+                fields.
+                """
 
                 name = "InstrumentTestTranslatorExtras"
                 _trivial_map = {"foobar": "BAZ"}

@@ -71,7 +71,6 @@ except ImportError:
 
     def _read_fits_metadata(file: str, hdu: int, can_raise: bool = False) -> MutableMapping[str, Any] | None:
         """Read a FITS header using astropy."""
-
         # For detailed docstrings see the afw implementation above
         header = None
         try:
@@ -228,7 +227,6 @@ def read_file_info(
         The return value of `ObservationInfo.to_simple()`. Returns `None`
         if there was a problem and `print_trace` is not `None`.
     """
-
     if content_mode not in ("metadata", "translated"):
         raise ValueError(f"Unrecognized content mode request: {content_mode}")
 

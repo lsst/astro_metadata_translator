@@ -254,7 +254,6 @@ class DecamTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-
         if self.is_key_ok("OBS-LONG"):
             # OBS-LONG has west-positive sign so must be flipped
             lon = self._header["OBS-LONG"] * -1.0

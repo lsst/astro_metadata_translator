@@ -41,7 +41,6 @@ class BasicTestCase(unittest.TestCase):
 
     def test_simple(self):
         """Test that we can simplify an ObservationInfo."""
-
         reference = dict(
             boresight_airmass=1.5,
             focus_z=1.0 * u.mm,

@@ -433,7 +433,6 @@ def fix_header(
 
     The first file located in the search path is used for the correction.
     """
-
     if FIXUP_SENTINEL in header:
         return header[FIXUP_SENTINEL]
 

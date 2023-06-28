@@ -84,7 +84,6 @@ class IndexingTestCase(unittest.TestCase):
 
     def test_file_reading(self):
         """Test the low-level file reader"""
-
         # First with a real header (but YAML)
         file = os.path.join(TESTDATA, "fitsheader-hsc-HSCA04090107.yaml")
         info = read_file_info(file, 1, None, "metadata", content_type="simple")
@@ -188,7 +187,6 @@ class IndexingTestCase(unittest.TestCase):
 
     def test_obs_info_sidecar(self):
         """Test reading of older files with missing content."""
-
         # First with a real header (but YAML)
         file = os.path.join(TESTDATA, "fitsheader-hsc.yaml")
         info = read_file_info(file, 1, None, "translated", content_type="native")

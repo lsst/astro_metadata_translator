@@ -183,7 +183,6 @@ class SdssTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-
         # Look up the value since files do not have location
         value = EarthLocation.of_site("apo")
 
