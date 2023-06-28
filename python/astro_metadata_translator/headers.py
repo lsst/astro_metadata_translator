@@ -17,23 +17,19 @@ __all__ = ("merge_headers", "fix_header")
 
 import copy
 import datetime
+import importlib.resources as resources
 import itertools
 import logging
 import os
 import posixpath
 from collections import Counter
 from collections.abc import Mapping, MutableMapping, Sequence
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, Any
 
 import yaml
-from lsst.resources import ResourcePath
 
 from .translator import MetadataTranslator
 from .translators import FitsTranslator
-
-if TYPE_CHECKING:
-    from lsst.resources import ResourceHandleProtocol
-
 
 log = logging.getLogger(__name__)
 
@@ -267,7 +263,7 @@ def merge_headers(
     return merged
 
 
-def _read_yaml(fh: IO[bytes] | ResourceHandleProtocol, msg: str) -> Mapping[str, Any] | None:
+def _read_yaml(fh: IO[bytes], msg: str) -> Mapping[str, Any] | None:
     """Read YAML from file descriptor.
 
     Parameters
@@ -355,20 +351,19 @@ def _find_from_resource(
         Name of resource read. `None` if no corrections found.
     """
     if package is not None and resource_root is not None:
-        resource_name = posixpath.join(resource_root, target_file)
-        uri_str = f"resource://{package}/{resource_name}"
-        uri = ResourcePath(uri_str)
-        if uri.exists():
-            log.debug("Applying header corrections from package resource %s", uri)
-            with uri.open("r") as fh:
-                corrections = _read_yaml(fh, f"package resource {uri_str}")
+        resource_path = resources.files(package).joinpath(resource_root, target_file)  # type: ignore
+        if resource_path.is_file():
+            resource_uri = f"resource://{package}/{posixpath.join(resource_root, target_file)}"
+            log.debug("Applying header corrections from package resource %s", resource_uri)
+            with resource_path.open("rb") as fh:
+                corrections = _read_yaml(fh, f"package resource {resource_path}")
 
             if corrections is None:
                 return None
 
             header.update(corrections)
 
-            return uri_str
+            return resource_uri
     return None
 
 
