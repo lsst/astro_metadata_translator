@@ -122,7 +122,7 @@ def find_files(files: Iterable[str], regex: str) -> list[str]:
 def read_basic_metadata_from_file(
     file: str, hdrnum: int, errstream: IO = sys.stderr, can_raise: bool = True
 ) -> MutableMapping[str, Any] | None:
-    """Read a raw header from a file, merging if necessary
+    """Read a raw header from a file, merging if necessary.
 
     Parameters
     ----------
@@ -192,7 +192,7 @@ def read_file_info(
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
 ) -> str | MutableMapping[str, Any] | ObservationInfo | None:
-    """Read information from file
+    """Read information from file.
 
     Parameters
     ----------

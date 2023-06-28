@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Represent standard metadata from instrument headers"""
+"""Represent standard metadata from instrument headers."""
 
 from __future__ import annotations
 
@@ -252,7 +252,7 @@ class ObservationInfo:
     def _get_all_properties(
         extensions: dict[str, PropertyDefinition] | None = None
     ) -> dict[str, PropertyDefinition]:
-        """Return the definitions of all properties
+        """Return the definitions of all properties.
 
         Parameters
         ----------
@@ -272,7 +272,7 @@ class ObservationInfo:
         return properties
 
     def _declare_extensions(self, extensions: dict[str, PropertyDefinition] | None) -> None:
-        """Declare and set up extension properties
+        """Declare and set up extension properties.
 
         This should always be called internally as part of the creation of a
         new `ObservationInfo`.
@@ -305,7 +305,7 @@ class ObservationInfo:
         self.all_properties = self._get_all_properties(extensions)
 
     def __setattr__(self, name: str, value: Any) -> Any:
-        """Set attribute
+        """Set attribute.
 
         This provides read-only protection for the extension properties. The
         core set of properties have read-only protection via the use of the
@@ -397,7 +397,10 @@ class ObservationInfo:
         return result
 
     def __eq__(self, other: Any) -> bool:
-        """Compares equal if standard properties are equal"""
+        """Check equality with another object.
+
+        Compares equal if standard properties are equal.
+        """
         if not isinstance(other, ObservationInfo):
             return NotImplemented
 
@@ -431,7 +434,7 @@ class ObservationInfo:
         return self.datetime_begin > other.datetime_begin
 
     def __getstate__(self) -> tuple[Any, ...]:
-        """Get pickleable state
+        """Get pickleable state.
 
         Returns the properties.  Deliberately does not preserve the full
         current state; in particular, does not return the full header or
@@ -449,7 +452,7 @@ class ObservationInfo:
         return state, self.extensions
 
     def __setstate__(self, state: tuple[Any, ...]) -> None:
-        """Set object state from pickle
+        """Set object state from pickle.
 
         Parameters
         ----------

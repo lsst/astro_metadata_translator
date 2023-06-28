@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Metadata translation code for Subaru telescope"""
+"""Metadata translation code for Subaru telescope."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class SubaruTranslator(FitsTranslator):
 
     @cache_translation
     def to_location(self) -> EarthLocation:
-        """Returns the location of the Subaru telescope on Mauna Kea.
+        """Return the location of the Subaru telescope on Mauna Kea.
 
         Hardcodes the location and does not look at any headers.
 

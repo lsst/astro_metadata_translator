@@ -9,9 +9,9 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-from __future__ import annotations
+"""Represent a collection of translated headers."""
 
-"""Represent a collection of translated headers"""
+from __future__ import annotations
 
 __all__ = ("ObservationGroup",)
 
@@ -123,7 +123,10 @@ class ObservationGroup(MutableSequence):
         return iter(self._members)
 
     def __eq__(self, other: Any) -> bool:
-        """Compares equal if all the members are equal in the same order."""
+        """Check equality with another group.
+
+        Compare equal if all the members are equal in the same order.
+        """
         if not isinstance(other, ObservationGroup):
             return NotImplemented
 
@@ -223,7 +226,7 @@ class ObservationGroup(MutableSequence):
 
     @classmethod
     def from_simple(cls, simple: list[dict[str, Any]]) -> ObservationGroup:
-        """Convert simplified form back to `ObservationGroup`
+        """Convert simplified form back to `ObservationGroup`.
 
         Parameters
         ----------

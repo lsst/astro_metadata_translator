@@ -21,6 +21,8 @@ NUMBER = 12345
 
 
 class DummyTranslator(StubTranslator):
+    """Test translation class that supports extensions."""
+
     name = "dummy"
     supported_instrument = "dummy"
     extensions = dict(
@@ -36,11 +38,13 @@ class DummyTranslator(StubTranslator):
         return "INSTRUME" in header and header["INSTRUME"] == "dummy"
 
     def to_ext_number(self):
-        """Return the combination on my luggage"""
+        """Return the combination on my luggage."""
         return NUMBER
 
 
 class ExtensionsTestCase(unittest.TestCase):
+    """Test support for extended properties."""
+
     def setUp(self):
         self.header = dict(INSTRUME="dummy")
         # The test translator is incomplete so it will issue warnings
@@ -49,13 +53,13 @@ class ExtensionsTestCase(unittest.TestCase):
             self.obsinfo = ObservationInfo(self.header)
 
     def assert_observation_info(self, obsinfo):
-        """Check that the `ObservationInfo` is as expected"""
+        """Check that the `ObservationInfo` is as expected."""
         self.assertIsInstance(obsinfo, ObservationInfo)
         self.assertEqual(obsinfo.ext_foo, FOO)
         self.assertEqual(obsinfo.ext_number, NUMBER)
 
     def test_basic(self):
-        """Test construction of extended ObservationInfo"""
+        """Test construction of extended ObservationInfo."""
         # Behaves like the original
         self.assert_observation_info(self.obsinfo)
 
@@ -75,12 +79,12 @@ class ExtensionsTestCase(unittest.TestCase):
             makeObservationInfo(extensions=DummyTranslator.extensions, ext_foo=98765)
 
     def test_pickle(self):
-        """Test that pickling works on ObservationInfo with extensions"""
+        """Test that pickling works on ObservationInfo with extensions."""
         obsinfo = pickle.loads(pickle.dumps(self.obsinfo))
         self.assert_observation_info(obsinfo)
 
     def test_simple(self):
-        """Test that simple representation works"""
+        """Test that simple representation works."""
         simple = self.obsinfo.to_simple()
         self.assertIn("ext_foo", simple)
         self.assertIn("ext_number", simple)
@@ -88,7 +92,7 @@ class ExtensionsTestCase(unittest.TestCase):
         self.assert_observation_info(obsinfo)
 
     def test_json(self):
-        """Test that JSON representation works"""
+        """Test that JSON representation works."""
         json = self.obsinfo.to_json()
         self.assertIn("ext_foo", json)
         self.assertIn("ext_number", json)

@@ -21,6 +21,8 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class HscTestCase(unittest.TestCase, MetadataAssertHelper):
+    """Test HSC translations."""
+
     datadir = os.path.join(TESTDIR, "data")
 
     def test_hsc_translator(self):

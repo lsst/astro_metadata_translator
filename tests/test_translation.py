@@ -20,7 +20,7 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class InstrumentTestTranslator(FitsTranslator, StubTranslator):
-    """Simple FITS-like translator to test the infrastructure"""
+    """Simple FITS-like translator to test the infrastructure."""
 
     # Needs a name to be registered
     name = "TestTranslator"
@@ -49,6 +49,8 @@ class MissingMethodsTranslator(FitsTranslator):
 
 
 class TranslatorTestCase(unittest.TestCase):
+    """Test core translation infrastructure."""
+
     def setUp(self):
         # Known simple header
         self.header = {

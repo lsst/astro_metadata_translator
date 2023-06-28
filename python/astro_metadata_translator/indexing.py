@@ -9,6 +9,8 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+"""Functions to support file indexing."""
+
 from __future__ import annotations
 
 __all__ = (
@@ -19,8 +21,6 @@ __all__ = (
     "process_index_data",
     "process_sidecar_data",
 )
-
-"""Functions to support file indexing."""
 
 import collections.abc
 import json

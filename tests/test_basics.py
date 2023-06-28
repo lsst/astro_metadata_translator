@@ -19,6 +19,8 @@ from astro_metadata_translator import ObservationInfo, makeObservationInfo
 
 
 class BasicTestCase(unittest.TestCase):
+    """Test basic metadata translation functionality."""
+
     def test_basic(self):
         version = astro_metadata_translator.__version__
         self.assertIsNotNone(version)

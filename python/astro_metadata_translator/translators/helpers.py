@@ -71,7 +71,7 @@ def is_non_science(self: MetadataTranslator) -> None:
 
 
 def altitude_from_zenith_distance(zd: astropy.units.Quantity) -> astropy.units.Quantity:
-    """Convert zenith distance to altitude
+    """Convert zenith distance to altitude.
 
     Parameters
     ----------

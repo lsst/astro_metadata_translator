@@ -20,7 +20,7 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class NotDecamTranslator(DecamTranslator):
-    """This is a DECam translator with override list of header corrections."""
+    """A DECam translator with override list of header corrections."""
 
     name = None
 
@@ -36,7 +36,7 @@ class NotDecamTranslator(DecamTranslator):
 
 
 class NotDecamTranslator2(NotDecamTranslator):
-    """This is like NotDecamTranslator but has a fixup that will break on
+    """Similar to NotDecamTranslator but has a fixup that will break on
     repeat.
     """
 
@@ -49,7 +49,7 @@ class NotDecamTranslator2(NotDecamTranslator):
 
 
 class AlsoNotDecamTranslator(DecamTranslator):
-    """This is a DECam translator with override list of header corrections
+    """A DECam translator with override list of header corrections
     that fails.
     """
 
@@ -61,7 +61,7 @@ class AlsoNotDecamTranslator(DecamTranslator):
 
 
 class NullDecamTranslator(DecamTranslator):
-    """This is a DECam translator that doesn't do any fixes."""
+    """A DECam translator that doesn't do any fixes."""
 
     name = None
 
@@ -71,6 +71,8 @@ class NullDecamTranslator(DecamTranslator):
 
 
 class HeadersTestCase(unittest.TestCase):
+    """Test header manipulation utilities."""
+
     def setUp(self):
         # Define reference headers
         self.h1 = dict(
@@ -386,6 +388,8 @@ class HeadersTestCase(unittest.TestCase):
 
 
 class FixHeadersTestCase(unittest.TestCase):
+    """Test header fix up."""
+
     def test_basic_fix_header(self):
         """Test that a header can be fixed if we specify a local path."""
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))

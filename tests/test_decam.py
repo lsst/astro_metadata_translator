@@ -20,6 +20,8 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
+    """Test DECam translations."""
+
     datadir = os.path.join(TESTDIR, "data")
 
     def test_decam_translator(self):

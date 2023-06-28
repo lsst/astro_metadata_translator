@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Classes and support code for metadata translation"""
+"""Classes and support code for metadata translation."""
 
 from __future__ import annotations
 
@@ -44,10 +44,7 @@ _VERSION_CACHE: dict[type, str] = dict()
 
 
 def cache_translation(func: Callable, method: str | None = None) -> Callable:
-    """Decorator to cache the result of a translation method.
-
-    Especially useful when a translation uses many other translation
-    methods.  Should be used only on ``to_x()`` methods.
+    """Cache the result of a translation method.
 
     Parameters
     ----------
@@ -62,6 +59,18 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
     -------
     wrapped : `function`
         Method wrapped by the caching function.
+
+    Notes
+    -----
+    Especially useful when a translation uses many other translation
+    methods or involves significant computation.
+    Should be used only on ``to_x()`` methods.
+
+    .. code-block:: python
+
+        @cache_translation
+        def to_detector_num(self):
+            ....
     """
     name = func.__name__ if method is None else method
 
@@ -76,7 +85,7 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
 
 
 class MetadataTranslator:
-    """Per-instrument metadata translation support
+    """Per-instrument metadata translation support.
 
     Parameters
     ----------
@@ -486,7 +495,7 @@ class MetadataTranslator:
     def can_translate_with_options(
         cls, header: Mapping[str, Any], options: dict[str, Any], filename: str | None = None
     ) -> bool:
-        """Helper method for `can_translate` allowing options.
+        """Determine if a header can be translated with different criteria.
 
         Parameters
         ----------
@@ -522,7 +531,7 @@ class MetadataTranslator:
     def determine_translator(
         cls, header: Mapping[str, Any], filename: str | None = None
     ) -> type[MetadataTranslator]:
-        """Determine a translation class by examining the header
+        """Determine a translation class by examining the header.
 
         Parameters
         ----------
@@ -707,7 +716,7 @@ class MetadataTranslator:
     def validate_value(
         value: float, default: float, minimum: float | None = None, maximum: float | None = None
     ) -> float:
-        """Validate the supplied value, returning a new value if out of range
+        """Validate the supplied value, returning a new value if out of range.
 
         Parameters
         ----------
@@ -768,8 +777,8 @@ class MetadataTranslator:
         return True
 
     def resource_root(self) -> tuple[str | None, str | None]:
-        """Package resource to use to locate correction resources within an
-        installed package.
+        """Return package resource to use to locate correction resources within
+        an installed package.
 
         Returns
         -------
@@ -817,7 +826,7 @@ class MetadataTranslator:
         return self.is_keyword_defined(self._header, keyword)
 
     def are_keys_ok(self, keywords: Iterable[str]) -> bool:
-        """Are the supplied keys all present and defined?
+        """Are the supplied keys all present and defined?.
 
         Parameters
         ----------

@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Metadata translation code for standard FITS headers"""
+"""Metadata translation code for standard FITS headers."""
 
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ class FitsTranslator(MetadataTranslator):
 
     @classmethod
     def _from_fits_date_string(cls, date_str: str, scale: str = "utc", time_str: str | None = None) -> Time:
-        """Parse standard FITS ISO-style date string and return time object
+        """Parse standard FITS ISO-style date string and return time object.
 
         Parameters
         ----------
@@ -107,7 +107,7 @@ class FitsTranslator(MetadataTranslator):
     def _from_fits_date(
         self, date_key: str, mjd_key: str | None = None, scale: str | None = None
     ) -> Time | None:
-        """Calculate a date object from the named FITS header
+        """Calculate a date object from the named FITS header.
 
         Uses the TIMESYS header if present to determine the time scale,
         defaulting to UTC.  Can be overridden since sometimes headers

@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Metadata translation code for SuprimeCam FITS headers"""
+"""Metadata translation code for SuprimeCam FITS headers."""
 
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return False
 
     def _get_adjusted_mjd(self) -> int:
-        """Calculate the modified julian date offset from reference day
+        """Calculate the modified julian date offset from reference day.
 
         Returns
         -------
@@ -150,7 +150,7 @@ class SuprimeCamTranslator(SubaruTranslator):
 
     @cache_translation
     def to_exposure_id(self) -> int:
-        """Calculate unique exposure integer for this observation
+        """Calculate unique exposure integer for this observation.
 
         Returns
         -------

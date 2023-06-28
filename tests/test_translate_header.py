@@ -97,7 +97,7 @@ class TestTranslateHeader(unittest.TestCase):
         self.assertEqual(len(failed), 3)
 
     def test_translate_header_traceback(self):
-        """Translate some header files that fail and trigger traceback"""
+        """Translate some header files that fail and trigger traceback."""
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files(
@@ -116,7 +116,7 @@ class TestTranslateHeader(unittest.TestCase):
         self.assertEqual(len(failed), 3)
 
     def test_translate_header_dump(self):
-        """Check that a header is dumped"""
+        """Check that a header is dumped."""
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files(
@@ -142,7 +142,7 @@ class TestTranslateHeader(unittest.TestCase):
         self.assertEqual(len(failed), 0)
 
     def test_translate_header_loud(self):
-        """Check that ObservationInfo content is displayed"""
+        """Check that ObservationInfo content is displayed."""
         with io.StringIO() as out:
             with io.StringIO() as err:
                 okay, failed = process_files(
