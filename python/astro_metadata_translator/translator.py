@@ -48,7 +48,7 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
 
     Parameters
     ----------
-    func : `function`
+    func : `~collections.abc.Callable`
         Translation method to cache.
     method : `str`, optional
         Name of the translation method to cache.  Not needed if the decorator
@@ -57,7 +57,7 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
 
     Returns
     -------
-    wrapped : `function`
+    wrapped : `~collections.abc.Callable`
         Method wrapped by the caching function.
 
     Notes
@@ -197,7 +197,7 @@ class MetadataTranslator:
         Retrieves the attribute associated with the given name.
         Then looks in all the parent classes to determine whether that
         attribute comes from a parent class or from the current class.
-        Attributes are compared using `id()`.
+        Attributes are compared using :py:func:`id`.
         """
         # The attribute to compare.
         if not hasattr(cls, name):
@@ -232,7 +232,7 @@ class MetadataTranslator:
 
         Returns
         -------
-        f : `function`
+        f : `~collections.abc.Callable`
             Function returning the constant.
         """
 
@@ -246,11 +246,16 @@ class MetadataTranslator:
             return_type = type(constant)
             property_doc = f"Returns constant value for '{property_key}' property"
 
+        if return_type.__module__ == "builtins":
+            full_name = return_type.__name__
+        else:
+            full_name = f"{return_type.__module__}.{return_type.__qualname__}"
+
         constant_translator.__doc__ = f"""{property_doc}
 
         Returns
         -------
-        translation : `{return_type}`
+        translation : `{full_name}`
             Translated property.
         """
         return constant_translator
@@ -294,7 +299,7 @@ class MetadataTranslator:
         unit : `astropy.units.Unit`, optional
             If not `None`, the value read from the header will be converted
             to a `~astropy.units.Quantity`.  Only supported for numeric values.
-        checker : `function`, optional
+        checker : `~collections.abc.Callable`, optional
             Callback function to be used by the translator method in case the
             keyword is not present.  Function will be executed as if it is
             a method of the translator class.  Running without raising an
@@ -303,7 +308,7 @@ class MetadataTranslator:
 
         Returns
         -------
-        t : `function`
+        t : `~collections.abc.Callable`
             Function implementing a translator with the specified
             parameters.
         """
@@ -389,7 +394,7 @@ class MetadataTranslator:
         ``_trivialMap`` can be defined.  Trivial mappings are a dict mapping a
         generic property to either a header keyword, or a tuple consisting of
         the header keyword and a dict containing key value pairs suitable for
-        the `MetadataTranslator.quantity_from_card()` method.
+        the `MetadataTranslator.quantity_from_card` method.
         """
         super().__init_subclass__(**kwargs)
 
@@ -871,7 +876,7 @@ class MetadataTranslator:
         maximum : `float`, optional
             Maximum possible valid value, optional.  If the calculated value
             is above this value, the default value will be used.
-        checker : `function`, optional
+        checker : `~collections.abc.Callable`, optional
             Callback function to be used by the translator method in case the
             keyword is not present.  Function will be executed as if it is
             a method of the translator class.  Running without raising an
@@ -1132,13 +1137,13 @@ class MetadataTranslator:
         In the base class implementation it is assumed that
         this supplied header is the only useful header for metadata translation
         and it will be returned unchanged if given. This can avoid
-        unnecesarily re-opening the file and re-reading the header when the
+        unnecessarily re-opening the file and re-reading the header when the
         content is already known.
 
         If no header is supplied, a header will be read from the supplied
-        file using `read_basic_metadata_from_file`, allowing it to merge
-        the primary and secondary header of a multi-extension FITS file.
-        Subclasses can read the header from the data file using whatever
+        file using `~.file_helpers.read_basic_metadata_from_file`, allowing it
+        to merge the primary and secondary header of a multi-extension FITS
+        file. Subclasses can read the header from the data file using whatever
         technique is best for that instrument.
 
         Subclasses can return multiple headers and ignore the externally
@@ -1201,12 +1206,12 @@ def _make_abstract_translator_method(
         Description of the property.
     return_typedoc : `str`
         Type string of this property (used in the doc string).
-    return_type : `class`
+    return_type : `type`
         Type of this property.
 
     Returns
     -------
-    m : `function`
+    m : `~collections.abc.Callable`
         Translator method for this property.
     """
 
@@ -1276,7 +1281,7 @@ def _make_forwarded_stub_translator_method(
 
     Parameters
     ----------
-    cls : `class`
+    cls : `type`
         Class to use when referencing `super()`.  This would usually be
         `StubTranslator`.
     property : `str`
@@ -1285,12 +1290,12 @@ def _make_forwarded_stub_translator_method(
         Description of the property.
     return_typedoc : `str`
         Type string of this property (used in the doc string).
-    return_type : `class`
+    return_type : `type`
         Type of this property.
 
     Returns
     -------
-    m : `function`
+    m : `~collections.abc.Callable`
         Stub translator method for this property.
     """
     method = f"to_{property}"

@@ -487,7 +487,7 @@ class ObservationInfo:
 
         Returns
         -------
-        simple : `dict` of [`str`, `Any`]
+        simple : `dict` of [`str`, `~typing.Any`]
             Simple dict of all properties.
 
         Notes
@@ -542,7 +542,7 @@ class ObservationInfo:
 
         Parameters
         ----------
-        simple : `dict` [`str`, `Any`]
+        simple : `dict` [`str`, `~typing.Any`]
             The dict returned by `to_simple()`
 
         Returns

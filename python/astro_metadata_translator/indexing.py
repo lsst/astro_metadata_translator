@@ -219,7 +219,8 @@ def read_index(
 
     Returns
     -------
-    index_ : `ObservationGroup` or `dict[str, Union[dict, ObservaitonInfo]]`
+    index_ : `.ObservationGroup` or `dict` [ `str`, \
+            `dict` | `.ObservationInfo` ]
         The return content matches that returned by `process_index_data`.
     """
     if not path.endswith(".json"):
@@ -274,22 +275,22 @@ def process_index_data(
     force_metadata : `bool`, optional
         By default the content returned will match the original form that
         was used for the index. If this parameter is `True` an index of
-        `ObservationInfo` will be returned as if it was simple dict content.
+        `.ObservationInfo` will be returned as if it was simple dict content.
     force_dict : `bool`, optional
         If `True` the structure returned will always be a dict keyed
         by filename.
 
     Returns
     -------
-    index : `ObservationGroup` or `dict` of [`str`, `dict`]
-       If the index file referred to `ObservationInfo` this will return
-       an `ObservationGroup`, otherwise a `dict` will be returned with the
+    index : `.ObservationGroup` or `dict` of [`str`, `dict`]
+       If the index file referred to `.ObservationInfo` this will return
+       an `.ObservationGroup`, otherwise a `dict` will be returned with the
        keys being paths to files and the values being the keys and values
        stored in the index (with common information merged in). This
        can be overridden using the ``force_metadata`` parameter. If
        ``force_dict`` is `True` a `dict` will be returned with filename
-       keys even if the index file refers to `ObservationInfo` (the values
-       will be `ObservationInfo` unless ``force_metadata`` is `True`).
+       keys even if the index file refers to `.ObservationInfo` (the values
+       will be `.ObservationInfo` unless ``force_metadata`` is `True`).
 
     Notes
     -----
@@ -343,9 +344,9 @@ def read_sidecar(path: str) -> ObservationInfo | MutableMapping[str, Any]:
 
     Returns
     -------
-    info : `ObservationInfo` or `dict` of [`str`, `dict`]
-        If the sidecar file referred to `ObservationInfo` this will return
-        an `ObservationInfo`, otherwise a `dict` will be returned.
+    info : `.ObservationInfo` or `dict` of [`str`, `dict`]
+        If the sidecar file referred to `.ObservationInfo` this will return
+        an `.ObservationInfo`, otherwise a `dict` will be returned.
     """
     if not path.endswith(".json"):
         raise ValueError(f"Sidecar files must be in .json format; got {path}")
@@ -393,13 +394,13 @@ def process_sidecar_data(
     force_metadata : `bool`, optional
         By default the content returned will match the original form that
         was used for the sidecar. If this parameter is `True` a sidecar of
-        `ObservationInfo` will be returned as if it was simple dict content.
+        `.ObservationInfo` will be returned as if it was simple dict content.
 
     Returns
     -------
-    info : `ObservationInfo` or `dict` of [`str`, `Any`]
-        If the sidecar file referred to `ObservationInfo` this will return
-        an `ObservationInfo`, otherwise a `dict` will be returned. This
+    info : `.ObservationInfo` or `dict` of [`str`, `~typing.Any`]
+        If the sidecar file referred to `.ObservationInfo` this will return
+        an `.ObservationInfo`, otherwise a `dict` will be returned. This
         can be overridden using the ``force_metadata`` parameter in which
         case a `dict` will always be returned.
     """

@@ -213,7 +213,7 @@ def read_file_info(
     content_type : `str`, optional
         Form of content to be returned. Can be either ``json`` to return a
         JSON string, ``simple`` to always return a `dict`, or ``native`` to
-        return either a `dict` (for ``metadata``) or `ObservationInfo` for
+        return either a `dict` (for ``metadata``) or `.ObservationInfo` for
         ``translated``.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
@@ -223,9 +223,9 @@ def read_file_info(
 
     Returns
     -------
-    simple : `dict` of `str` or `ObservationInfo`
-        The return value of `ObservationInfo.to_simple()`. Returns `None`
-        if there was a problem and `print_trace` is not `None`.
+    simple : `dict` of `str` or `.ObservationInfo`
+        The return value of `.ObservationInfo.to_simple`. Returns `None`
+        if there was a problem and ``print_trace`` is not `None`.
     """
     if content_mode not in ("metadata", "translated"):
         raise ValueError(f"Unrecognized content mode request: {content_mode}")
