@@ -675,7 +675,7 @@ class MetadataTranslator:
 
     @property
     def _log_prefix(self) -> str:
-        """Standard prefix that can be used for log messages to report
+        """Return standard prefix that can be used for log messages to report
         useful context.
 
         Will be either the filename and obsid, or just the obsid depending
