@@ -13,6 +13,9 @@ line_length = 110
 [tool.lsst_versions]
 write_to = "python/astro_metadata_translator/version.py"
 
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"  # Recommended as best practice
+
 [tool.pydocstyle]
 convention = "numpy"
 # Our coding style does not require docstrings for magic methods (D105)
