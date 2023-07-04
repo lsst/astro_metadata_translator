@@ -20,7 +20,7 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class NotDecamTranslator(DecamTranslator):
-    """This is a DECam translator with override list of header corrections."""
+    """A DECam translator with override list of header corrections."""
 
     name = None
 
@@ -36,8 +36,9 @@ class NotDecamTranslator(DecamTranslator):
 
 
 class NotDecamTranslator2(NotDecamTranslator):
-    """This is like NotDecamTranslator but has a fixup that will break on
-    repeat."""
+    """Similar to NotDecamTranslator but has a fixup that will break on
+    repeat.
+    """
 
     name = None
 
@@ -48,8 +49,9 @@ class NotDecamTranslator2(NotDecamTranslator):
 
 
 class AlsoNotDecamTranslator(DecamTranslator):
-    """This is a DECam translator with override list of header corrections
-    that fails."""
+    """A DECam translator with override list of header corrections
+    that fails.
+    """
 
     name = None
 
@@ -59,7 +61,7 @@ class AlsoNotDecamTranslator(DecamTranslator):
 
 
 class NullDecamTranslator(DecamTranslator):
-    """This is a DECam translator that doesn't do any fixes."""
+    """A DECam translator that doesn't do any fixes."""
 
     name = None
 
@@ -69,6 +71,8 @@ class NullDecamTranslator(DecamTranslator):
 
 
 class HeadersTestCase(unittest.TestCase):
+    """Test header manipulation utilities."""
+
     def setUp(self):
         # Define reference headers
         self.h1 = dict(
@@ -384,9 +388,10 @@ class HeadersTestCase(unittest.TestCase):
 
 
 class FixHeadersTestCase(unittest.TestCase):
+    """Test header fix up."""
+
     def test_basic_fix_header(self):
         """Test that a header can be fixed if we specify a local path."""
-
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         self.assertEqual(header["DETECTOR"], "S3-111_107419-8-3")
 
@@ -421,7 +426,8 @@ class FixHeadersTestCase(unittest.TestCase):
 
     def test_hsc_fix_header(self):
         """Check that one of the known HSC corrections is being applied
-        properly."""
+        properly.
+        """
         header = {"EXP-ID": "HSCA00120800", "INSTRUME": "HSC", "DATA-TYP": "FLAT"}
 
         fixed = fix_header(header, translator_class=HscTranslator)
@@ -440,8 +446,8 @@ class FixHeadersTestCase(unittest.TestCase):
 
     def test_decam_fix_header(self):
         """Check that one of the known DECam corrections is being applied
-        properly."""
-
+        properly.
+        """
         # This header is a bias (zero) with an erroneous Y filter
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         fixed = fix_header(header, translator_class=DecamTranslator)
@@ -450,7 +456,6 @@ class FixHeadersTestCase(unittest.TestCase):
 
     def test_translator_fix_header(self):
         """Check that translator classes can fix headers."""
-
         # Read in a known header
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         self.assertEqual(header["DTSITE"], "ct")
@@ -469,7 +474,6 @@ class FixHeadersTestCase(unittest.TestCase):
 
     def test_no_double_fix(self):
         """Check that header fixup only happens once."""
-
         # Read in a known header
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         self.assertEqual(header["DTSITE"], "ct")

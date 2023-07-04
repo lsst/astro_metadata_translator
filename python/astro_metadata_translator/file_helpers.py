@@ -71,7 +71,6 @@ except ImportError:
 
     def _read_fits_metadata(file: str, hdu: int, can_raise: bool = False) -> MutableMapping[str, Any] | None:
         """Read a FITS header using astropy."""
-
         # For detailed docstrings see the afw implementation above
         header = None
         try:
@@ -123,7 +122,7 @@ def find_files(files: Iterable[str], regex: str) -> list[str]:
 def read_basic_metadata_from_file(
     file: str, hdrnum: int, errstream: IO = sys.stderr, can_raise: bool = True
 ) -> MutableMapping[str, Any] | None:
-    """Read a raw header from a file, merging if necessary
+    """Read a raw header from a file, merging if necessary.
 
     Parameters
     ----------
@@ -193,7 +192,7 @@ def read_file_info(
     outstream: IO = sys.stdout,
     errstream: IO = sys.stderr,
 ) -> str | MutableMapping[str, Any] | ObservationInfo | None:
-    """Read information from file
+    """Read information from file.
 
     Parameters
     ----------
@@ -214,7 +213,7 @@ def read_file_info(
     content_type : `str`, optional
         Form of content to be returned. Can be either ``json`` to return a
         JSON string, ``simple`` to always return a `dict`, or ``native`` to
-        return either a `dict` (for ``metadata``) or `ObservationInfo` for
+        return either a `dict` (for ``metadata``) or `.ObservationInfo` for
         ``translated``.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
@@ -224,11 +223,10 @@ def read_file_info(
 
     Returns
     -------
-    simple : `dict` of `str` or `ObservationInfo`
-        The return value of `ObservationInfo.to_simple()`. Returns `None`
-        if there was a problem and `print_trace` is not `None`.
+    simple : `dict` of `str` or `.ObservationInfo`
+        The return value of `.ObservationInfo.to_simple`. Returns `None`
+        if there was a problem and ``print_trace`` is not `None`.
     """
-
     if content_mode not in ("metadata", "translated"):
         raise ValueError(f"Unrecognized content mode request: {content_mode}")
 

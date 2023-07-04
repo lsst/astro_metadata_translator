@@ -17,6 +17,7 @@ __all__ = ("merge_headers", "fix_header")
 
 import copy
 import datetime
+import importlib.resources as resources
 import itertools
 import logging
 import os
@@ -25,7 +26,6 @@ from collections import Counter
 from collections.abc import Mapping, MutableMapping, Sequence
 from typing import IO, Any
 
-import pkg_resources
 import yaml
 
 from .translator import MetadataTranslator
@@ -351,18 +351,19 @@ def _find_from_resource(
         Name of resource read. `None` if no corrections found.
     """
     if package is not None and resource_root is not None:
-        resource_name = posixpath.join(resource_root, target_file)
-        if pkg_resources.resource_exists(package, resource_name):
-            log.debug("Applying header corrections from package resource %s:%s", package, resource_name)
-            with pkg_resources.resource_stream(package, resource_name) as fh:
-                corrections = _read_yaml(fh, f"package resource {package}:{resource_name}")
+        resource_path = resources.files(package).joinpath(resource_root, target_file)  # type: ignore
+        if resource_path.is_file():
+            resource_uri = f"resource://{package}/{posixpath.join(resource_root, target_file)}"
+            log.debug("Applying header corrections from package resource %s", resource_uri)
+            with resource_path.open("rb") as fh:
+                corrections = _read_yaml(fh, f"package resource {resource_path}")
 
             if corrections is None:
                 return None
 
             header.update(corrections)
 
-            return f"{package}:{resource_name}"
+            return resource_uri
     return None
 
 
@@ -432,7 +433,6 @@ def fix_header(
 
     The first file located in the search path is used for the correction.
     """
-
     if FIXUP_SENTINEL in header:
         return header[FIXUP_SENTINEL]
 

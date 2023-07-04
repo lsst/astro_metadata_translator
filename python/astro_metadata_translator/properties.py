@@ -80,7 +80,7 @@ def datetime_to_simple(datetime: astropy.time.Time) -> tuple[float, float]:
 
 
 def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.time.Time:
-    """Convert simple form back to astropy.time.Time"""
+    """Convert simple form back to astropy.time.Time."""
     return astropy.time.Time(*simple, format="jd", scale="tai")
 
 
@@ -135,7 +135,7 @@ def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
 
 
 def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, float]:
-    """Convert SkyCoord to ICRS RA/Dec tuple"""
+    """Convert SkyCoord to ICRS RA/Dec tuple."""
     icrs = skycoord.icrs
     return (icrs.ra.to_value(astropy.units.deg), icrs.dec.to_value(astropy.units.deg))
 

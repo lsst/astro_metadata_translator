@@ -21,6 +21,8 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
+    """Test CFHT Megaprime translations."""
+
     datadir = os.path.join(TESTDIR, "data")
 
     def test_megaprime_translator(self):

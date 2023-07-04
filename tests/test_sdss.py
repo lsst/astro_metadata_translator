@@ -20,6 +20,8 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
+    """Test SDSS translations."""
+
     datadir = os.path.join(TESTDIR, "data")
 
     def test_sdss_translator(self):

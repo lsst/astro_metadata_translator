@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Metadata translation code for SDSS FITS headers"""
+"""Metadata translation code for SDSS FITS headers."""
 
 from __future__ import annotations
 
@@ -183,7 +183,6 @@ class SdssTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-
         # Look up the value since files do not have location
         value = EarthLocation.of_site("apo")
 

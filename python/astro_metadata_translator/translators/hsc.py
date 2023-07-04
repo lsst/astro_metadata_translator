@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Metadata translation code for HSC FITS headers"""
+"""Metadata translation code for HSC FITS headers."""
 
 from __future__ import annotations
 
@@ -211,7 +211,7 @@ class HscTranslator(SuprimeCamTranslator):
 
     @cache_translation
     def to_exposure_id(self) -> int:
-        """Calculate unique exposure integer for this observation
+        """Calculate unique exposure integer for this observation.
 
         Returns
         -------
@@ -264,7 +264,6 @@ class HscTranslator(SuprimeCamTranslator):
         num : `int`
             Detector number.
         """
-
         ccd = super().to_detector_num()
         try:
             tjd = self._get_adjusted_mjd()

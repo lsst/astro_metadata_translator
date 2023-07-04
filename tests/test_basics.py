@@ -19,6 +19,8 @@ from astro_metadata_translator import ObservationInfo, makeObservationInfo
 
 
 class BasicTestCase(unittest.TestCase):
+    """Test basic metadata translation functionality."""
+
     def test_basic(self):
         version = astro_metadata_translator.__version__
         self.assertIsNotNone(version)
@@ -41,7 +43,6 @@ class BasicTestCase(unittest.TestCase):
 
     def test_simple(self):
         """Test that we can simplify an ObservationInfo."""
-
         reference = dict(
             boresight_airmass=1.5,
             focus_z=1.0 * u.mm,

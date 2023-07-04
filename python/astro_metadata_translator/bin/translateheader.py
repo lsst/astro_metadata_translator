@@ -71,7 +71,6 @@ def build_argparser() -> argparse.ArgumentParser:
         The argument parser that defines the ``translate_header.py``
         command-line interface.
     """
-
     parser = argparse.ArgumentParser(description="Summarize headers from astronomical data files")
     parser.add_argument(
         "files",
@@ -339,10 +338,9 @@ def main() -> int:
     Returns
     -------
     status : `int`
-        Exit status to be passed to `sys.exit()`. 0 if any of the files
-        could be translated. 1 otherwise.
+        Exit status to be passed to `sys.exit`. ``0`` if any of the files
+        could be translated. ``1`` otherwise.
     """
-
     logging.warn(
         "This command is deprecated. Please use 'astrometadata translate' "
         " or 'astrometadata dump' instead. See 'astrometadata -h' for more details."

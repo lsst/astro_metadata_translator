@@ -12,3 +12,49 @@ line_length = 110
 
 [tool.lsst_versions]
 write_to = "python/astro_metadata_translator/version.py"
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"  # Recommended as best practice
+
+[tool.pydocstyle]
+convention = "numpy"
+# Our coding style does not require docstrings for magic methods (D105)
+# Our docstyle documents __init__ at the class level (D107)
+# We allow methods to inherit docstrings and this is not compatible with D102.
+# Docstring at the very first line is not required
+# D200, D205 and D400 all complain if the first sentence of the docstring does
+# not fit on one line.
+# D104 - we do not require documentation in __init__.py files.
+add-ignore = ["D107", "D105", "D102", "D104", "D100", "D200", "D205", "D400"]
+
+
+[tool.ruff]
+exclude = [
+    "__init__.py",
+]
+ignore = [
+    "N999",  # Invalid module name
+    "D107",  # Document __init__ at class level.
+    "D105",  # Do not require docstrings on magic methods.
+    "D102",  # Can inherit docstrings.
+    "D100",  # Modules are not required to include documentation.
+    "D205",  # Does not understand if a summary is two lines long.
+]
+line-length = 110
+select = [
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "N",  # pep8-naming
+    "W",  # pycodestyle
+    "D",  # pydocstyle
+]
+target-version = "py310"
+extend-select = [
+    "RUF100", # Warn about unused noqa
+]
+
+[tool.ruff.pycodestyle]
+max-doc-length = 79
+
+[tool.ruff.pydocstyle]
+convention = "numpy"

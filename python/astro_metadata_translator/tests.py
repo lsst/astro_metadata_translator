@@ -65,7 +65,7 @@ if daf_base is None:
 
 
 def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str, Any]:
-    """Read the named test file relative to the location of this helper
+    """Read the named test file relative to the location of this helper.
 
     Parameters
     ----------

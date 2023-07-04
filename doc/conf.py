@@ -24,3 +24,9 @@ except KeyError:
 # mostly work if the Pipelines and astro_metadata_translator are developed
 # concurrently.
 intersphinx_mapping["lsst"] = ("https://pipelines.lsst.io/v/daily/", None)  # noqa
+
+nitpick_ignore_regex = [
+    ("py:.*", r"lsst\..*"),  # Ignore warnings from links to other lsst packages.
+    ("py:class", "(None|item) -- remove.*"),  # MutableSequence
+    ("py:class", "integer -- return.*"),  # Sequence
+]

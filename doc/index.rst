@@ -15,7 +15,7 @@ There are header translation classes implemented as subclasses of
 `~astro_metadata_translator.MetadataTranslator`.  These translation subclasses
 implement methods corresponding to each derived property defined in
 `~astro_metadata_translator.ObservationInfo`. The methods are named
-`to_{property}` and can be implemented explicitly by a translation class, or
+``to_{property}`` and can be implemented explicitly by a translation class, or
 implicitly by defining trivial mappings from a header item to a property, or
 constant mappings that are fixed for all headers independent of any header
 values.
@@ -68,3 +68,5 @@ Python API reference
 .. automodapi:: astro_metadata_translator.bin.translateheader
 
 .. automodapi:: astro_metadata_translator.indexing
+
+.. automodapi:: astro_metadata_translator.file_helpers

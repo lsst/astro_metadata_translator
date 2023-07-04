@@ -20,6 +20,8 @@ TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class ObservationGroupTestCase(unittest.TestCase):
+    """Test grouping of observations."""
+
     datadir = os.path.join(TESTDIR, "data")
 
     def setUp(self):

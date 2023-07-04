@@ -15,27 +15,43 @@ from astro_metadata_translator import StubTranslator
 
 
 class ShadowBase(StubTranslator):
+    """Base class for testing shadowing."""
+
     def to_instrument(self):
         return "BaseInstrument"
 
 
 class ConstTranslator(StubTranslator):
+    """Simple translation class with a constant mapping."""
+
     _const_map = {"instrument": "InstrumentB"}
 
 
 class TrivialTranslator(ConstTranslator):
-    # This should not pick up the _const_map from parent class
+    """Translator inheriting from the constant mapping class but with an
+    override.
+
+    This class should not pick up the _const_map from parent class.
+    """
+
     _trivial_map = {"instrument": "INSTRUME"}
 
 
 class ExplicitTranslator(TrivialTranslator):
-    # The explicit method should override the parent implementations
-    # and not inherit the _trivial_map from parent.
+    """Translation class with explicit method inheriting from class
+    with automatic translation methods.
+
+    The explicit method should override the parent implementations
+    and not inherit the _trivial_map from parent.
+    """
+
     def to_instrument(self):
         return "InstrumentE"
 
 
 class TranslatorShadowing(unittest.TestCase):
+    """Test that shadowed translations are detected."""
+
     def test_shadowing(self):
         with self.assertLogs("astro_metadata_translator", level="WARN") as cm:
 

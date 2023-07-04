@@ -77,6 +77,7 @@ content_option = click.option(
 )
 @click.pass_context
 def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str]) -> None:
+    """Execute main click command-line."""
     ctx.ensure_object(dict)
 
     logging.basicConfig(level=log_level)
@@ -120,6 +121,7 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
 def translate(
     ctx: click.Context, files: Sequence[str], quiet: bool, hdrnum: int, mode: str, regex: str
 ) -> None:
+    """Translate a header."""
     # For quiet mode we want to translate everything but report nothing.
     if quiet:
         mode = "none"
@@ -152,6 +154,7 @@ def translate(
 @regex_option
 @click.pass_context
 def dump(ctx: click.Context, files: Sequence[str], hdrnum: int, mode: str, regex: str) -> None:
+    """Dump a header."""
     okay, failed = translate_header(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
 
     if failed:
@@ -171,6 +174,7 @@ def dump(ctx: click.Context, files: Sequence[str], hdrnum: int, mode: str, regex
 @content_option
 @click.pass_context
 def write_sidecar(ctx: click.Context, files: Sequence[str], hdrnum: int, regex: str, content: str) -> None:
+    """Write a sidecar file with header information."""
     okay, failed = write_sidecar_files(files, regex, hdrnum, content, ctx.obj["TRACEBACK"])
 
     if failed:
@@ -200,6 +204,7 @@ def write_sidecar(ctx: click.Context, files: Sequence[str], hdrnum: int, regex: 
 def write_index(
     ctx: click.Context, files: Sequence[str], hdrnum: int, regex: str, content: str, outpath: str
 ) -> None:
+    """Write a header index file."""
     okay, failed = write_index_files(
         files, regex, hdrnum, ctx.obj["TRACEBACK"], content_mode=content, outpath=outpath
     )

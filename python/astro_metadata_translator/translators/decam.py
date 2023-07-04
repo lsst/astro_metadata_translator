@@ -9,7 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Metadata translation code for DECam FITS headers"""
+"""Metadata translation code for DECam FITS headers."""
 
 from __future__ import annotations
 
@@ -254,7 +254,6 @@ class DecamTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-
         if self.is_key_ok("OBS-LONG"):
             # OBS-LONG has west-positive sign so must be flipped
             lon = self._header["OBS-LONG"] * -1.0
