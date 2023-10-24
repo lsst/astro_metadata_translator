@@ -351,7 +351,7 @@ def _find_from_resource(
         Name of resource read. `None` if no corrections found.
     """
     if package is not None and resource_root is not None:
-        resource_path = resources.files(package).joinpath(resource_root, target_file)  # type: ignore
+        resource_path = resources.files(package).joinpath(resource_root, target_file)
         if resource_path.is_file():
             resource_uri = f"resource://{package}/{posixpath.join(resource_root, target_file)}"
             log.debug("Applying header corrections from package resource %s", resource_uri)

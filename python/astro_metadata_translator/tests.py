@@ -13,6 +13,7 @@ from __future__ import annotations
 
 __all__ = ("read_test_file", "MetadataAssertHelper")
 
+import json
 import os
 import pickle
 import warnings
@@ -83,7 +84,13 @@ def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str,
     if dir is not None and not os.path.isabs(filename):
         filename = os.path.join(dir, filename)
     with open(filename) as fd:
-        header = yaml.load(fd, Loader=Loader)
+        if filename.endswith(".yaml"):
+            header = yaml.load(fd, Loader=Loader)
+        elif filename.endswith(".json"):
+            header = json.load(fd)
+        else:
+            raise RuntimeError(f"Unrecognized file format: {filename}")
+
     # Cannot directly check for Mapping because PropertyList is not one
     if not hasattr(header, "items"):
         raise ValueError(f"Contents of YAML file {filename} are not a mapping, they are {type(header)}")

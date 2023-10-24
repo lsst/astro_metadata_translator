@@ -127,8 +127,8 @@ def read_basic_metadata_from_file(
     Parameters
     ----------
     file : `str`
-        Name of file to read. Can be FITS or YAML. YAML must be a simple
-        top-level dict.
+        Name of file to read. Can be FITS, YAML or JSON. YAML or JSON must be
+        a simple top-level dict.
     hdrnum : `int`
         Header number to read. Only relevant for FITS. If greater than 1
         it will be merged with the primary header. If a negative number is
@@ -149,7 +149,7 @@ def read_basic_metadata_from_file(
         The header as a dict. Can be `None` if there was a problem reading
         the file.
     """
-    if file.endswith(".yaml"):
+    if file.endswith(".yaml") or file.endswith(".json"):
         try:
             md = read_test_file(
                 file,
