@@ -191,8 +191,7 @@ def read_index(
     path: str,
     *,
     force_dict: Literal[True],
-) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 @overload
@@ -200,8 +199,7 @@ def read_index(
     path: str,
     *,
     force_dict: Literal[False],
-) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 def read_index(
@@ -241,8 +239,7 @@ def process_index_data(
     *,
     force_metadata: Literal[True],
     force_dict: Literal[False],
-) -> MutableMapping[str, Any]:
-    ...
+) -> MutableMapping[str, Any]: ...
 
 
 @overload
@@ -251,15 +248,13 @@ def process_index_data(
     *,
     force_metadata: Literal[False],
     force_dict: Literal[True],
-) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 @overload
 def process_index_data(
     content: MutableMapping[str, Any], *, force_metadata: bool = False, force_dict: bool = False
-) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 def process_index_data(
@@ -363,22 +358,19 @@ def read_sidecar(path: str) -> ObservationInfo | MutableMapping[str, Any]:
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any],
-) -> ObservationInfo | MutableMapping[str, Any]:
-    ...
+) -> ObservationInfo | MutableMapping[str, Any]: ...
 
 
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any], force_metadata: Literal[True]
-) -> MutableMapping[str, Any]:
-    ...
+) -> MutableMapping[str, Any]: ...
 
 
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any], force_metadata: Literal[False]
-) -> ObservationInfo | MutableMapping[str, Any]:
-    ...
+) -> ObservationInfo | MutableMapping[str, Any]: ...
 
 
 def process_sidecar_data(
