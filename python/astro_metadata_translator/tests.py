@@ -191,7 +191,7 @@ class MetadataAssertHelper:
             Parameters to pass to `assertCoordinatesConsistent`.
         check_altaz : `bool`, optional
             Check that an alt/az value has been calculated.
-        kwargs : `dict`
+        **kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
 
@@ -251,7 +251,7 @@ class MetadataAssertHelper:
             Parameters to pass to `assertCoordinatesConsistent`.
         check_altaz : `bool`, optional
             Check that an alt/az value has been calculated.
-        kwargs : `dict`
+        **kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
 

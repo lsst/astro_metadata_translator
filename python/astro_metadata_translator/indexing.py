@@ -278,14 +278,14 @@ def process_index_data(
     Returns
     -------
     index : `.ObservationGroup` or `dict` of [`str`, `dict`]
-       If the index file referred to `.ObservationInfo` this will return
-       an `.ObservationGroup`, otherwise a `dict` will be returned with the
-       keys being paths to files and the values being the keys and values
-       stored in the index (with common information merged in). This
-       can be overridden using the ``force_metadata`` parameter. If
-       ``force_dict`` is `True` a `dict` will be returned with filename
-       keys even if the index file refers to `.ObservationInfo` (the values
-       will be `.ObservationInfo` unless ``force_metadata`` is `True`).
+        If the index file referred to `.ObservationInfo` this will return
+        an `.ObservationGroup`, otherwise a `dict` will be returned with the
+        keys being paths to files and the values being the keys and values
+        stored in the index (with common information merged in). This
+        can be overridden using the ``force_metadata`` parameter. If
+        ``force_dict`` is `True` a `dict` will be returned with filename
+        keys even if the index file refers to `.ObservationInfo` (the values
+        will be `.ObservationInfo` unless ``force_metadata`` is `True`).
 
     Notes
     -----

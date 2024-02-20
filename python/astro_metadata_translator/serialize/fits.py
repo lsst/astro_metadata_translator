@@ -30,7 +30,7 @@ def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) ->
     ----------
     date_begin : `astropy.time.Time`
         Date representing the beginning of the observation.
-    date_end  : `astropy.time.Time`
+    date_end : `astropy.time.Time`
         Date representing the end of the observation.
 
     Returns

@@ -702,7 +702,7 @@ class MetadataTranslator:
 
         Parameters
         ----------
-        args : sequence of `str`
+        *args : sequence of `str`
             Keywords used to process a translation.
         """
         self._used_cards.update(set(args))

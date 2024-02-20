@@ -178,7 +178,7 @@ def read_file(
         "auto" is used to indicate that a single file has been specified
         but the output will depend on whether the file is a multi-extension
         FITS file or not.
-    write_heading: `bool`, optional
+    write_heading : `bool`, optional
         If `True` and in table mode, write a table heading out before writing
         the content.
 
