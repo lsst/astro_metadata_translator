@@ -28,18 +28,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install packages
+      - name: Install debian packages
         run: sudo apt-get install graphviz
+
+      - name: Set the VIRTUAL_ENV variable for uv to work
+        run: |
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
+
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
 
       # We have two cores so we can speed up the testing with xdist
       - name: Install xdist and openfiles
-        run: pip install pytest-xdist pytest-openfiles pytest-cov
+        run: uv pip install pytest-xdist pytest-openfiles pytest-cov
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv pip install -r requirements.txt
 
       - name: Build and install
-        run: pip install -v .
+        run: uv pip install -v -e .
 
       - name: Run tests
         run: pytest -r a -v -n 3 --open-files --cov=astro_metadata_translator --cov=tests --cov-report=xml --cov-report=term --cov-branch
@@ -50,7 +59,7 @@ jobs:
           files: ./coverage.xml
 
       - name: Install documenteer
-        run: pip install -r doc/requirements.txt
+        run: uv pip install -r doc/requirements.txt
 
       - name: Build documentation
         if: ${{ matrix.python-version == '3.10' }}
