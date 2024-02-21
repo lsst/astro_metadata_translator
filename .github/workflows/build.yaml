@@ -67,11 +67,12 @@ jobs:
 
       - name: Landing page upload
         if: ${{ github.event_name == 'push' && matrix.python-version == '3.10' }}
-        env:
-          LTD_PASSWORD: ${{ secrets.LTD_PASSWORD }}
-          LTD_USERNAME: ${{ secrets.LTD_USERNAME }}
-        run: |
-          ltd upload --gh --product "astro-metadata-translator" --dir doc/_build/html
+        uses: lsst-sqre/ltd-upload@v1
+        with:
+          project: 'astro-metadata-translator'
+          dir: 'doc/_build/html'
+          password: ${{ secrets.LTD_PASSWORD }}
+          username: ${{ secrets.LTD_USERNAME }}
 
   pypi:
 
