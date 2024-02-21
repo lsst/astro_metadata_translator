@@ -12,6 +12,7 @@
 import os.path
 import unittest
 
+import astropy.time
 import astropy.units as u
 
 from astro_metadata_translator import ObservationInfo
@@ -53,6 +54,7 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_type="science",
                     observation_reason="science",
                     observing_day=20081101,
+                    observing_day_offset=astropy.time.TimeDelta(0, format="sec", scale="tai"),
                     physical_filter="i.MP9702",
                     pressure=617.65 * u.hPa,
                     relative_humidity=39.77,

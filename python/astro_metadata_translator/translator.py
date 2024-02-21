@@ -1024,12 +1024,61 @@ class MetadataTranslator:
             return "science"
         return "unknown"
 
+    @classmethod
+    def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
+        """Calculate the observing day offset to apply for a given observation.
+
+        In some cases the definition of the observing day offset has changed
+        during the lifetime of the instrument. For example lab data might
+        have a different offset to that when the instrument is on the
+        telescope.
+
+        Parameters
+        ----------
+        observing_date : `astropy.time.Time`
+            The observation date.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta` or `None`
+            The offset to apply when calculating the observing day for a
+            specific time of observation. `None` implies the offset
+            is not known for that date.
+        """
+        return None
+
+    @cache_translation
+    def to_observing_day_offset(self) -> astropy.time.TimeDelta | None:
+        """Return the offset required to calculate observing day.
+
+        Base class implementation returns `None`.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta` or `None`
+            The offset to apply. Returns `None` if the offset is not defined.
+
+        Notes
+        -----
+        This offset must be subtracted from a time of observation to calculate
+        the observing day. This offset must be added to the YYYYMMDDT00:00
+        observing day to calculate the time span coverage of the observing day.
+        """
+        datetime_begin = self.to_datetime_begin()
+        if datetime_begin is None:
+            return None
+        return self.observing_date_to_offset(datetime_begin)
+
     @cache_translation
     def to_observing_day(self) -> int:
         """Return the YYYYMMDD integer corresponding to the observing day.
 
         Base class implementation uses the TAI date of the start of the
-        observation.
+        observation corrected by the observing day offset. If that offset
+        is `None` no offset will be applied.
+
+        The offset is subtracted from the time of observation before
+        calculating the year, month and day.
 
         Returns
         -------
@@ -1038,11 +1087,21 @@ class MetadataTranslator:
             is broken and is unable to obtain a date of observation, ``0``
             is returned and the assumption is made that the problem will
             be caught elsewhere.
+
+        Notes
+        -----
+        For example, if the offset is +12 hours both 2023-07-06T13:00 and
+        2023-07-07T11:00 will return an observing day of 20230706 because
+        the observing day goes from 2023-07-06T12:00 to 2023-07-07T12:00.
         """
         datetime_begin = self.to_datetime_begin()
         if datetime_begin is None:
             return 0
-        return int(datetime_begin.tai.strftime("%Y%m%d"))
+        begin_tai = datetime_begin.tai
+        offset = self.to_observing_day_offset()
+        if offset:
+            begin_tai -= offset
+        return int(begin_tai.strftime("%Y%m%d"))
 
     @cache_translation
     def to_observation_counter(self) -> int:

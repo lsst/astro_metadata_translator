@@ -137,6 +137,7 @@ class ObservationInfo:
         observation_type: str
         observation_id: str
         observing_day: int
+        observing_day_offset: astropy.time.TimeDelta | None
         group_counter_start: int
         group_counter_end: int
         has_simulated_content: bool

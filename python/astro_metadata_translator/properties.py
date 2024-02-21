@@ -358,6 +358,42 @@ def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coord
     )
 
 
+def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
+    """Convert a TimeDelta to integer seconds.
+
+    This property does not need to support floating point seconds.
+
+    Parameters
+    ----------
+    delta : `astropy.time.TimeDelta`
+        The time offset.
+
+    Returns
+    -------
+    sec : `int`
+        Offset in integer seconds.
+    """
+    return round(delta.to_value("s"))
+
+
+def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
+    """Convert integer seconds to a `~astropy.time.TimeDelta`.
+
+    Parameters
+    ----------
+    simple : `int`
+        The offset in integer seconds.
+    **kwargs : `dict`
+        Additional information. Unused.
+
+    Returns
+    -------
+    delta : `astropy.time.TimeDelta`
+        The delta object.
+    """
+    return astropy.time.TimeDelta(simple, format="sec", scale="tai")
+
+
 @dataclass
 class PropertyDefinition:
     """Definition of an instrumental property."""
@@ -536,6 +572,16 @@ may not be.""",
     ),
     "observing_day": PropertyDefinition(
         "Integer in YYYYMMDD format corresponding to the day of observation.", "int", int
+    ),
+    "observing_day_offset": PropertyDefinition(
+        (
+            "Offset to subtract from an observation date when calculating the observing day. "
+            "Conversely, the offset to add to an observing day when calculating the time span of a day."
+        ),
+        "astropy.time.TimeDelta",
+        astropy.time.TimeDelta,
+        timedelta_to_simple,
+        simple_to_timedelta,
     ),
     "observation_counter": PropertyDefinition(
         (

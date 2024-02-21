@@ -21,6 +21,7 @@ import re
 from collections.abc import Iterator, Mapping, MutableMapping
 from typing import TYPE_CHECKING, Any
 
+import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle, EarthLocation
 from astropy.io import fits
@@ -74,6 +75,11 @@ class DecamTranslator(FitsTranslator):
         # which is the SI equivalent of mbar.
         "pressure": ("PRESSURE", dict(unit=u.hPa, default=771.611, minimum=700.0, maximum=850.0)),
     }
+
+    # DECam has no formal concept of an observing day. To ensure that
+    # observations from a single night all have the same observing_day, adopt
+    # the same offset used by the Vera Rubin Observatory of 12 hours.
+    _observing_day_offset = astropy.time.TimeDelta(12 * 3600, format="sec", scale="tai")
 
     # Unique detector names are currently not used but are read directly from
     # header.
@@ -446,3 +452,23 @@ class DecamTranslator(FitsTranslator):
                 if header["CCDNUM"] > 62:  # ignore guide CCDs
                     continue
                 yield merge_headers([primary_hdr, header], mode="overwrite")
+
+    @classmethod
+    def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
+        """Return the offset to use when calculating the observing day.
+
+        Parameters
+        ----------
+        observing_date : `astropy.time.Time`
+            The date of the observation. Unused.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta`
+            The offset to apply. The offset is always 12 hours. DECam has
+            no defined observing day concept in its headers. To ensure that
+            observations from a single night all have the same observing_day,
+            adopt the same offset used by the Vera Rubin Observatory of
+            12 hours.
+        """
+        return cls._observing_day_offset

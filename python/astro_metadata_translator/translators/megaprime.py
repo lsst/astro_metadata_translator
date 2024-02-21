@@ -20,6 +20,7 @@ import re
 from collections.abc import Iterator, MutableMapping
 from typing import TYPE_CHECKING, Any
 
+import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle, EarthLocation
 from astropy.io import fits
@@ -45,6 +46,8 @@ class MegaPrimeTranslator(FitsTranslator):
 
     default_resource_root = posixpath.join(CORRECTIONS_RESOURCE_ROOT, "CFHT")
     """Default resource path root to use to locate header correction files."""
+
+    _observing_day_offset = astropy.time.TimeDelta(0, format="sec", scale="tai")
 
     # CFHT Megacam has no rotator, and the instrument angle on sky is set to
     # +Y=N, +X=W which we define as a 0 degree rotation.
@@ -262,3 +265,20 @@ class MegaPrimeTranslator(FitsTranslator):
                     # Astropy strips EXTNAME so put it back for the translator
                     header["EXTNAME"] = f"ccd{hdu.ver:02d}"
                     yield header
+
+    @classmethod
+    def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
+        """Return the offset to use when calculating the observing day.
+
+        Parameters
+        ----------
+        observing_date : `astropy.time.Time`
+            The date of the observation. Unused.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta`
+            The offset to apply. The offset is always 0 seconds. In Hawaii
+            UTC rollover is at 2pm local time.
+        """
+        return cls._observing_day_offset

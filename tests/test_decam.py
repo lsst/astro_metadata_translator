@@ -12,6 +12,7 @@
 import os.path
 import unittest
 
+import astropy.time
 import astropy.units as u
 
 from astro_metadata_translator.tests import MetadataAssertHelper
@@ -51,7 +52,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_id="ct4m20130901t060255",
                     observation_type="science",
                     observation_reason="science",
-                    observing_day=20130901,
+                    observing_day=20130831,
                     physical_filter="z DECam SDSS c0004 9260.0 1520.0",
                     pressure=779.0 * u.hPa,
                     relative_humidity=23.0,
@@ -88,6 +89,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_type="zero",
                     observation_reason="unknown",
                     observing_day=20121211,
+                    observing_day_offset=astropy.time.TimeDelta(12 * 3600, format="sec", scale="tai"),
                     physical_filter="solid plate 0.0 0.0",  # corrected value
                     pressure=777.0 * u.hPa,
                     relative_humidity=38.0,
@@ -123,7 +125,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_id="ct4m20150220t004721",
                     observation_type="science",
                     observation_reason="science",
-                    observing_day=20150220,
+                    observing_day=20150219,
                     physical_filter="g",
                     pressure=777.0 * u.hPa,
                     relative_humidity=76.0,
@@ -159,7 +161,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_id="ct4m20190402t050618",
                     observation_type="science",
                     observation_reason="science",
-                    observing_day=20190402,
+                    observing_day=20190401,
                     physical_filter="VR DECam c0007 6300.0 2600.0",
                     pressure=779.0 * u.hPa,
                     relative_humidity=38.0,

@@ -51,6 +51,7 @@ class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_type="science",
                     observation_reason="science",
                     observing_day=20060920,
+                    observing_day_offset=None,
                     physical_filter="g",
                     pressure=None,
                     relative_humidity=None,
