@@ -1,6 +1,59 @@
 [build-system]
-requires = ["lsst-versions"]
+requires = ["setuptools", "lsst-versions"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "astro-metadata-translator"
+requires-python = ">=3.9.0"
+description = "A translator for astronomical metadata."
+license = {text = "BSD 3-Clause License"}
+authors = [
+    {name="Rubin Observatory Data Management", email="dm-admin@lists.lsst.org"},
+]
+readme = "README.md"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.9",
+]
+keywords = ["lsst"]
+dynamic = ["version"]
+dependencies = [
+    "astropy >=3.0.5",
+    "pyyaml >=3.13",
+    "click >= 8"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/lsst/astro_metadata_translator"
+
+[project.scripts]
+astrometadata = "astro_metadata_translator.cli.astrometadata:main"
+"translate_header.py" = "astro_metadata_translator.bin.translateheader:main"
+
+[tool.setuptools]
+zip-safe = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[tool.setuptools.package-data]
+astro_metadata_translator = ["corrections/*/*.yaml", "corrections/*/*.md", "py.typed"]
+
+[tool.setuptools.dynamic]
+version = { attr = "lsst_versions.get_lsst_version" }
 
 [tool.black]
 line-length = 110
