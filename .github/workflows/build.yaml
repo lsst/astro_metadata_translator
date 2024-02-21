@@ -48,7 +48,7 @@ jobs:
         run: uv pip install -r requirements.txt
 
       - name: Build and install
-        run: uv pip install -v -e .
+        run: uv pip install -v --no-deps -e .
 
       - name: Run tests
         run: pytest -r a -v -n 3 --cov=astro_metadata_translator --cov=tests --cov-report=xml --cov-report=term --cov-branch
