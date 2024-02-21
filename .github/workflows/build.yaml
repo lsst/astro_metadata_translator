@@ -42,7 +42,7 @@ jobs:
 
       # We have two cores so we can speed up the testing with xdist
       - name: Install xdist and openfiles
-        run: uv pip install pytest-xdist pytest-openfiles pytest-cov
+        run: uv pip install pytest-xdist pytest-cov
 
       - name: Install dependencies
         run: uv pip install -r requirements.txt
@@ -51,7 +51,7 @@ jobs:
         run: uv pip install -v -e .
 
       - name: Run tests
-        run: pytest -r a -v -n 3 --open-files --cov=astro_metadata_translator --cov=tests --cov-report=xml --cov-report=term --cov-branch
+        run: pytest -r a -v -n 3 --cov=astro_metadata_translator --cov=tests --cov-report=xml --cov-report=term --cov-branch
 
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v3
