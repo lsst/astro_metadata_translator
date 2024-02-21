@@ -53,7 +53,13 @@ class ExtensionsTestCase(unittest.TestCase):
             self.obsinfo = ObservationInfo(self.header)
 
     def assert_observation_info(self, obsinfo):
-        """Check that the `ObservationInfo` is as expected."""
+        """Check that the `ObservationInfo` is as expected.
+
+        Parameters
+        ----------
+        obsinfo : `ObservationInfo`
+            Information to check.
+        """
         self.assertIsInstance(obsinfo, ObservationInfo)
         self.assertEqual(obsinfo.ext_foo, FOO)
         self.assertEqual(obsinfo.ext_number, NUMBER)

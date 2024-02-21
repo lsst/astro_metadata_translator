@@ -34,7 +34,6 @@ class FitsTranslator(MetadataTranslator):
     - INSTRUME
     - TELESCOP
     - OBSGEO-[X,Y,Z]
-
     """
 
     # Direct translation from header key to standard form

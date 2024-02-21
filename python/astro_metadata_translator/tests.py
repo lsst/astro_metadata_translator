@@ -46,7 +46,20 @@ except AttributeError:
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
 # we can use if daf_base is not available.
 def pl_constructor(loader: yaml.Loader, node: yaml.SequenceNode) -> Any:
-    """Construct an OrderedDict from a YAML file containing a PropertyList."""
+    """Construct an OrderedDict from a YAML file containing a PropertyList.
+
+    Parameters
+    ----------
+    loader : `yaml.Loader`
+        Instance used to load YAML file.
+    node : `yaml.SequenceNode`
+        Node to examine.
+
+    Yields
+    ------
+    pl : `dict`
+        Contents of PropertyList as a dict.
+    """
     pl: dict[str, Any] = {}
     yield pl
     state = loader.construct_sequence(node, deep=True)
@@ -72,7 +85,7 @@ def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str,
     ----------
     filename : `str`
         Name of file in the data directory.
-    dir : `str`, optional.
+    dir : `str`, optional
         Directory from which to read file. Current directory used if none
         specified.
 

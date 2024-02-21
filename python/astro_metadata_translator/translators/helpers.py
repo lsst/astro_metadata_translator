@@ -19,7 +19,6 @@ the translator methods.
 
 Other functions are pure helpers that can be imported and used to help
 translation classes without using `MetadataTranslator` properties.
-
 """
 
 from __future__ import annotations

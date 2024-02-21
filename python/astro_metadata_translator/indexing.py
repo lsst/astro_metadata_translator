@@ -67,6 +67,7 @@ def index_files(
         file is relative. Will be ignored if `None`.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
+        merged with the header from this HDU.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
@@ -76,7 +77,7 @@ def index_files(
         Form of data to write in index file. Options are:
         ``translated`` (default) to write ObservationInfo to the index;
         ``metadata`` to write native metadata headers to the index.
-        The index file is called ``{mode}_index.json``
+        The index file is called ``{mode}_index.json``.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional

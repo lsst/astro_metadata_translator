@@ -395,6 +395,11 @@ class MetadataTranslator:
         generic property to either a header keyword, or a tuple consisting of
         the header keyword and a dict containing key value pairs suitable for
         the `MetadataTranslator.quantity_from_card` method.
+
+        Parameters
+        ----------
+        **kwargs : `dict`
+            Arbitrary parameters passed to parent class.
         """
         super().__init_subclass__(**kwargs)
 
@@ -444,7 +449,7 @@ class MetadataTranslator:
         # corresponding translator methods
         for property_key, header_key in trivial_map.items():
             kwargs = {}
-            if type(header_key) == tuple:
+            if type(header_key) is tuple:
                 kwargs = header_key[1]
                 header_key = header_key[0]
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
@@ -1120,7 +1125,7 @@ class MetadataTranslator:
         Returns
         -------
         focus_z: `astropy.units.Quantity`
-            The defocal distance from header or the 0.0mm default
+            The defocal distance from header or the 0.0mm default.
         """
         return 0.0 * u.mm
 
@@ -1267,21 +1272,20 @@ class StubTranslator(MetadataTranslator):
     translator.  It allows testing to proceed without being required to fully
     define all translation methods.  Once complete the class should be
     removed from the inheritance tree.
-
     """
 
     pass
 
 
 def _make_forwarded_stub_translator_method(
-    cls: type[MetadataTranslator], property: str, doc: str, return_typedoc: str, return_type: type
+    cls_: type[MetadataTranslator], property: str, doc: str, return_typedoc: str, return_type: type
 ) -> Callable:
     """Create a stub translation method for this property that calls the
     base method and catches `NotImplementedError`.
 
     Parameters
     ----------
-    cls : `type`
+    cls_ : `type`
         Class to use when referencing `super()`.  This would usually be
         `StubTranslator`.
     property : `str`
@@ -1301,7 +1305,7 @@ def _make_forwarded_stub_translator_method(
     method = f"to_{property}"
 
     def to_stub(self: MetadataTranslator) -> Any:
-        parent = getattr(super(cls, self), method, None)
+        parent = getattr(super(cls_, self), method, None)
         try:
             if parent is not None:
                 return parent()

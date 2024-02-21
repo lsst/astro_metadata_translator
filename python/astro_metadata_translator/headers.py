@@ -269,7 +269,7 @@ def _read_yaml(fh: IO[bytes], msg: str) -> Mapping[str, Any] | None:
     Parameters
     ----------
     fh : `io.IOBase`
-        Open file handle containing the YAML stream
+        Open file handle containing the YAML stream.
     msg : `str`
         Text to include in log file when referring to this stream. Examples
         could be "file something.yaml" or "resource module:resource".

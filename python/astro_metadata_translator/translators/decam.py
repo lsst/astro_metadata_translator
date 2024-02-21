@@ -216,6 +216,16 @@ class DecamTranslator(FitsTranslator):
 
         Calibration products made with constructCalibs have some metadata
         saved in its FITS header CALIB_ID.
+
+        Parameters
+        ----------
+        field : `str`
+            Field to extract from the ``CALIB_ID`` header.
+
+        Returns
+        -------
+        value : `str`
+            The value extracted from the calibration header for that field.
         """
         data = self._header["CALIB_ID"]
         match = re.search(r".*%s=(\S+)" % field, data)

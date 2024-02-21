@@ -60,7 +60,7 @@ def write_index_files(
         Form of data to write in index file. Options are:
         ``translated`` (default) to write ObservationInfo to the index;
         ``metadata`` to write native metadata headers to the index.
-        The index file is called ``_index.json``
+        The index file is called ``_index.json``.
     outpath : `str`, optional
         If specified a single index file will be written to this location
         combining all the information from all files. If `None`, the default,

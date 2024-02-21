@@ -25,7 +25,18 @@ from ..file_helpers import find_files, read_file_info
 def _split_ext(file: str) -> tuple[str, str]:
     """Split the extension from the file name and return it and the root.
 
-    Special case handling of .gz and other compression extensions.
+    Parameters
+    ----------
+    file : `str`
+        The file name to examine.
+
+    Returns
+    -------
+    root : `str`
+        The root of the file name.
+    ext : `str`
+        The file extension. There is special case handling of .gz and other
+        compression extensions.
     """
     special = {".gz", ".bz2", ".xz", ".fz"}
 
@@ -132,6 +143,7 @@ def write_sidecar_files(
         scanned.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
+        merged with the header from this HDU.
     content_mode : `str`
         Content mode to use when writing JSON to sidecar. Options are:
         ``metadata`` to write the unmodified header;

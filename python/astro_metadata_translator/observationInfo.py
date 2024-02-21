@@ -310,6 +310,13 @@ class ObservationInfo:
         This provides read-only protection for the extension properties. The
         core set of properties have read-only protection via the use of the
         python ``property``.
+
+        Parameters
+        ----------
+        name : `str`
+            Name of attribute to set.
+        value : `typing.Any`
+            Value to set it to.
         """
         if hasattr(self, "extensions") and name.startswith("ext_") and name[4:] in self.extensions:
             raise AttributeError(f"Attribute {name} is read-only")
@@ -400,6 +407,11 @@ class ObservationInfo:
         """Check equality with another object.
 
         Compares equal if standard properties are equal.
+
+        Parameters
+        ----------
+        other : `typing.Any`
+            Thing to compare with.
         """
         if not isinstance(other, ObservationInfo):
             return NotImplemented
@@ -543,7 +555,7 @@ class ObservationInfo:
         Parameters
         ----------
         simple : `dict` [`str`, `~typing.Any`]
-            The dict returned by `to_simple()`
+            The dict returned by `to_simple()`.
 
         Returns
         -------
