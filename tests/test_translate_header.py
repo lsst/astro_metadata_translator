@@ -13,14 +13,14 @@ import io
 import os.path
 import unittest
 
-from astro_metadata_translator.bin.translateheader import process_files
+from astro_metadata_translator.bin.translate import translate_or_dump_headers
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 TESTDATA = os.path.join(TESTDIR, "data")
 
 
 class TestTranslateHeader(unittest.TestCase):
-    """Test that the translate_header CLI logic works."""
+    """Test that the astrometadata translate and dump logic works."""
 
     def _readlines(self, stream):
         """Return the lines written to the stream.
@@ -42,7 +42,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files(
+                okay, failed = translate_or_dump_headers(
                     [TESTDATA],
                     r"^fitsheader.*yaml$",
                     0,
@@ -63,7 +63,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files with table output."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files(
+                okay, failed = translate_or_dump_headers(
                     [TESTDATA], r"^fitsheader.*yaml$", 0, False, outstream=out, errstream=err
                 )
                 output = self._readlines(out)
@@ -80,7 +80,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files that fail."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files(
+                okay, failed = translate_or_dump_headers(
                     [TESTDATA], r"^.*yaml$", 0, False, outstream=out, errstream=err, output_mode="none"
                 )
 
@@ -100,7 +100,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Translate some header files that fail and trigger traceback."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files(
+                okay, failed = translate_or_dump_headers(
                     [TESTDATA], r"^.*yaml$", 0, True, outstream=out, errstream=err, output_mode="none"
                 )
 
@@ -119,7 +119,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Check that a header is dumped."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files(
+                okay, failed = translate_or_dump_headers(
                     [os.path.join(TESTDATA, "fitsheader-decam.yaml")],
                     r"^fitsheader.*yaml$",
                     0,
@@ -145,7 +145,7 @@ class TestTranslateHeader(unittest.TestCase):
         """Check that ObservationInfo content is displayed."""
         with io.StringIO() as out:
             with io.StringIO() as err:
-                okay, failed = process_files(
+                okay, failed = translate_or_dump_headers(
                     [os.path.join(TESTDATA, "fitsheader-decam.yaml")],
                     r"^fitsheader.*yaml$",
                     0,

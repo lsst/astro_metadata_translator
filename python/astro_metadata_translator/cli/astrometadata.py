@@ -20,7 +20,7 @@ from collections.abc import Sequence
 
 import click
 
-from ..bin.translateheader import process_files as translate_header
+from ..bin.translate import translate_or_dump_headers
 from ..bin.writeindex import write_index_files
 from ..bin.writesidecar import write_sidecar_files
 
@@ -126,7 +126,7 @@ def translate(
     if quiet:
         mode = "none"
 
-    okay, failed = translate_header(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
+    okay, failed = translate_or_dump_headers(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
 
     if failed:
         click.echo("Files with failed translations:", err=True)
@@ -155,7 +155,7 @@ def translate(
 @click.pass_context
 def dump(ctx: click.Context, files: Sequence[str], hdrnum: int, mode: str, regex: str) -> None:
     """Dump a header."""
-    okay, failed = translate_header(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
+    okay, failed = translate_or_dump_headers(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
 
     if failed:
         click.echo("Files with failed header extraction:", err=True)

@@ -40,7 +40,6 @@ test = [
 
 [project.scripts]
 astrometadata = "astro_metadata_translator.cli.astrometadata:main"
-"translate_header.py" = "astro_metadata_translator.bin.translateheader:main"
 
 [tool.setuptools]
 zip-safe = true
