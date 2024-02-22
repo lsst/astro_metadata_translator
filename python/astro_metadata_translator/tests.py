@@ -24,6 +24,7 @@ import astropy.units as u
 import astropy.utils.exceptions
 import yaml
 from astropy.io.fits import Header
+from astropy.io.fits.verify import VerifyWarning
 from astropy.time import Time
 
 from astro_metadata_translator import ObservationInfo
@@ -221,8 +222,13 @@ class MetadataAssertHelper:
         for key, val in header.items():
             values = val if isinstance(val, list) else [val]
             for v in values:
-                # appending ensures *all* duplicated keys are also preserved
-                astropy_header.append((key, v))
+                # Appending ensures *all* duplicated keys are also preserved.
+                # astropy.io.fits complains about long keywords rather than
+                # letting us say "thank you for using the standard to let
+                # us write this header" so we need to catch the warnings.
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=VerifyWarning)
+                    astropy_header.append((key, v))
 
         for hdr in (header, astropy_header):
             try:
