@@ -84,17 +84,25 @@ class TestTranslateHeader(unittest.TestCase):
                     [TESTDATA], r"^.*yaml$", 0, False, outstream=out, errstream=err, output_mode="none"
                 )
 
-                lines = self._readlines(out)
-                self.assertEqual(len(lines), len(failed))
-                self.assertTrue(lines[0].startswith("Failure processing"), f"Line: '{lines[0]}'")
-                self.assertIn("not a mapping", lines[0], f"Line: '{lines[0]}'")
+                out_lines = self._readlines(out)
+                self.assertEqual(len(out_lines), len(failed))
+                self.assertTrue(out_lines[0].startswith("Failure processing"), f"Line: '{out_lines[0]}'")
+                self.assertIn("not a mapping", out_lines[0], f"Line: '{out_lines[0]}'")
 
-                lines = self._readlines(err)
-                self.assertEqual(len(lines), 13)
-                self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
+                err_lines = self._readlines(err)
+                self.assertEqual(len(err_lines), 13)  # The number of files analyzed
+                self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
 
-        self.assertEqual(len(okay), 10)
-        self.assertEqual(len(failed), 3)
+        # Form message to issue if the test fails.
+        newline = "\n"  # f-string can not accept \ in string.
+        msg = f"""Converted successfully:
+{newline.join(okay)}
+Failed conversions:
+{newline.join(failed)}
+Standard output:
+{newline.join(out_lines)}
+"""
+        self.assertEqual((len(okay), len(failed)), (10, 3), msg=msg)
 
     def test_translate_header_traceback(self):
         """Translate some header files that fail and trigger traceback."""
