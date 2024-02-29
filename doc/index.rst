@@ -65,8 +65,6 @@ Python API reference
 
 .. automodapi:: astro_metadata_translator
 
-.. automodapi:: astro_metadata_translator.bin.translateheader
-
 .. automodapi:: astro_metadata_translator.indexing
 
 .. automodapi:: astro_metadata_translator.file_helpers

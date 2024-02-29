@@ -24,6 +24,7 @@ import astropy.units as u
 import astropy.utils.exceptions
 import yaml
 from astropy.io.fits import Header
+from astropy.io.fits.verify import VerifyWarning
 from astropy.time import Time
 
 from astro_metadata_translator import ObservationInfo
@@ -46,7 +47,20 @@ except AttributeError:
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
 # we can use if daf_base is not available.
 def pl_constructor(loader: yaml.Loader, node: yaml.SequenceNode) -> Any:
-    """Construct an OrderedDict from a YAML file containing a PropertyList."""
+    """Construct an OrderedDict from a YAML file containing a PropertyList.
+
+    Parameters
+    ----------
+    loader : `yaml.Loader`
+        Instance used to load YAML file.
+    node : `yaml.SequenceNode`
+        Node to examine.
+
+    Yields
+    ------
+    pl : `dict`
+        Contents of PropertyList as a dict.
+    """
     pl: dict[str, Any] = {}
     yield pl
     state = loader.construct_sequence(node, deep=True)
@@ -72,7 +86,7 @@ def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str,
     ----------
     filename : `str`
         Name of file in the data directory.
-    dir : `str`, optional.
+    dir : `str`, optional
         Directory from which to read file. Current directory used if none
         specified.
 
@@ -191,7 +205,7 @@ class MetadataAssertHelper:
             Parameters to pass to `assertCoordinatesConsistent`.
         check_altaz : `bool`, optional
             Check that an alt/az value has been calculated.
-        kwargs : `dict`
+        **kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
 
@@ -208,8 +222,13 @@ class MetadataAssertHelper:
         for key, val in header.items():
             values = val if isinstance(val, list) else [val]
             for v in values:
-                # appending ensures *all* duplicated keys are also preserved
-                astropy_header.append((key, v))
+                # Appending ensures *all* duplicated keys are also preserved.
+                # astropy.io.fits complains about long keywords rather than
+                # letting us say "thank you for using the standard to let
+                # us write this header" so we need to catch the warnings.
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=VerifyWarning)
+                    astropy_header.append((key, v))
 
         for hdr in (header, astropy_header):
             try:
@@ -251,7 +270,7 @@ class MetadataAssertHelper:
             Parameters to pass to `assertCoordinatesConsistent`.
         check_altaz : `bool`, optional
             Check that an alt/az value has been calculated.
-        kwargs : `dict`
+        **kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
 

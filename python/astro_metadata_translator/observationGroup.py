@@ -126,6 +126,11 @@ class ObservationGroup(MutableSequence):
         """Check equality with another group.
 
         Compare equal if all the members are equal in the same order.
+
+        Parameters
+        ----------
+        other : `typing.Any`
+            Thing to compare with current group.
         """
         if not isinstance(other, ObservationGroup):
             return NotImplemented
@@ -140,8 +145,14 @@ class ObservationGroup(MutableSequence):
     ) -> None:
         """Store item in group.
 
-        Item must be an `ObservationInfo` or something that can be passed
-        to an `ObservationInfo` constructor.
+        Parameters
+        ----------
+        index : `int`
+            Index to use to store the item.
+        value : `ObservationInfo` or `~collections.abc.MutableMapping`
+            Information to store in group. Item must be an `ObservationInfo`
+            or something that can be passed to an `ObservationInfo`
+            constructor.
         """
         value = self._coerce_value(value)
         self._members[index] = value
@@ -204,7 +215,7 @@ class ObservationGroup(MutableSequence):
         Parameters
         ----------
         property : `str`
-            Property of an `ObservationInfo`
+            Property of an `ObservationInfo`.
 
         Returns
         -------

@@ -13,36 +13,45 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v3
         with:
           # Need to clone everything to determine version from git.
           fetch-depth: 0
-          cache: "pip"
-          cache-dependency-path: "setup.cfg"
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: "setup.cfg"
 
-      - name: Install packages
+      - name: Install debian packages
         run: sudo apt-get install graphviz
+
+      - name: Set the VIRTUAL_ENV variable for uv to work
+        run: |
+          echo "VIRTUAL_ENV=${Python_ROOT_DIR}" >> $GITHUB_ENV
+
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
 
       # We have two cores so we can speed up the testing with xdist
       - name: Install xdist and openfiles
-        run: pip install pytest-xdist pytest-openfiles pytest-cov
+        run: uv pip install pytest-xdist pytest-cov
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv pip install -r requirements.txt
 
       - name: Build and install
-        run: pip install -v .
+        run: uv pip install -v --no-deps -e .
 
       - name: Run tests
-        run: pytest -r a -v -n 3 --open-files --cov=astro_metadata_translator --cov=tests --cov-report=xml --cov-report=term --cov-branch
+        run: pytest -r a -v -n 3 --cov=astro_metadata_translator --cov=tests --cov-report=xml --cov-report=term --cov-branch
 
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v3
@@ -50,19 +59,20 @@ jobs:
           files: ./coverage.xml
 
       - name: Install documenteer
-        run: pip install -r doc/requirements.txt
+        run: uv pip install -r doc/requirements.txt
 
       - name: Build documentation
-        if: ${{ matrix.python-version == '3.10' }}
+        if: ${{ matrix.python-version == '3.11' }}
         run: package-docs build -n -W
 
       - name: Landing page upload
-        if: ${{ github.event_name == 'push' && matrix.python-version == '3.10' }}
-        env:
-          LTD_PASSWORD: ${{ secrets.LTD_PASSWORD }}
-          LTD_USERNAME: ${{ secrets.LTD_USERNAME }}
-        run: |
-          ltd upload --gh --product "astro-metadata-translator" --dir doc/_build/html
+        if: ${{ github.event_name == 'push' && matrix.python-version == '3.11' }}
+        uses: lsst-sqre/ltd-upload@v1
+        with:
+          project: 'astro-metadata-translator'
+          dir: 'doc/_build/html'
+          password: ${{ secrets.LTD_PASSWORD }}
+          username: ${{ secrets.LTD_USERNAME }}
 
   pypi:
 

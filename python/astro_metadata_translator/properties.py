@@ -16,7 +16,6 @@ Defines all properties in one place so that both `ObservationInfo` and
 base class can use knowledge of these properties to predefine translation
 stubs with documentation attached, and `ObservationInfo` can automatically
 define the getter methods.
-
 """
 from __future__ import annotations
 
@@ -58,7 +57,20 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tupl
 
 
 def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
-    """Convert simple form back to EarthLocation."""
+    """Convert simple form back to EarthLocation.
+
+    Parameters
+    ----------
+    simple : `tuple` [`float`, ...]
+        The geocentric location as three floats in meters.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    loc : `astropy.coordinates.EarthLocation`
+        The location on the Earth.
+    """
     return astropy.coordinates.EarthLocation.from_geocentric(*simple, unit=astropy.units.m)
 
 
@@ -80,68 +92,225 @@ def datetime_to_simple(datetime: astropy.time.Time) -> tuple[float, float]:
 
 
 def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.time.Time:
-    """Convert simple form back to astropy.time.Time."""
+    """Convert simple form back to `astropy.time.Time`.
+
+    Parameters
+    ----------
+    simple : `tuple` [`float`, `float`]
+        The time represented by two MJDs.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    t : `astropy.time.Time`
+        An astropy time object.
+    """
     return astropy.time.Time(*simple, format="jd", scale="tai")
 
 
 def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
-    """Convert exposure time Quantity to seconds."""
+    """Convert exposure time Quantity to seconds.
+
+    Parameters
+    ----------
+    exptime : `astropy.units.Quantity`
+        The exposure time as a quantity.
+
+    Returns
+    -------
+    e : `float`
+        Exposure time in seconds.
+    """
     return exptime.to_value(astropy.units.s)
 
 
 def simple_to_exptime(simple: float, **kwargs: Any) -> astropy.units.Quantity:
-    """Convert simple form back to Quantity."""
+    """Convert simple form back to Quantity.
+
+    Parameters
+    ----------
+    simple : `float`
+        Exposure time in seconds.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    q : `astropy.units.Quantity`
+        The exposure time as a quantity.
+    """
     return simple * astropy.units.s
 
 
 def angle_to_simple(angle: astropy.coordinates.Angle) -> float:
-    """Convert Angle to degrees."""
+    """Convert Angle to degrees.
+
+    Parameters
+    ----------
+    angle : `astropy.coordinates.Angle`
+        The angle.
+
+    Returns
+    -------
+    a : `float`
+        The angle in degrees.
+    """
     return angle.to_value(astropy.units.deg)
 
 
 def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
-    """Convert degrees to Angle."""
+    """Convert degrees to Angle.
+
+    Parameters
+    ----------
+    simple : `float`
+        The angle in degrees.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    a : `astropy.coordinates.Angle`
+        The angle as an object.
+    """
     return astropy.coordinates.Angle(simple * astropy.units.deg)
 
 
 def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
-    """Convert focusz to meters."""
+    """Convert focusz to meters.
+
+    Parameters
+    ----------
+    focusz : `astropy.units.Quantity`
+        The z-focus as a quantity.
+
+    Returns
+    -------
+    f : `float`
+        The z-focus in meters.
+    """
     return focusz.to_value(astropy.units.m)
 
 
 def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
-    """Convert simple form back to Quantity."""
+    """Convert simple form back to Quantity.
+
+    Parameters
+    ----------
+    simple : `float`
+        The z-focus in meters.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    q : `astropy.units.Quantity`
+        The z-focus as a quantity.
+    """
     return simple * astropy.units.m
 
 
 def temperature_to_simple(temp: astropy.units.Quantity) -> float:
-    """Convert temperature to kelvin."""
+    """Convert temperature to kelvin.
+
+    Parameters
+    ----------
+    temp : `astropy.units.Quantity`
+        The temperature as a quantity.
+
+    Returns
+    -------
+    t : `float`
+        The temperature in kelvin.
+    """
     return temp.to(astropy.units.K, equivalencies=astropy.units.temperature()).to_value()
 
 
 def simple_to_temperature(simple: float, **kwargs: Any) -> astropy.units.Quantity:
-    """Convert scalar kelvin value back to quantity."""
+    """Convert scalar kelvin value back to quantity.
+
+    Parameters
+    ----------
+    simple : `float`
+        Temperature as a float in units of kelvin.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    q : `astropy.units.Quantity`
+        The temperature as a quantity.
+    """
     return simple * astropy.units.K
 
 
 def pressure_to_simple(press: astropy.units.Quantity) -> float:
-    """Convert pressure Quantity to hPa."""
+    """Convert pressure Quantity to hPa.
+
+    Parameters
+    ----------
+    press : `astropy.units.Quantity`
+        The pressure as a quantity.
+
+    Returns
+    -------
+    hpa : `float`
+        The pressure in units of hPa.
+    """
     return press.to_value(astropy.units.hPa)
 
 
 def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
-    """Convert the pressure scalar back to Quantity."""
+    """Convert the pressure scalar back to Quantity.
+
+    Parameters
+    ----------
+    simple : `float`
+        Pressure in units of hPa.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    q : `astropy.units.Quantity`
+        The pressure as a quantity.
+    """
     return simple * astropy.units.hPa
 
 
 def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, float]:
-    """Convert SkyCoord to ICRS RA/Dec tuple."""
+    """Convert SkyCoord to ICRS RA/Dec tuple.
+
+    Parameters
+    ----------
+    skycoord : `astropy.coordinates.SkyCoord`
+        Sky coordinates in astropy form.
+
+    Returns
+    -------
+    simple : `tuple` [`float`, `float`]
+        Sky coordinates as a tuple of two floats in units of degrees.
+    """
     icrs = skycoord.icrs
     return (icrs.ra.to_value(astropy.units.deg), icrs.dec.to_value(astropy.units.deg))
 
 
 def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.SkyCoord:
-    """Convert ICRS tuple to SkyCoord."""
+    """Convert ICRS tuple to SkyCoord.
+
+    Parameters
+    ----------
+    simple : `tuple` [`float`, `float`]
+        Sky coordinates in degrees.
+    **kwargs : `typing.Any`
+        Keyword arguments. Currently not used.
+
+    Returns
+    -------
+    skycoord : `astropy.coordinates.SkyCoord`
+        The sky coordinates in astropy form.
+    """
     return astropy.coordinates.SkyCoord(*simple, unit=astropy.units.deg)
 
 
@@ -150,6 +319,17 @@ def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
 
     Do not include obstime or location in simplification. It is assumed
     that those will be present from other properties.
+
+    Parameters
+    ----------
+    altaz : `astropy.coordinates.AltAz`
+        The alt/az in astropy form.
+
+    Returns
+    -------
+    simple : `tuple` [`float`, `float`]
+        The Alt/Az as a tuple of two floats representing the position in
+        units of degrees.
     """
     return (altaz.az.to_value(astropy.units.deg), altaz.alt.to_value(astropy.units.deg))
 
@@ -157,7 +337,18 @@ def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
 def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.AltAz:
     """Convert simple altaz tuple to AltAz.
 
-    Will look for location and datetime_begin in kwargs.
+    Parameters
+    ----------
+    simple : `tuple` [`float`, `float`]
+        Altitude and elevation in degrees.
+    **kwargs : `dict`
+        Additional information. Must contain ``location`` and
+        ``datetime_begin``.
+
+    Returns
+    -------
+    altaz : `astropy.coordinates.AltAz`
+        The altaz in astropy form.
     """
     location = kwargs.get("location")
     obstime = kwargs.get("datetime_begin")
@@ -165,6 +356,42 @@ def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coord
     return astropy.coordinates.AltAz(
         simple[0] * astropy.units.deg, simple[1] * astropy.units.deg, obstime=obstime, location=location
     )
+
+
+def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
+    """Convert a TimeDelta to integer seconds.
+
+    This property does not need to support floating point seconds.
+
+    Parameters
+    ----------
+    delta : `astropy.time.TimeDelta`
+        The time offset.
+
+    Returns
+    -------
+    sec : `int`
+        Offset in integer seconds.
+    """
+    return round(delta.to_value("s"))
+
+
+def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
+    """Convert integer seconds to a `~astropy.time.TimeDelta`.
+
+    Parameters
+    ----------
+    simple : `int`
+        The offset in integer seconds.
+    **kwargs : `dict`
+        Additional information. Unused.
+
+    Returns
+    -------
+    delta : `astropy.time.TimeDelta`
+        The delta object.
+    """
+    return astropy.time.TimeDelta(simple, format="sec", scale="tai")
 
 
 @dataclass
@@ -345,6 +572,16 @@ may not be.""",
     ),
     "observing_day": PropertyDefinition(
         "Integer in YYYYMMDD format corresponding to the day of observation.", "int", int
+    ),
+    "observing_day_offset": PropertyDefinition(
+        (
+            "Offset to subtract from an observation date when calculating the observing day. "
+            "Conversely, the offset to add to an observing day when calculating the time span of a day."
+        ),
+        "astropy.time.TimeDelta",
+        astropy.time.TimeDelta,
+        timedelta_to_simple,
+        simple_to_timedelta,
     ),
     "observation_counter": PropertyDefinition(
         (

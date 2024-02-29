@@ -15,6 +15,7 @@ from __future__ import annotations
 
 __all__ = ("SubaruTranslator",)
 
+import astropy.time
 from astropy.coordinates import EarthLocation
 
 from ..translator import cache_translation
@@ -23,6 +24,8 @@ from .fits import FitsTranslator
 
 class SubaruTranslator(FitsTranslator):
     """Metadata translator for Subaru telescope headers."""
+
+    _observing_day_offset = astropy.time.TimeDelta(0, format="sec", scale="tai")
 
     @cache_translation
     def to_location(self) -> EarthLocation:
@@ -47,3 +50,20 @@ class SubaruTranslator(FitsTranslator):
             The observation counter.
         """
         return self.to_exposure_id()
+
+    @classmethod
+    def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
+        """Return the offset to use when calculating the observing day.
+
+        Parameters
+        ----------
+        observing_date : `astropy.time.Time`
+            The date of the observation. Unused.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta`
+            The offset to apply. The offset is always 0 seconds. In Hawaii
+            UTC rollover is at 2pm local time.
+        """
+        return cls._observing_day_offset

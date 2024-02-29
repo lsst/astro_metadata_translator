@@ -67,6 +67,7 @@ def index_files(
         file is relative. Will be ignored if `None`.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
+        merged with the header from this HDU.
     print_trace : `bool`
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
@@ -76,7 +77,7 @@ def index_files(
         Form of data to write in index file. Options are:
         ``translated`` (default) to write ObservationInfo to the index;
         ``metadata`` to write native metadata headers to the index.
-        The index file is called ``{mode}_index.json``
+        The index file is called ``{mode}_index.json``.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
@@ -191,8 +192,7 @@ def read_index(
     path: str,
     *,
     force_dict: Literal[True],
-) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 @overload
@@ -200,8 +200,7 @@ def read_index(
     path: str,
     *,
     force_dict: Literal[False],
-) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 def read_index(
@@ -241,8 +240,7 @@ def process_index_data(
     *,
     force_metadata: Literal[True],
     force_dict: Literal[False],
-) -> MutableMapping[str, Any]:
-    ...
+) -> MutableMapping[str, Any]: ...
 
 
 @overload
@@ -251,15 +249,13 @@ def process_index_data(
     *,
     force_metadata: Literal[False],
     force_dict: Literal[True],
-) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 @overload
 def process_index_data(
     content: MutableMapping[str, Any], *, force_metadata: bool = False, force_dict: bool = False
-) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]:
-    ...
+) -> ObservationGroup | MutableMapping[str, MutableMapping[str, Any] | ObservationInfo]: ...
 
 
 def process_index_data(
@@ -283,14 +279,14 @@ def process_index_data(
     Returns
     -------
     index : `.ObservationGroup` or `dict` of [`str`, `dict`]
-       If the index file referred to `.ObservationInfo` this will return
-       an `.ObservationGroup`, otherwise a `dict` will be returned with the
-       keys being paths to files and the values being the keys and values
-       stored in the index (with common information merged in). This
-       can be overridden using the ``force_metadata`` parameter. If
-       ``force_dict`` is `True` a `dict` will be returned with filename
-       keys even if the index file refers to `.ObservationInfo` (the values
-       will be `.ObservationInfo` unless ``force_metadata`` is `True`).
+        If the index file referred to `.ObservationInfo` this will return
+        an `.ObservationGroup`, otherwise a `dict` will be returned with the
+        keys being paths to files and the values being the keys and values
+        stored in the index (with common information merged in). This
+        can be overridden using the ``force_metadata`` parameter. If
+        ``force_dict`` is `True` a `dict` will be returned with filename
+        keys even if the index file refers to `.ObservationInfo` (the values
+        will be `.ObservationInfo` unless ``force_metadata`` is `True`).
 
     Notes
     -----
@@ -363,22 +359,19 @@ def read_sidecar(path: str) -> ObservationInfo | MutableMapping[str, Any]:
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any],
-) -> ObservationInfo | MutableMapping[str, Any]:
-    ...
+) -> ObservationInfo | MutableMapping[str, Any]: ...
 
 
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any], force_metadata: Literal[True]
-) -> MutableMapping[str, Any]:
-    ...
+) -> MutableMapping[str, Any]: ...
 
 
 @overload
 def process_sidecar_data(
     content: MutableMapping[str, Any], force_metadata: Literal[False]
-) -> ObservationInfo | MutableMapping[str, Any]:
-    ...
+) -> ObservationInfo | MutableMapping[str, Any]: ...
 
 
 def process_sidecar_data(

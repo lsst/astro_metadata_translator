@@ -12,6 +12,7 @@
 import os.path
 import unittest
 
+import astropy.time
 import astropy.units as u
 
 from astro_metadata_translator import merge_headers
@@ -52,6 +53,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
                     observation_type="science",
                     observation_reason="science",
                     observing_day=20131102,
+                    observing_day_offset=astropy.time.TimeDelta(0, format="sec", scale="tai"),
                     physical_filter="HSC-I",
                     pressure=621.7 * u.hPa,
                     relative_humidity=33.1,

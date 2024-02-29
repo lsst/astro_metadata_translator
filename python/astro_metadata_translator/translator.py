@@ -395,6 +395,11 @@ class MetadataTranslator:
         generic property to either a header keyword, or a tuple consisting of
         the header keyword and a dict containing key value pairs suitable for
         the `MetadataTranslator.quantity_from_card` method.
+
+        Parameters
+        ----------
+        **kwargs : `dict`
+            Arbitrary parameters passed to parent class.
         """
         super().__init_subclass__(**kwargs)
 
@@ -444,7 +449,7 @@ class MetadataTranslator:
         # corresponding translator methods
         for property_key, header_key in trivial_map.items():
             kwargs = {}
-            if type(header_key) == tuple:
+            if type(header_key) is tuple:
                 kwargs = header_key[1]
                 header_key = header_key[0]
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
@@ -702,7 +707,7 @@ class MetadataTranslator:
 
         Parameters
         ----------
-        args : sequence of `str`
+        *args : sequence of `str`
             Keywords used to process a translation.
         """
         self._used_cards.update(set(args))
@@ -1019,12 +1024,61 @@ class MetadataTranslator:
             return "science"
         return "unknown"
 
+    @classmethod
+    def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
+        """Calculate the observing day offset to apply for a given observation.
+
+        In some cases the definition of the observing day offset has changed
+        during the lifetime of the instrument. For example lab data might
+        have a different offset to that when the instrument is on the
+        telescope.
+
+        Parameters
+        ----------
+        observing_date : `astropy.time.Time`
+            The observation date.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta` or `None`
+            The offset to apply when calculating the observing day for a
+            specific time of observation. `None` implies the offset
+            is not known for that date.
+        """
+        return None
+
+    @cache_translation
+    def to_observing_day_offset(self) -> astropy.time.TimeDelta | None:
+        """Return the offset required to calculate observing day.
+
+        Base class implementation returns `None`.
+
+        Returns
+        -------
+        offset : `astropy.time.TimeDelta` or `None`
+            The offset to apply. Returns `None` if the offset is not defined.
+
+        Notes
+        -----
+        This offset must be subtracted from a time of observation to calculate
+        the observing day. This offset must be added to the YYYYMMDDT00:00
+        observing day to calculate the time span coverage of the observing day.
+        """
+        datetime_begin = self.to_datetime_begin()
+        if datetime_begin is None:
+            return None
+        return self.observing_date_to_offset(datetime_begin)
+
     @cache_translation
     def to_observing_day(self) -> int:
         """Return the YYYYMMDD integer corresponding to the observing day.
 
         Base class implementation uses the TAI date of the start of the
-        observation.
+        observation corrected by the observing day offset. If that offset
+        is `None` no offset will be applied.
+
+        The offset is subtracted from the time of observation before
+        calculating the year, month and day.
 
         Returns
         -------
@@ -1033,11 +1087,21 @@ class MetadataTranslator:
             is broken and is unable to obtain a date of observation, ``0``
             is returned and the assumption is made that the problem will
             be caught elsewhere.
+
+        Notes
+        -----
+        For example, if the offset is +12 hours both 2023-07-06T13:00 and
+        2023-07-07T11:00 will return an observing day of 20230706 because
+        the observing day goes from 2023-07-06T12:00 to 2023-07-07T12:00.
         """
         datetime_begin = self.to_datetime_begin()
         if datetime_begin is None:
             return 0
-        return int(datetime_begin.tai.strftime("%Y%m%d"))
+        begin_tai = datetime_begin.tai
+        offset = self.to_observing_day_offset()
+        if offset:
+            begin_tai -= offset
+        return int(begin_tai.strftime("%Y%m%d"))
 
     @cache_translation
     def to_observation_counter(self) -> int:
@@ -1120,7 +1184,7 @@ class MetadataTranslator:
         Returns
         -------
         focus_z: `astropy.units.Quantity`
-            The defocal distance from header or the 0.0mm default
+            The defocal distance from header or the 0.0mm default.
         """
         return 0.0 * u.mm
 
@@ -1267,21 +1331,20 @@ class StubTranslator(MetadataTranslator):
     translator.  It allows testing to proceed without being required to fully
     define all translation methods.  Once complete the class should be
     removed from the inheritance tree.
-
     """
 
     pass
 
 
 def _make_forwarded_stub_translator_method(
-    cls: type[MetadataTranslator], property: str, doc: str, return_typedoc: str, return_type: type
+    cls_: type[MetadataTranslator], property: str, doc: str, return_typedoc: str, return_type: type
 ) -> Callable:
     """Create a stub translation method for this property that calls the
     base method and catches `NotImplementedError`.
 
     Parameters
     ----------
-    cls : `type`
+    cls_ : `type`
         Class to use when referencing `super()`.  This would usually be
         `StubTranslator`.
     property : `str`
@@ -1301,7 +1364,7 @@ def _make_forwarded_stub_translator_method(
     method = f"to_{property}"
 
     def to_stub(self: MetadataTranslator) -> Any:
-        parent = getattr(super(cls, self), method, None)
+        parent = getattr(super(cls_, self), method, None)
         try:
             if parent is not None:
                 return parent()
