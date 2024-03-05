@@ -19,6 +19,7 @@ import importlib
 import inspect
 import logging
 import math
+import numbers
 import warnings
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
@@ -1047,6 +1048,42 @@ class MetadataTranslator:
         """
         return None
 
+    @classmethod
+    def observing_date_to_observing_day(
+        cls, observing_date: astropy.time.Time, offset: astropy.time.TimeDelta | int | None
+    ) -> int:
+        """Return the YYYYMMDD integer corresponding to the observing day.
+
+        The offset is subtracted from the time of observation before
+        calculating the year, month and day.
+
+        Parameters
+        ----------
+        observing_date : `astropy.time.Time`
+            The observation date.
+        offset : `astropy.time.TimeDelta` | `numbers.Real` | None
+            The offset to subtract from the observing date when calculating
+            the observing day. If a plain number is given it is taken to be
+            in units of seconds. If `None` no offset is applied.
+
+        Returns
+        -------
+        day : `int`
+            The observing day as an integer of form YYYYMMDD.
+
+        Notes
+        -----
+        For example, if the offset is +12 hours both 2023-07-06T13:00 and
+        2023-07-07T11:00 will return an observing day of 20230706 because
+        the observing day goes from 2023-07-06T12:00 to 2023-07-07T12:00.
+        """
+        observing_date = observing_date.tai
+        if offset:
+            if isinstance(offset, numbers.Real):
+                offset = astropy.time.TimeDelta(offset, format="sec", scale="tai")
+            observing_date -= offset
+        return int(observing_date.strftime("%Y%m%d"))
+
     @cache_translation
     def to_observing_day_offset(self) -> astropy.time.TimeDelta | None:
         """Return the offset required to calculate observing day.
@@ -1097,11 +1134,8 @@ class MetadataTranslator:
         datetime_begin = self.to_datetime_begin()
         if datetime_begin is None:
             return 0
-        begin_tai = datetime_begin.tai
         offset = self.to_observing_day_offset()
-        if offset:
-            begin_tai -= offset
-        return int(begin_tai.strftime("%Y%m%d"))
+        return self.observing_date_to_observing_day(datetime_begin.tai, offset)
 
     @cache_translation
     def to_observation_counter(self) -> int:
