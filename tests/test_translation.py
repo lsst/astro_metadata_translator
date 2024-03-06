@@ -12,7 +12,7 @@
 import os.path
 import unittest
 
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
 
 from astro_metadata_translator import FitsTranslator, ObservationInfo, StubTranslator
 
@@ -244,6 +244,18 @@ class TranslatorTestCase(unittest.TestCase):
                         pedantic=False,
                         required={"boresight_airmass"},
                     )
+
+    def test_observing_date(self):
+        """Test the observing_date class methods."""
+        date1 = Time("2023-07-06T13:00", format="isot", scale="tai")
+        day_obs = StubTranslator.observing_date_to_observing_day(date1, 12 * 3600)
+        self.assertEqual(day_obs, 20230706)
+
+        date2 = Time("2023-07-07T11:00", format="isot", scale="tai")
+        day_obs = StubTranslator.observing_date_to_observing_day(date2, TimeDelta("0.5d", scale="tai"))
+        self.assertEqual(day_obs, 20230706)
+        day_obs = StubTranslator.observing_date_to_observing_day(date2, 1.0)
+        self.assertEqual(day_obs, 20230707)
 
 
 if __name__ == "__main__":
