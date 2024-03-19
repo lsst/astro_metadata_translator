@@ -81,9 +81,13 @@ add-ignore = ["D107", "D105", "D102", "D104", "D100", "D200", "D205", "D400"]
 
 
 [tool.ruff]
+target-version = "py310"
+line-length = 110
 exclude = [
     "__init__.py",
 ]
+
+[tool.ruff.lint]
 ignore = [
     "N999",  # Invalid module name
     "D107",  # Document __init__ at class level.
@@ -92,7 +96,6 @@ ignore = [
     "D100",  # Modules are not required to include documentation.
     "D205",  # Does not understand if a summary is two lines long.
 ]
-line-length = 110
 select = [
     "E",  # pycodestyle
     "F",  # pyflakes
@@ -100,15 +103,14 @@ select = [
     "W",  # pycodestyle
     "D",  # pydocstyle
 ]
-target-version = "py310"
 extend-select = [
     "RUF100", # Warn about unused noqa
 ]
 
-[tool.ruff.pycodestyle]
+[tool.ruff.lint.pycodestyle]
 max-doc-length = 79
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.numpydoc_validation]
