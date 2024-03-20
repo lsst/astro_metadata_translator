@@ -26,6 +26,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMappin
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import astropy.io.fits.card
+import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle
 
@@ -33,7 +34,6 @@ from .properties import PROPERTIES, PropertyDefinition
 
 if TYPE_CHECKING:
     import astropy.coordinates
-    import astropy.time
 
 log = logging.getLogger(__name__)
 
@@ -570,11 +570,11 @@ class MetadataTranslator:
             if trans.can_translate(header, filename=filename):
                 log.debug("Using translation class %s%s", name, file_msg)
                 return trans
-        else:
-            raise ValueError(
-                f"None of the registered translation classes {list(cls.translators.keys())}"
-                f" understood this header{file_msg}"
-            )
+
+        raise ValueError(
+            f"None of the registered translation classes {list(cls.translators.keys())}"
+            f" understood this header{file_msg}"
+        )
 
     @classmethod
     def translator_version(cls) -> str:

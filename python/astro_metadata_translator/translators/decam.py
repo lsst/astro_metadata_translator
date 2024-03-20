@@ -32,7 +32,6 @@ from .helpers import altaz_from_degree_headers, is_non_science, tracking_from_de
 
 if TYPE_CHECKING:
     import astropy.coordinates
-    import astropy.time
 
 log = logging.getLogger(__name__)
 

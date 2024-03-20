@@ -95,7 +95,7 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
         try:
             importlib.import_module(m)
         except (ImportError, ModuleNotFoundError):
-            logging.warn("Failed to import translator module: %s", m)
+            logging.warning("Failed to import translator module: %s", m)
 
 
 @main.command(help="Translate metadata in supplied files and report.")

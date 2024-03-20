@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-__all__ = "write_index_files"
+__all__ = ["write_index_files"]
 
 import json
 import logging
