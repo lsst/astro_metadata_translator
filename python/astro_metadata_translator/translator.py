@@ -1222,6 +1222,35 @@ class MetadataTranslator:
         """
         return 0.0 * u.mm
 
+    @cache_translation
+    def to_can_see_sky(self) -> bool | None:
+        """Return whether the observation can see the sky or not.
+
+        Returns
+        -------
+        can_see_sky : `bool` or `None`
+            `True` if the detector is receiving photons from the sky.
+            `False` if the sky is not visible to the detector.
+            `None` if the metadata translator does not know one way or the
+            other.
+
+        Notes
+        -----
+        The base class translator uses a simple heuristic of returning
+        `True` if the observation type is "science" or "object" and `False`
+        if the observation type is "bias" or "dark". For all other cases it
+        will return `None`.
+        """
+        obs_type = self.to_observation_type()
+        if obs_type is not None:
+            obs_type = obs_type.lower()
+
+        if obs_type in ("science", "object"):
+            return True
+        if obs_type in ("bias", "dark"):
+            return False
+        return None
+
     @classmethod
     def determine_translatable_headers(
         cls, filename: str, primary: MutableMapping[str, Any] | None = None
