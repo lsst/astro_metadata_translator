@@ -141,6 +141,16 @@ class MetadataTranslator:
     `PropertyDefinition`.
     """
 
+    _sky_observation_types: tuple[str, ...] = ("science", "object")
+    """Observation types that correspond to an observation where the detector
+    can see sky photons.  This is used by the default implementation of
+    ``can_see_sky`` determination."""
+
+    _non_sky_observation_types: tuple[str, ...] = ("bias", "dark")
+    """Observation types that correspond to an observation where the detector
+    can not see sky photons.  This is used by the default implementation of
+    ``can_see_sky`` determination."""
+
     # Static typing requires that we define the standard dynamic properties
     # statically.
     if TYPE_CHECKING:
@@ -1245,9 +1255,9 @@ class MetadataTranslator:
         if obs_type is not None:
             obs_type = obs_type.lower()
 
-        if obs_type in ("science", "object"):
+        if obs_type in self._sky_observation_types:
             return True
-        if obs_type in ("bias", "dark"):
+        if obs_type in self._non_sky_observation_types:
             return False
         return None
 

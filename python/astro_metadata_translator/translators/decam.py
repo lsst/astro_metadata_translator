@@ -80,6 +80,10 @@ class DecamTranslator(FitsTranslator):
     # the same offset used by the Vera Rubin Observatory of 12 hours.
     _observing_day_offset = astropy.time.TimeDelta(12 * 3600, format="sec", scale="tai")
 
+    # List from Frank Valdes (2024-03-21).
+    _sky_observation_types: tuple[str, ...] = ("science", "object", "standard", "sky flat")
+    _non_sky_observation_types: tuple[str, ...] = ("zero", "dark", "dome flat")
+
     # Unique detector names are currently not used but are read directly from
     # header.
     # The detector_group could be N or S with detector_name corresponding
