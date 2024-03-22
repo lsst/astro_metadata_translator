@@ -165,15 +165,20 @@ class MetadataAssertHelper:
         AssertionError
             Inconsistencies found.
         """
-        self.assertIsNotNone(obsinfo.tracking_radec)
-        self.assertIsNotNone(obsinfo.altaz_begin)
+        self.assertIsNotNone(obsinfo.tracking_radec, msg="Checking tracking_radec is defined")
+        self.assertIsNotNone(obsinfo.altaz_begin, msg="Checking AltAz is defined")
 
         # Is airmass from header close to airmass from AltAz headers?
         # In most cases there is uncertainty over whether the elevation
         # and airmass in the header are for the start, end, or middle
         # of the observation.  Sometimes the AltAz is from the start
         # but the airmass is from the middle so accuracy is not certain.
-        self.assertAlmostEqual(obsinfo.altaz_begin.secz.to_value(), obsinfo.boresight_airmass, delta=amdelta)
+        self.assertAlmostEqual(
+            obsinfo.altaz_begin.secz.to_value(),
+            obsinfo.boresight_airmass,
+            delta=amdelta,
+            msg="Checking airmass is consistent",
+        )
 
         # Is AltAz from headers close to AltAz from RA/Dec headers?
         # Can trigger warnings from Astropy if date is in future
