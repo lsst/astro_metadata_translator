@@ -54,7 +54,7 @@ def write_sidecar_file(
     hdrnum: int,
     content_mode: str,
     print_trace: bool,
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
 ) -> bool:
     """Write JSON summary to sidecar file.
@@ -76,7 +76,8 @@ def write_sidecar_file(
         a one line summary of the error condition. If `None` the exception
         will be allowed.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.
@@ -129,7 +130,7 @@ def write_sidecar_files(
     hdrnum: int,
     content_mode: str,
     print_trace: bool,
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
 ) -> tuple[list[str], list[str]]:
     """Process each file and create sidecar file.
@@ -153,7 +154,8 @@ def write_sidecar_files(
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.

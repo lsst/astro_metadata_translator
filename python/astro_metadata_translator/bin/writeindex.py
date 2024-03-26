@@ -33,7 +33,7 @@ def write_index_files(
     print_trace: bool,
     content_mode: str = "translated",
     outpath: str | None = None,
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
 ) -> tuple[list[str], list[str]]:
     """Process each file and create JSON index file.
@@ -67,7 +67,8 @@ def write_index_files(
         and index file will be written to each directory in which files
         are found.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream. Defaults to `sys.stdout`.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.

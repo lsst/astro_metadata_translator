@@ -48,7 +48,7 @@ def index_files(
     hdrnum: int,
     print_trace: bool,
     content: str,
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
 ) -> tuple[MutableMapping[str, str | MutableMapping[str, Any]], list[str], list[str]]:
     """Create an index from the supplied files.
@@ -79,7 +79,8 @@ def index_files(
         ``metadata`` to write native metadata headers to the index.
         The index file is called ``{mode}_index.json``.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.

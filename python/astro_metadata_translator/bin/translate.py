@@ -63,7 +63,7 @@ def read_file(
     file: str,
     hdrnum: int,
     print_trace: bool,
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
     output_mode: str = "verbose",
     write_heading: bool = False,
@@ -82,7 +82,8 @@ def read_file(
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.
@@ -190,7 +191,7 @@ def translate_or_dump_headers(
     regex: str,
     hdrnum: int,
     print_trace: bool,
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
     output_mode: str = "auto",
 ) -> tuple[list[str], list[str]]:
@@ -210,8 +211,9 @@ def translate_or_dump_headers(
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
-    outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+    outstream : `io.StringIO` or `None`, optional
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.

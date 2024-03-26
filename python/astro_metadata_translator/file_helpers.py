@@ -189,7 +189,7 @@ def read_file_info(
     print_trace: bool | None = None,
     content_mode: str = "translated",
     content_type: str = "simple",
-    outstream: IO = sys.stdout,
+    outstream: IO | None = None,
     errstream: IO = sys.stderr,
 ) -> str | MutableMapping[str, Any] | ObservationInfo | None:
     """Read information from file.
@@ -215,8 +215,9 @@ def read_file_info(
         JSON string, ``simple`` to always return a `dict`, or ``native`` to
         return either a `dict` (for ``metadata``) or `.ObservationInfo` for
         ``translated``.
-    outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
+    outstream : `io.StringIO` or `None`, optional
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     errstream : `io.StringIO`, optional
         Stream to send messages that would normally be sent to standard
         error. Defaults to `sys.stderr`.
