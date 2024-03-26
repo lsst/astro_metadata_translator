@@ -10,6 +10,7 @@
 # license that can be found in the LICENSE file.
 
 import io
+import logging
 import os.path
 import unittest
 
@@ -41,20 +42,19 @@ class TestTranslateHeader(unittest.TestCase):
     def test_translate_header(self):
         """Translate some header files."""
         with io.StringIO() as out:
-            with io.StringIO() as err:
+            with self.assertLogs(level=logging.INFO) as cm:
                 okay, failed = translate_or_dump_headers(
                     [TESTDATA],
                     r"^fitsheader.*yaml$",
                     0,
                     False,
                     outstream=out,
-                    errstream=err,
                     output_mode="none",
                 )
-                self.assertEqual(self._readlines(out), [])
-                lines = self._readlines(err)
-                self.assertEqual(len(lines), 10)
-                self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
+            self.assertEqual(self._readlines(out), [])
+            lines = [r.getMessage() for r in cm.records]
+            self.assertEqual(len(lines), 10)
+            self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
         self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 0)
@@ -62,16 +62,20 @@ class TestTranslateHeader(unittest.TestCase):
     def test_translate_header_table(self):
         """Translate some header files with table output."""
         with io.StringIO() as out:
-            with io.StringIO() as err:
+            with self.assertLogs(level=logging.WARNING) as cm:
+                logging.getLogger().warning("False warning")
                 okay, failed = translate_or_dump_headers(
-                    [TESTDATA], r"^fitsheader.*yaml$", 0, False, outstream=out, errstream=err
+                    [TESTDATA],
+                    r"^fitsheader.*yaml$",
+                    0,
+                    False,
+                    outstream=out,
                 )
                 output = self._readlines(out)
                 self.assertTrue(output[0].startswith("ObsId"))
                 self.assertTrue(output[1].startswith("-------"))
                 self.assertEqual(len(output), 12)
-                errlines = self._readlines(err)
-                self.assertEqual(len(errlines), 0)
+                self.assertEqual(len(cm.output), 1)  # Should only have the warning this test made.
 
         self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 0)
@@ -79,19 +83,19 @@ class TestTranslateHeader(unittest.TestCase):
     def test_translate_header_fails(self):
         """Translate some header files that fail."""
         with io.StringIO() as out:
-            with io.StringIO() as err:
+            with self.assertLogs(level=logging.INFO) as cm:
                 okay, failed = translate_or_dump_headers(
-                    [TESTDATA], r"^.*yaml$", 0, False, outstream=out, errstream=err, output_mode="none"
+                    [TESTDATA], r"^.*yaml$", 0, False, outstream=out, output_mode="none"
                 )
 
-                out_lines = self._readlines(out)
-                self.assertEqual(len(out_lines), len(failed))
-                self.assertTrue(out_lines[0].startswith("Failure processing"), f"Line: '{out_lines[0]}'")
-                self.assertIn("not a mapping", out_lines[0], f"Line: '{out_lines[0]}'")
+            out_lines = self._readlines(out)
+            self.assertEqual(len(out_lines), len(failed))
+            self.assertTrue(out_lines[0].startswith("Failure processing"), f"Line: '{out_lines[0]}'")
+            self.assertIn("not a mapping", out_lines[0], f"Line: '{out_lines[0]}'")
 
-                err_lines = self._readlines(err)
-                self.assertEqual(len(err_lines), 13)  # The number of files analyzed
-                self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
+            err_lines = [r.getMessage() for r in cm.records]
+            self.assertEqual(len(err_lines), 13)  # The number of files analyzed
+            self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
 
         # Form message to issue if the test fails.
         newline = "\n"  # f-string can not accept \ in string.
@@ -107,18 +111,18 @@ Standard output:
     def test_translate_header_traceback(self):
         """Translate some header files that fail and trigger traceback."""
         with io.StringIO() as out:
-            with io.StringIO() as err:
+            with self.assertLogs(level=logging.INFO) as cm:
                 okay, failed = translate_or_dump_headers(
-                    [TESTDATA], r"^.*yaml$", 0, True, outstream=out, errstream=err, output_mode="none"
+                    [TESTDATA], r"^.*yaml$", 0, True, outstream=out, output_mode="none"
                 )
 
-                lines = self._readlines(out)
-                self.assertGreaterEqual(len(lines), 22, "\n".join(lines))
-                self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
+            lines = self._readlines(out)
+            self.assertGreaterEqual(len(lines), 22, "\n".join(lines))
+            self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
 
-                lines = self._readlines(err)
-                self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
-                self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
+            lines = [r.getMessage() for r in cm.records]
+            self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
+            self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
         self.assertEqual(len(okay), 10)
         self.assertEqual(len(failed), 3)
@@ -126,25 +130,24 @@ Standard output:
     def test_translate_header_dump(self):
         """Check that a header is dumped."""
         with io.StringIO() as out:
-            with io.StringIO() as err:
+            with self.assertLogs(level=logging.INFO) as cm:
                 okay, failed = translate_or_dump_headers(
                     [os.path.join(TESTDATA, "fitsheader-decam.yaml")],
                     r"^fitsheader.*yaml$",
                     0,
                     False,
                     outstream=out,
-                    errstream=err,
                     output_mode="yaml",
                 )
 
-                lines = self._readlines(out)
-                # Look for a DECam header in the output
-                header = "\n".join(lines)
-                self.assertIn("DTINSTRU", header)
+            lines = self._readlines(out)
+            # Look for a DECam header in the output
+            header = "\n".join(lines)
+            self.assertIn("DTINSTRU", header)
 
-                lines = self._readlines(err)
-                self.assertEqual(len(lines), 1)
-                self.assertTrue(lines[0], "Analyzing tests/data/fitsheader-decam.yaml...")
+            lines = [r.getMessage() for r in cm.records]
+            self.assertEqual(len(lines), 1)
+            self.assertTrue(lines[0], "Analyzing tests/data/fitsheader-decam.yaml...")
 
         self.assertEqual(len(okay), 1)
         self.assertEqual(len(failed), 0)
@@ -152,24 +155,23 @@ Standard output:
     def test_translate_header_loud(self):
         """Check that ObservationInfo content is displayed."""
         with io.StringIO() as out:
-            with io.StringIO() as err:
+            with self.assertLogs(level=logging.INFO) as cm:
                 okay, failed = translate_or_dump_headers(
                     [os.path.join(TESTDATA, "fitsheader-decam.yaml")],
                     r"^fitsheader.*yaml$",
                     0,
                     False,
                     outstream=out,
-                    errstream=err,
                     output_mode="verbose",
                 )
 
-                lines = self._readlines(out)
-                # Look for the translated DECam header in the output
-                self.assertEqual(lines[2], "datetime_begin: 2013-09-01T06:02:55.754")
+            lines = self._readlines(out)
+            # Look for the translated DECam header in the output
+            self.assertEqual(lines[2], "datetime_begin: 2013-09-01T06:02:55.754")
 
-                lines = self._readlines(err)
-                self.assertEqual(len(lines), 1)
-                self.assertTrue(lines[0], "Analyzing tests/data/fitsheader-decam.yaml...")
+            lines = [r.getMessage() for r in cm.records]
+            self.assertEqual(len(lines), 1)
+            self.assertTrue(lines[0], "Analyzing tests/data/fitsheader-decam.yaml...")
 
         self.assertEqual(len(okay), 1)
         self.assertEqual(len(failed), 0)

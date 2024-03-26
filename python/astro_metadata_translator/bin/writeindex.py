@@ -16,7 +16,6 @@ __all__ = ["write_index_files"]
 import json
 import logging
 import os
-import sys
 from collections.abc import MutableMapping, Sequence
 from typing import IO
 
@@ -34,7 +33,6 @@ def write_index_files(
     content_mode: str = "translated",
     outpath: str | None = None,
     outstream: IO | None = None,
-    errstream: IO = sys.stderr,
 ) -> tuple[list[str], list[str]]:
     """Process each file and create JSON index file.
 
@@ -69,9 +67,6 @@ def write_index_files(
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `None` which
         uses the default output stream. Defaults to `sys.stdout`.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
 
     Returns
     -------
@@ -105,7 +100,12 @@ def write_index_files(
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in files_per_directory.items():
         output, this_okay, this_failed = index_files(
-            files_in_dir, directory, hdrnum, print_trace, content_mode, outstream, errstream
+            files_in_dir,
+            directory,
+            hdrnum,
+            print_trace,
+            content_mode,
+            outstream,
         )
 
         failed.extend(this_failed)

@@ -26,7 +26,6 @@ import collections.abc
 import json
 import logging
 import os
-import sys
 from collections.abc import MutableMapping, Sequence
 from copy import deepcopy
 from typing import IO, Any, Literal, overload
@@ -49,7 +48,6 @@ def index_files(
     print_trace: bool,
     content: str,
     outstream: IO | None = None,
-    errstream: IO = sys.stderr,
 ) -> tuple[MutableMapping[str, str | MutableMapping[str, Any]], list[str], list[str]]:
     """Create an index from the supplied files.
 
@@ -81,9 +79,6 @@ def index_files(
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `None` which
         uses the default output stream.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
 
     Returns
     -------
@@ -111,7 +106,7 @@ def index_files(
             path = os.path.join(root, file)
         else:
             path = file
-        simple = read_file_info(path, hdrnum, print_trace, content, "simple", outstream, errstream)
+        simple = read_file_info(path, hdrnum, print_trace, content, "simple", outstream)
         if simple is None:
             failed.append(path)
             continue

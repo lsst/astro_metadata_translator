@@ -14,7 +14,6 @@ from __future__ import annotations
 __all__ = ("write_sidecar_files", "write_sidecar_file")
 
 import os
-import sys
 import traceback
 from collections.abc import Sequence
 from typing import IO
@@ -55,7 +54,6 @@ def write_sidecar_file(
     content_mode: str,
     print_trace: bool,
     outstream: IO | None = None,
-    errstream: IO = sys.stderr,
 ) -> bool:
     """Write JSON summary to sidecar file.
 
@@ -78,9 +76,6 @@ def write_sidecar_file(
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `None` which
         uses the default output stream.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
 
     Returns
     -------
@@ -100,7 +95,6 @@ def write_sidecar_file(
             content_type="json",
             print_trace=print_trace,
             outstream=outstream,
-            errstream=errstream,
         )
         if json_str is None:
             return False
@@ -131,7 +125,6 @@ def write_sidecar_files(
     content_mode: str,
     print_trace: bool,
     outstream: IO | None = None,
-    errstream: IO = sys.stderr,
 ) -> tuple[list[str], list[str]]:
     """Process each file and create sidecar file.
 
@@ -156,9 +149,6 @@ def write_sidecar_files(
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `None` which
         uses the default output stream.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
 
     Returns
     -------
@@ -173,7 +163,7 @@ def write_sidecar_files(
     failed = []
     okay = []
     for path in sorted(found_files):
-        isok = write_sidecar_file(path, hdrnum, content_mode, print_trace, outstream, errstream)
+        isok = write_sidecar_file(path, hdrnum, content_mode, print_trace, outstream)
         if isok:
             okay.append(path)
         else:

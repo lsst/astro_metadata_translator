@@ -11,6 +11,7 @@
 
 import io
 import json
+import logging
 import os
 import tempfile
 import unittest
@@ -145,10 +146,10 @@ class IndexingTestCase(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             read_file_info("notthere.not", 1)
 
-        with io.StringIO() as err:
-            info = read_file_info("notthere.not", 1, print_trace=False, errstream=err)
-            err.seek(0)
-            self.assertEqual(err.readlines()[0], "Unable to open file notthere.not\n")
+        with self.assertLogs(level=logging.WARNING) as cm:
+            info = read_file_info("notthere.not", 1, print_trace=False)
+
+        self.assertIn("Unable to open file notthere.not", "\n".join(cm.output))
 
         # Now read a file that can not be translated and should trigger
         # different errors
@@ -160,20 +161,18 @@ class IndexingTestCase(unittest.TestCase):
         self.assertIn("Unable to determine translator class", "\n".join(cm.output))
 
         with io.StringIO() as out:
-            with io.StringIO() as err:
-                info = read_file_info(bad_file, 1, print_trace=False, errstream=err, outstream=out)
-                out.seek(0)
-                lines = out.readlines()
-                self.assertEqual(len(lines), 1)
-                self.assertIn("ValueError", lines[0])
+            info = read_file_info(bad_file, 1, print_trace=False, outstream=out)
+            out.seek(0)
+            lines = out.readlines()
+            self.assertEqual(len(lines), 1)
+            self.assertIn("ValueError", lines[0])
 
         with io.StringIO() as out:
-            with io.StringIO() as err:
-                info = read_file_info(bad_file, 1, print_trace=True, errstream=err, outstream=out)
-                out.seek(0)
-                lines = out.readlines()
-                self.assertGreater(len(lines), 4)
-                self.assertIn("ValueError", lines[-1])
+            info = read_file_info(bad_file, 1, print_trace=True, outstream=out)
+            out.seek(0)
+            lines = out.readlines()
+            self.assertGreater(len(lines), 4)
+            self.assertIn("ValueError", lines[-1])
 
         # A sidecar file that is not a dict.
         not_dict = os.path.join(TESTDATA, "bad-sidecar.json")
