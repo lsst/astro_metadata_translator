@@ -13,12 +13,15 @@ from __future__ import annotations
 
 __all__ = ("write_sidecar_files", "write_sidecar_file")
 
+import logging
 import os
 import traceback
 from collections.abc import Sequence
 from typing import IO
 
 from ..file_helpers import find_files, read_file_info
+
+log = logging.getLogger(__name__)
 
 
 def _split_ext(file: str) -> tuple[str, str]:
@@ -106,6 +109,7 @@ def write_sidecar_file(
         newfile = root + ".json"
         with open(newfile, "w") as fd:
             print(json_str, file=fd)
+        log.debug("Writing sidecar file %s", newfile)
 
     except Exception as e:
         if print_trace is None:

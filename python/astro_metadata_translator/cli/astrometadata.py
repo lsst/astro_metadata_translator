@@ -184,8 +184,14 @@ def write_sidecar(ctx: click.Context, files: Sequence[str], hdrnum: int, regex: 
         for f in failed:
             click.echo(f"\t{f}", err=True)
 
+    if not okay and not failed:
+        # No files found at all.
+        click.echo("Found no files matching regex.")
+        raise click.exceptions.Exit(1)
+
     if not okay:
         # Good status if anything was returned in okay
+        click.echo(f"No files processed successfully. Found {len(failed)}.", err=True)
         raise click.exceptions.Exit(1)
 
 
