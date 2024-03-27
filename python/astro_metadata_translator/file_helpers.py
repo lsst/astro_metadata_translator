@@ -9,16 +9,19 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
-"""Support functions for script implementations."""
+"""Support functions for script implementations.
+
+These functions should not be treated as part of the public API.
+"""
 
 from __future__ import annotations
 
 __all__ = ("find_files", "read_basic_metadata_from_file", "read_file_info")
 
 import json
+import logging
 import os
 import re
-import sys
 import traceback
 from collections.abc import Iterable, MutableMapping
 from typing import IO, Any
@@ -26,6 +29,8 @@ from typing import IO, Any
 from .headers import merge_headers
 from .observationInfo import ObservationInfo
 from .tests import read_test_file
+
+log = logging.getLogger(__name__)
 
 # Prefer afw over Astropy
 try:
@@ -120,7 +125,7 @@ def find_files(files: Iterable[str], regex: str) -> list[str]:
 
 
 def read_basic_metadata_from_file(
-    file: str, hdrnum: int, errstream: IO = sys.stderr, can_raise: bool = True
+    file: str, hdrnum: int, can_raise: bool = True
 ) -> MutableMapping[str, Any] | None:
     """Read a raw header from a file, merging if necessary.
 
@@ -135,9 +140,6 @@ def read_basic_metadata_from_file(
         given the second header, if present, will be merged with the primary
         header. If there is only a primary header a negative number behaves
         identically to specifying 0 for the HDU number.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`. Only used if exceptions are disabled.
     can_raise : `bool`, optional
         Indicate whether the function can raise an exception (default)
         or should return `None` on error. Can still raise if an unexpected
@@ -165,7 +167,7 @@ def read_basic_metadata_from_file(
     else:
         md = _read_fits_metadata(file, 0, can_raise=can_raise)
     if md is None:
-        print(f"Unable to open file {file}", file=errstream)
+        log.warning("Unable to open file %s", file)
         return None
     if hdrnum < 0:
         if "EXTEND" in md and md["EXTEND"]:
@@ -178,7 +180,7 @@ def read_basic_metadata_from_file(
         if mdn is not None:
             md = merge_headers([md, mdn], mode="overwrite")
         else:
-            print(f"HDU {hdrnum} was not found in file {file}. Ignoring request.", file=errstream)
+            log.warning("HDU %d was not found in file %s. Ignoring request.", hdrnum, file)
 
     return md
 
@@ -189,8 +191,7 @@ def read_file_info(
     print_trace: bool | None = None,
     content_mode: str = "translated",
     content_type: str = "simple",
-    outstream: IO = sys.stdout,
-    errstream: IO = sys.stderr,
+    outstream: IO | None = None,
 ) -> str | MutableMapping[str, Any] | ObservationInfo | None:
     """Read information from file.
 
@@ -215,11 +216,9 @@ def read_file_info(
         JSON string, ``simple`` to always return a `dict`, or ``native`` to
         return either a `dict` (for ``metadata``) or `.ObservationInfo` for
         ``translated``.
-    outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
+    outstream : `io.StringIO` or `None`, optional
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
 
     Returns
     -------
@@ -235,9 +234,7 @@ def read_file_info(
 
     try:
         # Calculate the JSON from the file
-        md = read_basic_metadata_from_file(
-            file, hdrnum, errstream=errstream, can_raise=True if print_trace is None else False
-        )
+        md = read_basic_metadata_from_file(file, hdrnum, can_raise=True if print_trace is None else False)
         if md is None:
             return None
         if content_mode == "metadata":

@@ -32,7 +32,6 @@ from .helpers import altaz_from_degree_headers, is_non_science, tracking_from_de
 
 if TYPE_CHECKING:
     import astropy.coordinates
-    import astropy.time
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +79,10 @@ class DecamTranslator(FitsTranslator):
     # observations from a single night all have the same observing_day, adopt
     # the same offset used by the Vera Rubin Observatory of 12 hours.
     _observing_day_offset = astropy.time.TimeDelta(12 * 3600, format="sec", scale="tai")
+
+    # List from Frank Valdes (2024-03-21).
+    _sky_observation_types: tuple[str, ...] = ("science", "object", "standard", "sky flat")
+    _non_sky_observation_types: tuple[str, ...] = ("zero", "dark", "dome flat")
 
     # Unique detector names are currently not used but are read directly from
     # header.

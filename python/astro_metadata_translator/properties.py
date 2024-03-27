@@ -612,4 +612,11 @@ may not be.""",
         None,
         None,
     ),
+    "can_see_sky": PropertyDefinition(
+        "True if the observation is looking at sky, False if it is definitely"
+        " not looking at the sky. None indicates that it is not known whether"
+        " sky could be seen.",
+        "bool",
+        bool,
+    ),
 }

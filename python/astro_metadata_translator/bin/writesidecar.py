@@ -13,13 +13,15 @@ from __future__ import annotations
 
 __all__ = ("write_sidecar_files", "write_sidecar_file")
 
+import logging
 import os
-import sys
 import traceback
 from collections.abc import Sequence
 from typing import IO
 
 from ..file_helpers import find_files, read_file_info
+
+log = logging.getLogger(__name__)
 
 
 def _split_ext(file: str) -> tuple[str, str]:
@@ -54,8 +56,7 @@ def write_sidecar_file(
     hdrnum: int,
     content_mode: str,
     print_trace: bool,
-    outstream: IO = sys.stdout,
-    errstream: IO = sys.stderr,
+    outstream: IO | None = None,
 ) -> bool:
     """Write JSON summary to sidecar file.
 
@@ -76,10 +77,8 @@ def write_sidecar_file(
         a one line summary of the error condition. If `None` the exception
         will be allowed.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
 
     Returns
     -------
@@ -99,7 +98,6 @@ def write_sidecar_file(
             content_type="json",
             print_trace=print_trace,
             outstream=outstream,
-            errstream=errstream,
         )
         if json_str is None:
             return False
@@ -111,6 +109,7 @@ def write_sidecar_file(
         newfile = root + ".json"
         with open(newfile, "w") as fd:
             print(json_str, file=fd)
+        log.debug("Writing sidecar file %s", newfile)
 
     except Exception as e:
         if print_trace is None:
@@ -129,8 +128,7 @@ def write_sidecar_files(
     hdrnum: int,
     content_mode: str,
     print_trace: bool,
-    outstream: IO = sys.stdout,
-    errstream: IO = sys.stderr,
+    outstream: IO | None = None,
 ) -> tuple[list[str], list[str]]:
     """Process each file and create sidecar file.
 
@@ -153,10 +151,8 @@ def write_sidecar_files(
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
 
     Returns
     -------
@@ -171,7 +167,7 @@ def write_sidecar_files(
     failed = []
     okay = []
     for path in sorted(found_files):
-        isok = write_sidecar_file(path, hdrnum, content_mode, print_trace, outstream, errstream)
+        isok = write_sidecar_file(path, hdrnum, content_mode, print_trace, outstream)
         if isok:
             okay.append(path)
         else:

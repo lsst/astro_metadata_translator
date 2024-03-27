@@ -18,7 +18,7 @@ from __future__ import annotations
 
 __all__ = ("translate_or_dump_headers",)
 
-import sys
+import logging
 import traceback
 from collections.abc import Sequence
 from typing import IO
@@ -28,6 +28,8 @@ import yaml
 from astro_metadata_translator import MetadataTranslator, ObservationInfo, fix_header
 
 from ..file_helpers import find_files, read_basic_metadata_from_file
+
+log = logging.getLogger(__name__)
 
 # Output mode choices
 OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlnative", "fixednative", "none")
@@ -63,8 +65,7 @@ def read_file(
     file: str,
     hdrnum: int,
     print_trace: bool,
-    outstream: IO = sys.stdout,
-    errstream: IO = sys.stderr,
+    outstream: IO | None = None,
     output_mode: str = "verbose",
     write_heading: bool = False,
 ) -> bool:
@@ -82,10 +83,8 @@ def read_file(
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
     outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     output_mode : `str`, optional
         Output mode to use. Must be one of "verbose", "none", "table",
         "yaml", or "fixed".  "yaml" and "fixed" can be modified with a
@@ -111,10 +110,10 @@ def read_file(
 
     # This gets in the way in tabular mode
     if output_mode != "table":
-        print(f"Analyzing {file}...", file=errstream)
+        log.info("Analyzing %s...", file)
 
     try:
-        md = read_basic_metadata_from_file(file, hdrnum, errstream=errstream, can_raise=True)
+        md = read_basic_metadata_from_file(file, hdrnum, can_raise=True)
         if md is None:
             raise RuntimeError(f"Failed to read file {file} HDU={hdrnum}")
 
@@ -190,8 +189,7 @@ def translate_or_dump_headers(
     regex: str,
     hdrnum: int,
     print_trace: bool,
-    outstream: IO = sys.stdout,
-    errstream: IO = sys.stderr,
+    outstream: IO | None = None,
     output_mode: str = "auto",
 ) -> tuple[list[str], list[str]]:
     """Read and translate metadata from the specified files.
@@ -210,11 +208,9 @@ def translate_or_dump_headers(
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
-    outstream : `io.StringIO`, optional
-        Output stream to use for standard messages. Defaults to `sys.stdout`.
-    errstream : `io.StringIO`, optional
-        Stream to send messages that would normally be sent to standard
-        error. Defaults to `sys.stderr`.
+    outstream : `io.StringIO` or `None`, optional
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
     output_mode : `str`, optional
         Output mode to use for the translated information.
         "auto" switches based on how many files are found.
@@ -239,7 +235,7 @@ def translate_or_dump_headers(
     okay = []
     heading = True
     for path in sorted(found_files):
-        isok = read_file(path, hdrnum, print_trace, outstream, errstream, output_mode, heading)
+        isok = read_file(path, hdrnum, print_trace, outstream, output_mode, heading)
         heading = False
         if isok:
             okay.append(path)

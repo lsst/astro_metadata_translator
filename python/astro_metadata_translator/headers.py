@@ -17,13 +17,13 @@ __all__ = ("merge_headers", "fix_header")
 
 import copy
 import datetime
-import importlib.resources as resources
 import itertools
 import logging
 import os
 import posixpath
 from collections import Counter
 from collections.abc import Mapping, MutableMapping, Sequence
+from importlib import resources
 from typing import IO, Any
 
 import yaml

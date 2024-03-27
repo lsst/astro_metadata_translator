@@ -66,7 +66,6 @@ def is_non_science(self: MetadataTranslator) -> None:
     """
     if self.to_observation_type() == "science":
         raise KeyError(f"{self._log_prefix}: Header represents science observation and can not default")
-    return
 
 
 def altitude_from_zenith_distance(zd: astropy.units.Quantity) -> astropy.units.Quantity:

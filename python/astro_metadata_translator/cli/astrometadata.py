@@ -27,6 +27,8 @@ from ..bin.writesidecar import write_sidecar_files
 # Default regex for finding data files
 re_default = r"\.fit[s]?\b"
 
+log = logging.getLogger("astro_metadata_translator")
+
 PACKAGES_VAR = "METADATA_TRANSLATORS"
 
 hdrnum_option = click.option(
@@ -95,7 +97,7 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
         try:
             importlib.import_module(m)
         except (ImportError, ModuleNotFoundError):
-            logging.warn("Failed to import translator module: %s", m)
+            log.warning("Failed to import translator module: %s", m)
 
 
 @main.command(help="Translate metadata in supplied files and report.")
@@ -182,8 +184,14 @@ def write_sidecar(ctx: click.Context, files: Sequence[str], hdrnum: int, regex: 
         for f in failed:
             click.echo(f"\t{f}", err=True)
 
+    if not okay and not failed:
+        # No files found at all.
+        click.echo("Found no files matching regex.")
+        raise click.exceptions.Exit(1)
+
     if not okay:
         # Good status if anything was returned in okay
+        click.echo(f"No files processed successfully. Found {len(failed)}.", err=True)
         raise click.exceptions.Exit(1)
 
 

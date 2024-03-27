@@ -50,6 +50,18 @@ class HscTranslator(SuprimeCamTranslator):
     }
     """One-to-one mappings"""
 
+    # List from Hisanori Furusawa (2024-03-25).
+    _sky_observation_types: tuple[str, ...] = (
+        "science",
+        "object",
+        "standard_star",
+        "skyflat",
+        "focus",
+        "focusing",
+        "exp",
+    )
+    _non_sky_observation_types: tuple[str, ...] = ("dark", "bias", "agexp", "domeflat")
+
     # Zero point for HSC dates: 2012-01-01  51544 -> 2000-01-01
     _DAY0 = 55927
 
