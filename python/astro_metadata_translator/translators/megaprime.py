@@ -31,7 +31,6 @@ from .helpers import altaz_from_degree_headers, tracking_from_degree_headers
 
 if TYPE_CHECKING:
     import astropy.coordinates
-    import astropy.time
     import astropy.units
 
 
@@ -190,8 +189,8 @@ class MegaPrimeTranslator(FitsTranslator):
         for key, unit in (("PRESSURE", u.hPa), ("AIRPRESS", u.Pa)):
             if self.is_key_ok(key):
                 return self.quantity_from_card(key, unit)
-        else:
-            raise KeyError(f"{self._log_prefix}: Could not find pressure keywords in header")
+
+        raise KeyError(f"{self._log_prefix}: Could not find pressure keywords in header")
 
     @cache_translation
     def to_observation_counter(self) -> int:

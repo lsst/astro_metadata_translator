@@ -26,6 +26,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMappin
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import astropy.io.fits.card
+import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle
 
@@ -33,7 +34,6 @@ from .properties import PROPERTIES, PropertyDefinition
 
 if TYPE_CHECKING:
     import astropy.coordinates
-    import astropy.time
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +140,16 @@ class MetadataTranslator:
     Each property is indexed by name (`str`), with a corresponding
     `PropertyDefinition`.
     """
+
+    _sky_observation_types: tuple[str, ...] = ("science", "object")
+    """Observation types that correspond to an observation where the detector
+    can see sky photons.  This is used by the default implementation of
+    ``can_see_sky`` determination."""
+
+    _non_sky_observation_types: tuple[str, ...] = ("bias", "dark")
+    """Observation types that correspond to an observation where the detector
+    can not see sky photons.  This is used by the default implementation of
+    ``can_see_sky`` determination."""
 
     # Static typing requires that we define the standard dynamic properties
     # statically.
@@ -570,11 +580,11 @@ class MetadataTranslator:
             if trans.can_translate(header, filename=filename):
                 log.debug("Using translation class %s%s", name, file_msg)
                 return trans
-        else:
-            raise ValueError(
-                f"None of the registered translation classes {list(cls.translators.keys())}"
-                f" understood this header{file_msg}"
-            )
+
+        raise ValueError(
+            f"None of the registered translation classes {list(cls.translators.keys())}"
+            f" understood this header{file_msg}"
+        )
 
     @classmethod
     def translator_version(cls) -> str:
@@ -1221,6 +1231,35 @@ class MetadataTranslator:
             The defocal distance from header or the 0.0mm default.
         """
         return 0.0 * u.mm
+
+    @cache_translation
+    def to_can_see_sky(self) -> bool | None:
+        """Return whether the observation can see the sky or not.
+
+        Returns
+        -------
+        can_see_sky : `bool` or `None`
+            `True` if the detector is receiving photons from the sky.
+            `False` if the sky is not visible to the detector.
+            `None` if the metadata translator does not know one way or the
+            other.
+
+        Notes
+        -----
+        The base class translator uses a simple heuristic of returning
+        `True` if the observation type is "science" or "object" and `False`
+        if the observation type is "bias" or "dark". For all other cases it
+        will return `None`.
+        """
+        obs_type = self.to_observation_type()
+        if obs_type is not None:
+            obs_type = obs_type.lower()
+
+        if obs_type in self._sky_observation_types:
+            return True
+        if obs_type in self._non_sky_observation_types:
+            return False
+        return None
 
     @classmethod
     def determine_translatable_headers(
