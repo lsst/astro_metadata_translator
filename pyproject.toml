@@ -79,6 +79,14 @@ convention = "numpy"
 # D104 - we do not require documentation in __init__.py files.
 add-ignore = ["D107", "D105", "D102", "D104", "D100", "D200", "D205", "D400"]
 
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
 
 [tool.ruff]
 target-version = "py311"
