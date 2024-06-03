@@ -39,6 +39,34 @@ class TestTranslateHeader(unittest.TestCase):
         stream.seek(0)
         return [ll.rstrip() for ll in stream.readlines()]
 
+    def assert_ok_fail(
+        self, okay: list[str], failed: list[str], stdout: list[str], expected: tuple[int, int]
+    ):
+        """Check that we have the expected numbers of successes and
+        failures.
+
+        Parameters
+        ----------
+        okay : `list` [`str`]
+            List of successful translations.
+        failed : `list` [`str`]
+            List of failed translations.
+        stdout : `list` [`str`]
+            Additional information output.
+        expected : `tuple` [`int`, `int`]
+            Expected length of ``okay`` and ``failed``.
+        """
+        # Form message to issue if the test fails.
+        newline = "\n"  # f-string can not accept \ in string.
+        msg = f"""Converted successfully:
+{newline.join(okay)}
+Failed conversions:
+{newline.join(failed)}
+Standard output:
+{newline.join(stdout)}
+"""
+        self.assertEqual((len(okay), len(failed)), expected, msg=msg)
+
     def test_translate_header(self):
         """Translate some header files."""
         with io.StringIO() as out:
@@ -51,13 +79,14 @@ class TestTranslateHeader(unittest.TestCase):
                     outstream=out,
                     output_mode="none",
                 )
-            self.assertEqual(self._readlines(out), [])
+
+            output = self._readlines(out)
+            self.assertEqual(output, [])
             lines = [r.getMessage() for r in cm.records]
             self.assertEqual(len(lines), 10)
             self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assertEqual(len(okay), 10)
-        self.assertEqual(len(failed), 0)
+        self.assert_ok_fail(okay, failed, output, (10, 0))
 
     def test_translate_header_table(self):
         """Translate some header files with table output."""
@@ -77,8 +106,7 @@ class TestTranslateHeader(unittest.TestCase):
                 self.assertEqual(len(output), 12)
                 self.assertEqual(len(cm.output), 1)  # Should only have the warning this test made.
 
-        self.assertEqual(len(okay), 10)
-        self.assertEqual(len(failed), 0)
+        self.assert_ok_fail(okay, failed, output, (10, 0))
 
     def test_translate_header_fails(self):
         """Translate some header files that fail."""
@@ -97,16 +125,7 @@ class TestTranslateHeader(unittest.TestCase):
             self.assertEqual(len(err_lines), 13)  # The number of files analyzed
             self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
 
-        # Form message to issue if the test fails.
-        newline = "\n"  # f-string can not accept \ in string.
-        msg = f"""Converted successfully:
-{newline.join(okay)}
-Failed conversions:
-{newline.join(failed)}
-Standard output:
-{newline.join(out_lines)}
-"""
-        self.assertEqual((len(okay), len(failed)), (10, 3), msg=msg)
+        self.assert_ok_fail(okay, failed, out_lines, (10, 3))
 
     def test_translate_header_traceback(self):
         """Translate some header files that fail and trigger traceback."""
@@ -116,16 +135,15 @@ Standard output:
                     [TESTDATA], r"^.*yaml$", 0, True, outstream=out, output_mode="none"
                 )
 
-            lines = self._readlines(out)
-            self.assertGreaterEqual(len(lines), 22, "\n".join(lines))
-            self.assertTrue(lines[0].startswith("Traceback"), f"Line '{lines[0]}'")
+            out_lines = self._readlines(out)
+            self.assertGreaterEqual(len(out_lines), 22, "\n".join(out_lines))
+            self.assertTrue(out_lines[0].startswith("Traceback"), f"Line '{out_lines[0]}'")
 
             lines = [r.getMessage() for r in cm.records]
             self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
             self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assertEqual(len(okay), 10)
-        self.assertEqual(len(failed), 3)
+        self.assert_ok_fail(okay, failed, out_lines, (10, 3))
 
     def test_translate_header_dump(self):
         """Check that a header is dumped."""
@@ -140,17 +158,16 @@ Standard output:
                     output_mode="yaml",
                 )
 
-            lines = self._readlines(out)
+            out_lines = self._readlines(out)
             # Look for a DECam header in the output
-            header = "\n".join(lines)
+            header = "\n".join(out_lines)
             self.assertIn("DTINSTRU", header)
 
             lines = [r.getMessage() for r in cm.records]
             self.assertEqual(len(lines), 1)
             self.assertTrue(lines[0], "Analyzing tests/data/fitsheader-decam.yaml...")
 
-        self.assertEqual(len(okay), 1)
-        self.assertEqual(len(failed), 0)
+        self.assert_ok_fail(okay, failed, out_lines, (1, 0))
 
     def test_translate_header_loud(self):
         """Check that ObservationInfo content is displayed."""
@@ -165,16 +182,15 @@ Standard output:
                     output_mode="verbose",
                 )
 
-            lines = self._readlines(out)
+            out_lines = self._readlines(out)
             # Look for the translated DECam header in the output
-            self.assertEqual(lines[2], "datetime_begin: 2013-09-01T06:02:55.754")
+            self.assertEqual(out_lines[2], "datetime_begin: 2013-09-01T06:02:55.754")
 
             lines = [r.getMessage() for r in cm.records]
             self.assertEqual(len(lines), 1)
             self.assertTrue(lines[0], "Analyzing tests/data/fitsheader-decam.yaml...")
 
-        self.assertEqual(len(okay), 1)
-        self.assertEqual(len(failed), 0)
+        self.assert_ok_fail(okay, failed, out_lines, (1, 0))
 
 
 if __name__ == "__main__":
