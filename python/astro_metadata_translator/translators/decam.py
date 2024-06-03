@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 
 import astropy.time
 import astropy.units as u
-from astropy.coordinates import Angle, EarthLocation
+from astropy.coordinates import Angle, EarthLocation, UnknownSiteException
 from astropy.io import fits
 
 from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
@@ -34,6 +34,10 @@ if TYPE_CHECKING:
     import astropy.coordinates
 
 log = logging.getLogger(__name__)
+
+_CTIO_FALLBACK_LOCATION = EarthLocation.from_geocentric(
+    1814303.74553723, -5214365.7436216, -3187340.56598756, unit=u.m
+)
 
 
 class DecamTranslator(FitsTranslator):
@@ -280,7 +284,10 @@ class DecamTranslator(FitsTranslator):
             self._used_these_cards("OBS-LONG", "OBS-LAT", "OBS-ELEV")
         else:
             # Look up the value since some files do not have location
-            value = EarthLocation.of_site("ctio")
+            try:
+                value = EarthLocation.of_site("ctio")
+            except UnknownSiteException:
+                value = _CTIO_FALLBACK_LOCATION
 
         return value
 
