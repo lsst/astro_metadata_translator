@@ -20,7 +20,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 import astropy.units as u
-from astropy.coordinates import AltAz, Angle, EarthLocation
+from astropy.coordinates import AltAz, Angle, EarthLocation, UnknownSiteException
 
 from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
@@ -29,6 +29,12 @@ from .helpers import tracking_from_degree_headers
 if TYPE_CHECKING:
     import astropy.coordinates
     import astropy.time
+
+
+# Hard-code APO location fallback.
+_APO_LOCATION = EarthLocation.from_geocentric(
+    -1463969.30185172, -5166673.34223433, 3434985.71204565, unit=u.m
+)
 
 
 class SdssTranslator(FitsTranslator):
@@ -183,8 +189,13 @@ class SdssTranslator(FitsTranslator):
         location : `astropy.coordinates.EarthLocation`
             An object representing the location of the telescope.
         """
-        # Look up the value since files do not have location
-        value = EarthLocation.of_site("apo")
+        # Look up the value since files do not have location.
+        # This might require a network look up if the cached database
+        # is not accessible. If it fails fall back to hard-coded location.
+        try:
+            value = EarthLocation.of_site("apo")
+        except UnknownSiteException:
+            value = _APO_LOCATION
 
         return value
 
