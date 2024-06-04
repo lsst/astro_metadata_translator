@@ -141,6 +141,7 @@ class TestCLI(unittest.TestCase):
                 ],
             )
             self.assertEqual(result.exit_code, 0, click_result_msg(result))
+            self.assertNotIn("failed header extraction", result.output, msg="\n\n" + result.output)
 
             ind = read_index(temp.name)
             self.assertIsInstance(ind, ObservationGroup)

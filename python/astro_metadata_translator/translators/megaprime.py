@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import astropy.time
 import astropy.units as u
-from astropy.coordinates import Angle, EarthLocation
+from astropy.coordinates import Angle, EarthLocation, UnknownSiteException
 from astropy.io import fits
 
 from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
@@ -32,6 +32,10 @@ from .helpers import altaz_from_degree_headers, tracking_from_degree_headers
 if TYPE_CHECKING:
     import astropy.coordinates
     import astropy.units
+
+_MK_FALLBACK_LOCATION = EarthLocation.from_geocentric(
+    -5464301.77135369, -2493489.8730419, 2151085.16950589, unit=u.m
+)
 
 
 class MegaPrimeTranslator(FitsTranslator):
@@ -115,7 +119,10 @@ class MegaPrimeTranslator(FitsTranslator):
                 self._used_these_cards(long_key, lat_key)
                 break
         else:
-            value = EarthLocation.of_site("CFHT")
+            try:
+                value = EarthLocation.of_site("CFHT")
+            except UnknownSiteException:
+                value = _MK_FALLBACK_LOCATION
         return value
 
     @cache_translation
