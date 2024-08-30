@@ -393,6 +393,33 @@ class DecamTranslator(FitsTranslator):
             modified = True
             log.debug("%s: Set FILTER to %s because OBSTYPE is %s", log_label, header["FILTER"], obstype)
 
+        # The following provides corrections to the boresight header info for
+        # the raw data files obtained from http://astroarchive.noirlab.edu/,
+        # program number 2013A-0351, of the Trifid and Lagoon Nebulae region.
+        if "Trifid" in header.get("OBJECT", "unknown") and obstype == "object":
+            # Create a translator since we need the date
+            translator = cls(header)
+            date_obs = translator.to_datetime_begin()
+            date_min = astropy.time.Time("2013-02-10", format="isot", scale="utc")
+            date_max = astropy.time.Time("2013-02-14", format="isot", scale="utc")
+            if date_obs > date_min and date_obs < date_max:
+                # Median differences (in deg) between the raw header
+                # RA/DEC values & the boresight values obtianed from
+                # https://astroarchive.noirlab.edu for these data.
+                delta_ra = -0.027417
+                delta_dec = -0.002833
+                ra_hour = Angle(header["RA"], unit="hour")
+                dec_deg = Angle(header["DEC"], unit="degree")
+                header["TELRA"] = (ra_hour + delta_ra * u.degree).hour
+                header["TELDEC"] = (dec_deg + delta_dec * u.degree).degree
+                modified = True
+                log.debug(
+                    "Found Trifid in OBJECT header.  Changing TELRA and TELDEC headers to "
+                    "RA + %.5f deg and DEC + %.5f deg, respectively.",
+                    delta_ra,
+                    delta_dec,
+                )
+
         return modified
 
     @classmethod
