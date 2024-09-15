@@ -142,11 +142,14 @@ class MetadataAssertHelper:
         def assertLessEqual(self, a: Any, b: Any, msg: str | None = None) -> None:  # noqa: N802
             pass
 
+        def assertGreaterEqual(self, a: Any, b: Any, msg: str | None = None) -> None:  # noqa: N802
+            pass
+
         def fail(self, msg: str) -> NoReturn:
             pass
 
     def assertCoordinatesConsistent(  # noqa: N802
-        self, obsinfo: ObservationInfo, max_sep: float = 1.0, amdelta: float = 0.01
+        self, obsinfo: ObservationInfo, max_sep: float = 1.0, min_sep: float = 0.0, amdelta: float = 0.01
     ) -> None:
         """Check that SkyCoord, AltAz, and airmass are self consistent.
 
@@ -157,6 +160,10 @@ class MetadataAssertHelper:
         max_sep : `float`, optional
             Maximum separation between AltAz derived from RA/Dec headers
             and that found in the AltAz headers.
+        min_sep : `float`, optional
+            Minimum separation between AltAz derived from RA/Dec headers
+            and that found in the AltAz headers. This is to accommodate
+            cases where the telecsope boresight headers required adjustment.
         amdelta : `float`, optional
             Max difference between header airmass and derived airmass.
 
@@ -186,6 +193,11 @@ class MetadataAssertHelper:
             warnings.simplefilter("ignore", category=astropy.utils.exceptions.AstropyWarning)
             sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
         self.assertLess(sep.to_value(unit="arcmin"), max_sep, msg="AltAz inconsistent with RA/Dec")
+        self.assertGreaterEqual(
+            sep.to_value(unit="arcmin"),
+            min_sep,
+            msg="Difference between AltAz and RA/Dec is less than expected from fixed boresight headers."
+        )
 
     def assertObservationInfoFromYaml(  # noqa: N802
         self,
