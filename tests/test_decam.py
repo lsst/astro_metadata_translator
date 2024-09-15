@@ -172,6 +172,46 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
                     check_altaz=True,
                 ),
             ),
+            (
+                "fitsheader-decam-raw_dec050441_25.yaml",
+                dict(
+                    telescope="CTIO 4.0-m telescope",
+                    instrument="DECam",
+                    boresight_rotation_coord="sky",
+                    boresight_rotation_angle=90.0 * u.degree,
+                    dark_time=31.1290202 * u.s,
+                    detector_exposure_id=17776425,
+                    detector_name="1",
+                    detector_unique_name="S1",
+                    detector_group="S",
+                    detector_num=25,
+                    detector_serial="S3-111_107419-8-3",
+                    exposure_id=177764,
+                    exposure_group="177764",
+                    exposure_time=30.0 * u.s,
+                    focus_z=2387.06 * u.um,
+                    group_counter_end=177764,
+                    group_counter_start=177764,
+                    has_simulated_content=False,
+                    object="Trifid and Lagoon",
+                    observation_counter=177764,
+                    observation_id="ct4m20130213t090140",
+                    observation_type="science",
+                    observation_reason="science",
+                    observing_day=20130212,
+                    physical_filter="g DECam SDSS c0001 4720.0 1520.0",
+                    pressure=780.0 * u.hPa,
+                    relative_humidity=32.0,
+                    science_program="2013A-0351",
+                    temperature=14.2 * u.deg_C,
+                    visit_id=177764,
+                    # The boresight should have shifted by at least 6 arcmin
+                    # (and AZ/ZD have not been adjusted, so they should be
+                    # different).
+                    wcs_params=dict(min_sep=6.0, max_sep=7.0),
+                    check_altaz=True,
+                ),
+            ),
         )
         for file, expected in test_data:
             with self.subTest(f"Testing {file}"):

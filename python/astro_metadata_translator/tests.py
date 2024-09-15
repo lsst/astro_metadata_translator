@@ -196,7 +196,7 @@ class MetadataAssertHelper:
         self.assertGreaterEqual(
             sep.to_value(unit="arcmin"),
             min_sep,
-            msg="Difference between AltAz and RA/Dec is less than expected from fixed boresight headers."
+            msg="Difference between AltAz and RA/Dec is less than expected from fixed boresight headers.",
         )
 
     def assertObservationInfoFromYaml(  # noqa: N802
