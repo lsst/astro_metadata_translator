@@ -79,14 +79,13 @@ Standard output:
                     outstream=out,
                     output_mode="none",
                 )
-
             output = self._readlines(out)
             self.assertEqual(output, [])
             lines = [r.getMessage() for r in cm.records]
-            self.assertEqual(len(lines), 10)
+            self.assertEqual(len(lines), 11)
             self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, output, (10, 0))
+        self.assert_ok_fail(okay, failed, output, (11, 0))
 
     def test_translate_header_table(self):
         """Translate some header files with table output."""
@@ -103,10 +102,10 @@ Standard output:
                 output = self._readlines(out)
                 self.assertTrue(output[0].startswith("ObsId"))
                 self.assertTrue(output[1].startswith("-------"))
-                self.assertEqual(len(output), 12)
+                self.assertEqual(len(output), 13)
                 self.assertEqual(len(cm.output), 1)  # Should only have the warning this test made.
 
-        self.assert_ok_fail(okay, failed, output, (10, 0))
+        self.assert_ok_fail(okay, failed, output, (11, 0))
 
     def test_translate_header_fails(self):
         """Translate some header files that fail."""
@@ -122,10 +121,10 @@ Standard output:
             self.assertIn("not a mapping", out_lines[0], f"Line: '{out_lines[0]}'")
 
             err_lines = [r.getMessage() for r in cm.records]
-            self.assertEqual(len(err_lines), 13)  # The number of files analyzed
+            self.assertEqual(len(err_lines), 14)  # The number of files analyzed
             self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, out_lines, (10, 3))
+        self.assert_ok_fail(okay, failed, out_lines, (11, 3))
 
     def test_translate_header_traceback(self):
         """Translate some header files that fail and trigger traceback."""
@@ -143,7 +142,7 @@ Standard output:
             self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
             self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, out_lines, (10, 3))
+        self.assert_ok_fail(okay, failed, out_lines, (11, 3))
 
     def test_translate_header_dump(self):
         """Check that a header is dumped."""
