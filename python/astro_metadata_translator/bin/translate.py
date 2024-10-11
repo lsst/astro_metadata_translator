@@ -146,7 +146,7 @@ def read_file(
 
         wrote_heading = False
         for md in headers:
-            obs_info = ObservationInfo(md, pedantic=True, filename=file)
+            obs_info = ObservationInfo(md, pedantic=False, filename=file)
             if output_mode == "table":
                 columns = [
                     "{:{fmt}}".format(getattr(obs_info, c["attr"]), fmt=c["format"]) for c in TABLE_COLUMNS
