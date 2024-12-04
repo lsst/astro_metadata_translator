@@ -19,6 +19,7 @@ from __future__ import annotations
 __all__ = ("translate_or_dump_headers",)
 
 import logging
+import re
 import traceback
 from collections.abc import Sequence
 from typing import IO
@@ -148,9 +149,22 @@ def read_file(
         for md in headers:
             obs_info = ObservationInfo(md, pedantic=False, filename=file)
             if output_mode == "table":
-                columns = [
-                    "{:{fmt}}".format(getattr(obs_info, c["attr"]), fmt=c["format"]) for c in TABLE_COLUMNS
-                ]
+                columns = []
+                for c in TABLE_COLUMNS:
+                    value = getattr(obs_info, c["attr"])
+                    if value is not None:
+                        value = "{:{fmt}}".format(value, fmt=c["format"])
+                    else:
+                        match = re.search(r"^(>*)(\d+)\.", c["format"])
+                        if match:
+                            length = int(match.group(2))
+                            justify = match.group(1)
+                        else:
+                            length = len(c["label"])
+                            justify = ">" if c["format"].startswith(">") else ""
+                        print(c["format"], length, justify)
+                        value = "{:{fmt}}".format("-", fmt=f"{justify}{length}.{length}")
+                    columns.append(value)
 
                 if write_heading and not wrote_heading:
                     # Construct headings of the same width as the items
