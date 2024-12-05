@@ -40,6 +40,10 @@ log = logging.getLogger(__name__)
 # Output mode choices
 OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlnative", "fixednative", "none")
 
+# Number of rows per table page.
+# This is a minimum given that DECam data files can include multiple headers.
+MAX_TABLE_PAGE_SIZE = 500
+
 # Definitions for table columns
 TABLE_COLUMNS = (
     {"format": "<", "attr": "observation_id", "label": "ObsId"},
@@ -302,6 +306,11 @@ def translate_or_dump_headers(
             okay.append(path)
         else:
             failed.append(path)
+
+        # Check if we have exceeded the page size and should dump the table.
+        if output_mode == "table" and len(output_columns[TABLE_COLUMNS[0]["label"]]) >= MAX_TABLE_PAGE_SIZE:
+            _dump_columns(output_columns, outstream)
+            output_columns = defaultdict(list)
 
     if output_columns:
         _dump_columns(output_columns, outstream)
