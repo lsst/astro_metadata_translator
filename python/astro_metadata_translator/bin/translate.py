@@ -19,16 +19,21 @@ from __future__ import annotations
 __all__ = ("translate_or_dump_headers",)
 
 import logging
-import re
+import math
 import traceback
+from collections import defaultdict
 from collections.abc import Sequence
-from typing import IO
+from typing import IO, Any
 
+import astropy.time
+import astropy.units as u
 import yaml
+from astropy.table import Column, MaskedColumn, QTable
 
 from astro_metadata_translator import MetadataTranslator, ObservationInfo, fix_header
 
 from ..file_helpers import find_files, read_basic_metadata_from_file
+from ..properties import PROPERTIES
 
 log = logging.getLogger(__name__)
 
@@ -37,28 +42,30 @@ OUTPUT_MODES = ("auto", "verbose", "table", "yaml", "fixed", "yamlnative", "fixe
 
 # Definitions for table columns
 TABLE_COLUMNS = (
-    {"format": "32.32s", "attr": "observation_id", "label": "ObsId"},
+    {"format": "<", "attr": "observation_id", "label": "ObsId"},
     {
-        "format": "8.8s",
+        "format": "<",
         "attr": "observation_type",
         "label": "ImgType",
     },
     {
-        "format": "16.16s",
+        "format": "<",
         "attr": "object",
         "label": "Object",
     },
     {
-        "format": "16.16s",
+        "format": "<",
         "attr": "physical_filter",
         "label": "Filter",
     },
     {"format": ">8.8s", "attr": "detector_unique_name", "label": "Detector"},
     {
-        "format": "5.1f",
+        "format": None,
         "attr": "exposure_time",
         "label": "ExpTime",
+        "bad": math.nan * u.s,
     },
+    {"attr": "datetime_begin", "label": "Observation Date", "bad": astropy.time.Time(0.0, format="jd")},
 )
 
 
@@ -66,6 +73,7 @@ def read_file(
     file: str,
     hdrnum: int,
     print_trace: bool,
+    output_columns: defaultdict[str, list],
     outstream: IO | None = None,
     output_mode: str = "verbose",
     write_heading: bool = False,
@@ -83,6 +91,8 @@ def read_file(
         If there is an error reading the file and this parameter is `True`,
         a full traceback of the exception will be reported. If `False` prints
         a one line summary of the error condition.
+    output_columns : `collections.defaultdict` [ `str`, `list` ]
+        For table mode, a place to store the columns.
     outstream : `io.StringIO`, optional
         Output stream to use for standard messages. Defaults to `None` which
         uses the default output stream.
@@ -145,50 +155,21 @@ def read_file(
         if output_mode == "auto":
             output_mode = "table" if len(headers) > 1 else "verbose"
 
-        wrote_heading = False
+        if output_mode == "table" and output_columns is None:
+            raise ValueError("Table mode requires output columns")
+
         for md in headers:
             obs_info = ObservationInfo(md, pedantic=False, filename=file)
             if output_mode == "table":
-                columns = []
                 for c in TABLE_COLUMNS:
-                    value = getattr(obs_info, c["attr"])
-                    if value is not None:
-                        value = "{:{fmt}}".format(value, fmt=c["format"])
-                    else:
-                        match = re.search(r"^(>*)(\d+)\.", c["format"])
-                        if match:
-                            length = int(match.group(2))
-                            justify = match.group(1)
-                        else:
-                            length = len(c["label"])
-                            justify = ">" if c["format"].startswith(">") else ""
-                        print(c["format"], length, justify)
-                        value = "{:{fmt}}".format("-", fmt=f"{justify}{length}.{length}")
-                    columns.append(value)
-
-                if write_heading and not wrote_heading:
-                    # Construct headings of the same width as the items
-                    # we have calculated.  Doing this means we don't have to
-                    # work out for ourselves how many characters will be used
-                    # for non-strings (especially Quantity)
-                    headings = []
-                    separators = []
-                    for thiscol, defn in zip(columns, TABLE_COLUMNS):
-                        width = len(thiscol)
-                        headings.append("{:{w}.{w}}".format(defn["label"], w=width))
-                        separators.append("-" * width)
-                    print(" ".join(headings), file=outstream)
-                    print(" ".join(separators), file=outstream)
-                    wrote_heading = True
-
-                row = " ".join(columns)
-                print(row, file=outstream)
+                    output_columns[c["label"]].append(getattr(obs_info, c["attr"]))
             elif output_mode == "verbose":
                 print(f"{obs_info}", file=outstream)
             elif output_mode == "none":
                 pass
             else:
                 raise RuntimeError(f"Output mode of '{output_mode}' not recognized but should be known.")
+
     except Exception as e:
         if print_trace:
             traceback.print_exc(file=outstream)
@@ -248,12 +229,50 @@ def translate_or_dump_headers(
     failed = []
     okay = []
     heading = True
+    output_columns: defaultdict[str, list] = defaultdict(list)
     for path in sorted(found_files):
-        isok = read_file(path, hdrnum, print_trace, outstream, output_mode, heading)
+        isok = read_file(path, hdrnum, print_trace, output_columns, outstream, output_mode, heading)
         heading = False
         if isok:
             okay.append(path)
         else:
             failed.append(path)
+
+    if output_columns:
+
+        def _masked(value: Any, fillvalue: Any) -> Any:
+            return value if value is not None else fillvalue
+
+        qt = QTable()
+        for c in TABLE_COLUMNS:
+            data = output_columns[c["label"]]
+            need_mask = False
+            mask = []
+            for v in data:
+                is_none = v is None
+                if is_none:
+                    need_mask = True
+                mask.append(is_none)
+            col_format = c.get("format")
+
+            if need_mask:
+                data = [_masked(v, c.get("bad", "-")) for v in output_columns[c["label"]]]
+
+            # Quantity have to be handled in special way since they need
+            # to be merged into a single entity before they can be stored
+            # in a column.
+            if issubclass(PROPERTIES[c["attr"]].py_type, u.Quantity):
+                data = u.Quantity(data)
+            elif issubclass(PROPERTIES[c["attr"]].py_type, astropy.time.Time):
+                # Force to ISO string.
+                data = astropy.time.Time(data).isot
+
+            if need_mask:
+                data = MaskedColumn(name=c["label"], data=data, mask=mask, format=col_format)
+            else:
+                data = Column(data=data, name=c["label"], format=col_format)
+            qt[c["label"]] = data
+
+        print("\n".join(qt.pformat(max_lines=-1, max_width=-1)), file=outstream)
 
     return okay, failed

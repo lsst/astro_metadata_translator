@@ -100,9 +100,9 @@ Standard output:
                     outstream=out,
                 )
                 output = self._readlines(out)
-                self.assertTrue(output[0].startswith("ObsId"))
-                self.assertTrue(output[1].startswith("-------"))
-                self.assertEqual(len(output), 13)
+                self.assertIn("ObsId", output[0])
+                self.assertTrue(output[2].startswith("-------"))
+                self.assertEqual(len(output), 14)  # 3 header lines for QTable.
                 self.assertEqual(len(cm.output), 1)  # Should only have the warning this test made.
 
         self.assert_ok_fail(okay, failed, output, (11, 0))
@@ -115,7 +115,8 @@ Standard output:
                     [TESTDATA], "^bad-megaprime.yaml$", 0, False, outstream=out, output_mode="table"
                 )
                 output = self._readlines(out)
-                self.assertIn("-        w2", output[2])
+                self.assertIn(" -- ", output[3])  # String masked value.
+                self.assertIn(" ———", output[3])  # Quantity masked value.
 
     def test_translate_header_fails(self):
         """Translate some header files that fail."""
