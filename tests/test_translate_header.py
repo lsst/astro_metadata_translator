@@ -100,12 +100,23 @@ Standard output:
                     outstream=out,
                 )
                 output = self._readlines(out)
-                self.assertTrue(output[0].startswith("ObsId"))
-                self.assertTrue(output[1].startswith("-------"))
-                self.assertEqual(len(output), 13)
+                self.assertIn("ObsId", output[0])
+                self.assertTrue(output[2].startswith("-------"))
+                self.assertEqual(len(output), 14)  # 3 header lines for QTable.
                 self.assertEqual(len(cm.output), 1)  # Should only have the warning this test made.
 
         self.assert_ok_fail(okay, failed, output, (11, 0))
+
+    def test_translate_bad_header_table(self):
+        """Translate a header that has a bad translation in the table."""
+        with io.StringIO() as out:
+            with self.assertLogs(level=logging.WARNING):
+                okay, failed = translate_or_dump_headers(
+                    [TESTDATA], "^bad-megaprime.yaml$", 0, False, outstream=out, output_mode="table"
+                )
+                output = self._readlines(out)
+                self.assertIn(" -- ", output[3])  # String masked value.
+                self.assertIn(" ———", output[3])  # Quantity masked value.
 
     def test_translate_header_fails(self):
         """Translate some header files that fail."""
@@ -121,10 +132,12 @@ Standard output:
             self.assertIn("not a mapping", out_lines[0], f"Line: '{out_lines[0]}'")
 
             err_lines = [r.getMessage() for r in cm.records]
-            self.assertEqual(len(err_lines), 14)  # The number of files analyzed
+            # Filter out warnings.
+            analyzed = [e for e in err_lines if e.startswith("Analyzing")]
+            self.assertEqual(len(analyzed), 15)  # The number of files analyzed
             self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, out_lines, (11, 3))
+        self.assert_ok_fail(okay, failed, out_lines, (12, 3))
 
     def test_translate_header_traceback(self):
         """Translate some header files that fail and trigger traceback."""
@@ -142,7 +155,7 @@ Standard output:
             self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
             self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, out_lines, (11, 3))
+        self.assert_ok_fail(okay, failed, out_lines, (12, 3))
 
     def test_translate_header_dump(self):
         """Check that a header is dumped."""
