@@ -179,6 +179,71 @@ def read_file(
     return True
 
 
+def _fill_bad_values(value: Any, fillvalue: Any) -> Any:
+    """Convert None values to the fill value.
+
+    Parameters
+    ----------
+    value : `Any`
+        Value to check.
+    fillvalue : `Any`
+        Value to use if `None`.
+
+    Returns
+    -------
+    filled : `Any`
+        Original value or the fill value.
+    """
+    return value if value is not None else fillvalue
+
+
+def _dump_columns(output_columns: dict[str, list], outstream: IO | None = None) -> None:
+    """Write columns to output stream as a table.
+
+    Parameters
+    ----------
+    output_columns : `dict` [`str`, `list`]
+        The columns to be written, indexed by column name.
+    outstream : `io.StringIO` or `None`, optional
+        Output stream to use for standard messages. Defaults to `None` which
+        uses the default output stream.
+    """
+    if not output_columns:
+        return
+
+    qt = QTable()
+    for c in TABLE_COLUMNS:
+        data = output_columns[c["label"]]
+        need_mask = False
+        mask = []
+        for v in data:
+            is_none = v is None
+            if is_none:
+                need_mask = True
+            mask.append(is_none)
+        col_format = c.get("format")
+
+        if need_mask:
+            data = [_fill_bad_values(v, c.get("bad", "-")) for v in output_columns[c["label"]]]
+
+        # Quantity have to be handled in special way since they need
+        # to be merged into a single entity before they can be stored
+        # in a column.
+        if issubclass(PROPERTIES[c["attr"]].py_type, u.Quantity):
+            data = u.Quantity(data)
+        elif issubclass(PROPERTIES[c["attr"]].py_type, astropy.time.Time):
+            # Force to ISO string.
+            data = astropy.time.Time(data).isot
+
+        if need_mask:
+            data = MaskedColumn(name=c["label"], data=data, mask=mask, format=col_format)
+        else:
+            data = Column(data=data, name=c["label"], format=col_format)
+        qt[c["label"]] = data
+
+    print("\n".join(qt.pformat(max_lines=-1, max_width=-1)), file=outstream)
+
+
 def translate_or_dump_headers(
     files: Sequence[str],
     regex: str,
@@ -239,40 +304,6 @@ def translate_or_dump_headers(
             failed.append(path)
 
     if output_columns:
-
-        def _masked(value: Any, fillvalue: Any) -> Any:
-            return value if value is not None else fillvalue
-
-        qt = QTable()
-        for c in TABLE_COLUMNS:
-            data = output_columns[c["label"]]
-            need_mask = False
-            mask = []
-            for v in data:
-                is_none = v is None
-                if is_none:
-                    need_mask = True
-                mask.append(is_none)
-            col_format = c.get("format")
-
-            if need_mask:
-                data = [_masked(v, c.get("bad", "-")) for v in output_columns[c["label"]]]
-
-            # Quantity have to be handled in special way since they need
-            # to be merged into a single entity before they can be stored
-            # in a column.
-            if issubclass(PROPERTIES[c["attr"]].py_type, u.Quantity):
-                data = u.Quantity(data)
-            elif issubclass(PROPERTIES[c["attr"]].py_type, astropy.time.Time):
-                # Force to ISO string.
-                data = astropy.time.Time(data).isot
-
-            if need_mask:
-                data = MaskedColumn(name=c["label"], data=data, mask=mask, format=col_format)
-            else:
-                data = Column(data=data, name=c["label"], format=col_format)
-            qt[c["label"]] = data
-
-        print("\n".join(qt.pformat(max_lines=-1, max_width=-1)), file=outstream)
+        _dump_columns(output_columns, outstream)
 
     return okay, failed
