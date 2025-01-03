@@ -56,6 +56,9 @@ JIRA component
 Command Line Utilities
 ======================
 
+If an external package has a ``astro_metadata_translators`` entry point defined in its ``pyproject.toml`` that entry point can be loaded by name with the ``-p`` option to the command line tools instead of using a full python path to the translator code.
+The full set of available plugin names can be obtained using ``astrometadata --list-plugins translate``.
+
 .. click:: astro_metadata_translator.cli.astrometadata:main
   :prog: astrometadata
   :show-nested:

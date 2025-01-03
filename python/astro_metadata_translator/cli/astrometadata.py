@@ -17,6 +17,7 @@ import importlib
 import logging
 import os
 from collections.abc import Sequence
+from importlib.metadata import entry_points
 
 import click
 
@@ -73,12 +74,19 @@ content_option = click.option(
     "-p",
     "--packages",
     multiple=True,
-    help="Python packages to import to register additional translators. This is in addition"
+    help="Python packages or plugin names to import to register additional translators. This is in addition"
     f" to any packages specified in the {PACKAGES_VAR} environment variable (colon-separated"
-    " python module names).",
+    " python module names or plugin names).",
+)
+@click.option(
+    "--list-plugins/--no-list-plugins",
+    default=False,
+    help="List all available registered plugins. If true, the command will return immediately.",
 )
 @click.pass_context
-def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str]) -> None:
+def main(
+    ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str], list_plugins: bool
+) -> None:
     """Execute main click command-line."""
     ctx.ensure_object(dict)
 
@@ -87,6 +95,14 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
     # Traceback needs to be known to subcommands
     ctx.obj["TRACEBACK"] = traceback
 
+    plugins = {p.name: p for p in entry_points(group="astro_metadata_translators")}
+    if list_plugins:
+        if plugins:
+            print("Available translator plugins:")
+        for k in sorted(plugins):
+            print("* ", k)
+        return
+
     packages_set = set(packages)
     if PACKAGES_VAR in os.environ:
         new_packages = os.environ[PACKAGES_VAR].split(":")
@@ -94,6 +110,12 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
 
     # Process import requests
     for m in packages_set:
+        if m in plugins:
+            try:
+                # Loading is sufficient to register the translator.
+                plugins[m].load()
+            except Exception as e:
+                log.warning("Failed to import plugin %s: %s", m, e)
         try:
             importlib.import_module(m)
         except (ImportError, ModuleNotFoundError):
