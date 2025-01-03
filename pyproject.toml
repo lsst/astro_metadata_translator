@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "astro-metadata-translator"
-requires-python = ">=3.9.0"
+requires-python = ">=3.10.0"
 description = "A translator for astronomical metadata."
 license = {text = "BSD 3-Clause License"}
 authors = [
@@ -20,7 +20,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.9",
 ]
 keywords = ["lsst"]
 dynamic = ["version"]
