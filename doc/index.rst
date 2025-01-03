@@ -26,6 +26,9 @@ translation.
 A translation class does not need to reside in the
 ``astro_metadata_translator`` package.
 
+If an external package has a ``astro_metadata_translators`` entry point defined in its ``pyproject.toml`` that entry point will automatically be loaded to allow installed translators to be made available without user intervention.
+The entry point function itself is not run, it is sufficient to load it and let the translators register themselves with the base class.
+
 `~astro_metadata_translator.ObservationInfo` is a class summarizing the
 information from the translators.
 An instance of this class can be instantiated from
