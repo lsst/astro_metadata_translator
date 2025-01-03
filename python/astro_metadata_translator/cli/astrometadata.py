@@ -75,7 +75,7 @@ content_option = click.option(
     multiple=True,
     help="Python packages to import to register additional translators. This is in addition"
     f" to any packages specified in the {PACKAGES_VAR} environment variable (colon-separated"
-    " python module names).",
+    " python module names) or those registered automatically by entry points.",
 )
 @click.pass_context
 def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str]) -> None:
