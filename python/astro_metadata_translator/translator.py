@@ -23,6 +23,7 @@ import numbers
 import warnings
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
+from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import astropy.io.fits.card
@@ -581,9 +582,15 @@ class MetadataTranslator:
                 log.debug("Using translation class %s%s", name, file_msg)
                 return trans
 
+        plugins = [p.name for p in entry_points(group="astro_metadata_translators")]
+        plugin_msg = ""
+        if plugins:
+            plugin_names = ", ".join(plugins)
+            plugin_msg = f". (available plugins: {plugin_names})"
+
         raise ValueError(
             f"None of the registered translation classes {list(cls.translators.keys())}"
-            f" understood this header{file_msg}"
+            f" understood this header{file_msg}{plugin_msg}"
         )
 
     @classmethod
