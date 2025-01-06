@@ -218,6 +218,11 @@ def _dump_columns(output_columns: dict[str, list], outstream: IO | None = None) 
     qt = QTable()
     for c in TABLE_COLUMNS:
         data = output_columns[c["label"]]
+        # If the column has no content, assume no columns have content and
+        # abandon table output.
+        if not len(data):
+            return
+
         need_mask = False
         mask = []
         for v in data:
