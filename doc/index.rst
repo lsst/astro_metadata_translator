@@ -43,6 +43,22 @@ For details on the format of header correction files see `~astro_metadata_transl
   Some of the names could yet be changed for consistency with other data
   dictionaries.
 
+Entry Points
+============
+
+Translators in other packages are automatically registered with the translation system when they are imported.
+To simplify the user experience when specifying that an external translator should be imported by the command-line tooling, an external package can define entry points in its ``pyproject.toml``.
+
+For example:
+
+.. code-block:: toml
+
+  [project.entry-points.astro_metadata_translators]
+  obs_lsst = "lsst.obs.lsst.translators:_register_translators"
+
+The label (here ``obs_lsst``) is what the user can specify with ``-p``, and the entry point itself has two requirements.
+Firstly, on loading the entry point all the translators must be loaded (so that they register themselves) and secondly, the function specified must return the names of the translators.
+These names are used with the ``--list-plugins`` command-line option to give an indication to the user as to what instruments they support.
 
 Project info
 ============
