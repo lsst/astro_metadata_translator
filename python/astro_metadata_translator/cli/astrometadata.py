@@ -98,9 +98,17 @@ def main(
     plugins = {p.name: p for p in entry_points(group="astro_metadata_translators")}
     if list_plugins:
         if plugins:
-            print("Available translator plugins:")
-        for k in sorted(plugins):
-            print("* ", k)
+            print("Available translator plugins grouped by label (use '-p <label>' to activate):")
+        for label in sorted(plugins):
+            print(f"* {label}:")
+            try:
+                func = plugins[label].load()
+            except Exception as e:
+                print(f"  - Unable to load plugin [{e}]")
+                continue
+            translators = func()
+            for t in translators:
+                print(f"  - {t}")
         return
 
     packages_set = set(packages)
