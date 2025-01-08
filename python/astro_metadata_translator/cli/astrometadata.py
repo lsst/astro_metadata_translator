@@ -90,6 +90,12 @@ def main(
     """Execute main click command-line."""
     ctx.ensure_object(dict)
 
+    # Currently we set the log level globally for all Python loggers
+    # rather than having a metadata translator logger that all metadata
+    # translators can use as a parent. This can potentially cause spurious
+    # messages from numexpr. Try to hide those by setting the numexpr env var.
+    os.environ["NUMEXPR_MAX_THREADS"] = "8"
+
     logging.basicConfig(level=log_level)
 
     # Traceback needs to be known to subcommands
