@@ -115,7 +115,8 @@ def main(
             translators = func()
             for t in translators:
                 print(f"  - {t}")
-        return
+        # Exit early with good status.
+        raise click.exceptions.Exit(0)
 
     packages_set = set(packages)
     if PACKAGES_VAR in os.environ:
