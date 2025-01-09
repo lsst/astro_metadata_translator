@@ -60,7 +60,11 @@ content_option = click.option(
 )
 
 
-@click.group(name="astrometadata", context_settings=dict(help_option_names=["-h", "--help"]))
+@click.group(
+    name="astrometadata",
+    context_settings=dict(help_option_names=["-h", "--help"]),
+    invoke_without_command=True,
+)
 @click.option(
     "--log-level",
     type=click.Choice(["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"], case_sensitive=False),
@@ -116,6 +120,11 @@ def main(
             for t in translators:
                 print(f"  - {t}")
         # Exit early with good status.
+        raise click.exceptions.Exit(0)
+
+    if ctx.invoked_subcommand is None:
+        # Print the help if we were invoked without a subcommand.
+        click.echo(ctx.get_help())
         raise click.exceptions.Exit(0)
 
     packages_set = set(packages)
