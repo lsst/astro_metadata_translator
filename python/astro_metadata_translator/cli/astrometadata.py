@@ -107,6 +107,11 @@ def main(
 
     plugins = {p.name: p for p in entry_points(group="astro_metadata_translators")}
     if list_plugins:
+        from astro_metadata_translator import MetadataTranslator
+
+        print("Builtin translators:")
+        for t in sorted(MetadataTranslator.translators):
+            print(f"- {t}")
         if plugins:
             print("Available translator plugins grouped by label (use '-p <label>' to activate):")
         for label in sorted(plugins):
