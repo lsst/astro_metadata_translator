@@ -145,6 +145,7 @@ def main(
                 plugins[m].load()
             except Exception as e:
                 log.warning("Failed to import plugin %s: %s", m, e)
+            continue
         try:
             importlib.import_module(m)
         except (ImportError, ModuleNotFoundError):
