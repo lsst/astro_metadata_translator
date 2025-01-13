@@ -147,6 +147,12 @@ class TestCLI(unittest.TestCase):
             self.assertIsInstance(ind, ObservationGroup)
             self.assertGreaterEqual(len(ind), 10)
 
+    def test_list_plugins(self):
+        """Test that --list-plugins runs."""
+        result = self.runner.invoke(astrometadata, ["--list-plugins"])
+        self.assertEqual(result.exit_code, 0, click_result_msg(result))
+        self.assertIn("Builtin translators", result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,6 +17,7 @@ import importlib
 import logging
 import os
 from collections.abc import Sequence
+from importlib.metadata import entry_points
 
 import click
 
@@ -59,7 +60,11 @@ content_option = click.option(
 )
 
 
-@click.group(name="astrometadata", context_settings=dict(help_option_names=["-h", "--help"]))
+@click.group(
+    name="astrometadata",
+    context_settings=dict(help_option_names=["-h", "--help"]),
+    invoke_without_command=True,
+)
 @click.option(
     "--log-level",
     type=click.Choice(["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"], case_sensitive=False),
@@ -73,19 +78,59 @@ content_option = click.option(
     "-p",
     "--packages",
     multiple=True,
-    help="Python packages to import to register additional translators. This is in addition"
+    help="Python packages or plugin names to import to register additional translators. This is in addition"
     f" to any packages specified in the {PACKAGES_VAR} environment variable (colon-separated"
-    " python module names).",
+    " python module names or plugin names).",
+)
+@click.option(
+    "--list-plugins/--no-list-plugins",
+    default=False,
+    help="List all available registered plugins. If true, the command will return immediately.",
 )
 @click.pass_context
-def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str]) -> None:
+def main(
+    ctx: click.Context, log_level: int, traceback: bool, packages: Sequence[str], list_plugins: bool
+) -> None:
     """Execute main click command-line."""
     ctx.ensure_object(dict)
+
+    # Currently we set the log level globally for all Python loggers
+    # rather than having a metadata translator logger that all metadata
+    # translators can use as a parent. This can potentially cause spurious
+    # messages from numexpr. Try to hide those by setting the numexpr env var.
+    os.environ["NUMEXPR_MAX_THREADS"] = "8"
 
     logging.basicConfig(level=log_level)
 
     # Traceback needs to be known to subcommands
     ctx.obj["TRACEBACK"] = traceback
+
+    plugins = {p.name: p for p in entry_points(group="astro_metadata_translators")}
+    if list_plugins:
+        from astro_metadata_translator import MetadataTranslator
+
+        print("Builtin translators:")
+        for t in sorted(MetadataTranslator.translators):
+            print(f"- {t}")
+        if plugins:
+            print("Available translator plugins grouped by label (use '-p <label>' to activate):")
+        for label in sorted(plugins):
+            print(f"* {label}:")
+            try:
+                func = plugins[label].load()
+            except Exception as e:
+                print(f"  - Unable to load plugin [{e}]")
+                continue
+            translators = func()
+            for t in translators:
+                print(f"  - {t}")
+        # Exit early with good status.
+        raise click.exceptions.Exit(0)
+
+    if ctx.invoked_subcommand is None:
+        # Print the help if we were invoked without a subcommand.
+        click.echo(ctx.get_help())
+        raise click.exceptions.Exit(0)
 
     packages_set = set(packages)
     if PACKAGES_VAR in os.environ:
@@ -94,6 +139,13 @@ def main(ctx: click.Context, log_level: int, traceback: bool, packages: Sequence
 
     # Process import requests
     for m in packages_set:
+        if m in plugins:
+            try:
+                # Loading is sufficient to register the translator.
+                plugins[m].load()
+            except Exception as e:
+                log.warning("Failed to import plugin %s: %s", m, e)
+            continue
         try:
             importlib.import_module(m)
         except (ImportError, ModuleNotFoundError):
