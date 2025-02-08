@@ -10,6 +10,7 @@
 # license that can be found in the LICENSE file.
 
 """Transform ObservationInfo into "standard" FITS headers."""
+
 from __future__ import annotations
 
 __all__ = ("dates_to_fits", "group_to_fits", "info_to_fits")

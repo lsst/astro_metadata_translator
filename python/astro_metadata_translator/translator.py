@@ -1479,6 +1479,10 @@ for name, description in PROPERTIES.items():
         StubTranslator,
         f"to_{name}",
         _make_forwarded_stub_translator_method(
-            StubTranslator, name, definition.doc, definition.str_type, definition.py_type  # type: ignore
+            StubTranslator,  # type: ignore
+            name,
+            definition.doc,
+            definition.str_type,
+            definition.py_type,
         ),
     )
