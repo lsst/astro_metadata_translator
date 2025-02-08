@@ -61,6 +61,7 @@ target-version = ["py311"]
 [tool.isort]
 profile = "black"
 line_length = 110
+known_first_party = ["astro_metadata_translator"]
 
 [tool.lsst_versions]
 write_to = "python/astro_metadata_translator/version.py"
@@ -110,10 +111,14 @@ select = [
     "N",  # pep8-naming
     "W",  # pycodestyle
     "D",  # pydocstyle
+    "I",  # isort
 ]
 extend-select = [
     "RUF100", # Warn about unused noqa
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["astro_metadata_translator"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 79
