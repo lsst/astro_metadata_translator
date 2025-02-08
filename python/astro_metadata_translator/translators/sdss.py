@@ -68,7 +68,7 @@ class SdssTranslator(FitsTranslator):
     }
 
     _trivial_map = {
-        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "exposure_time": ("EXPTIME", {"unit": u.s}),
         "object": "OBJECT",
         "physical_filter": "FILTER",
         "exposure_id": "RUN",
@@ -254,7 +254,7 @@ class SdssTranslator(FitsTranslator):
     def to_detector_exposure_id(self) -> int | None:
         # Docstring will be inherited. Property defined in properties.py
         try:
-            frame_field_map = dict(r=0, i=2, u=4, z=6, g=8)
+            frame_field_map = {"r": 0, "i": 2, "u": 4, "z": 6, "g": 8}
             run = self._header["RUN"]
             filt = self._header["FILTER"]
             camcol = self._header["CAMCOL"]
@@ -264,7 +264,7 @@ class SdssTranslator(FitsTranslator):
             if self.to_observation_type() != "science":
                 return None
             raise (e)
-        filter_id_map = dict(u=0, g=1, r=2, i=3, z=4)
+        filter_id_map = {"u": 0, "g": 1, "r": 2, "i": 3, "z": 4}
         return ((int(run) * 10 + filter_id_map[filt]) * 10 + int(camcol)) * 10000 + int(field)
 
     @cache_translation

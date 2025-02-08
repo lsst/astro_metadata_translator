@@ -458,7 +458,7 @@ class ObservationInfo:
         state : `tuple`
             Pickled state.
         """
-        state = dict()
+        state = {}
         for p in self.all_properties:
             state[p] = getattr(self, p)
 

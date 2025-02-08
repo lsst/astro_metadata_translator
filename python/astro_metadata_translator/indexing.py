@@ -149,7 +149,7 @@ def calculate_index(
         raise ValueError(f"Unrecognized mode for index creation: {content_mode}")
 
     # Merge all the information into a primary plus diff
-    merged = merge_headers([hdr for hdr in headers.values()], mode="diff")
+    merged = merge_headers(list(headers.values()), mode="diff")
 
     # For a single file it is possible that the merged contents
     # are not a dict but are an LSST-style PropertyList. JSON needs
@@ -169,7 +169,7 @@ def calculate_index(
 
     # if there was only one file there will not be a diff but we
     # want it to look like there was.
-    diff_dict = merged.pop("__DIFF__", [dict()])
+    diff_dict = merged.pop("__DIFF__", [{}])
 
     # Put the common headers first in the output.
     # Store the mode so that we can work out how to read the file in

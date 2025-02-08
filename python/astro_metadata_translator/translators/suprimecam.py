@@ -58,10 +58,10 @@ class SuprimeCamTranslator(SubaruTranslator):
         "detector_serial": "DETECTOR",  # DETECTOR is the "call name"
         "boresight_airmass": "AIRMASS",
         "relative_humidity": "OUT-HUM",
-        "temperature": ("OUT-TMP", dict(unit=u.K)),
-        "pressure": ("OUT-PRS", dict(unit=u.hPa)),
-        "exposure_time": ("EXPTIME", dict(unit=u.s)),
-        "dark_time": ("EXPTIME", dict(unit=u.s)),  # Assume same as exposure time
+        "temperature": ("OUT-TMP", {"unit": u.K}),
+        "pressure": ("OUT-PRS", {"unit": u.hPa}),
+        "exposure_time": ("EXPTIME", {"unit": u.s}),
+        "dark_time": ("EXPTIME", {"unit": u.s}),  # Assume same as exposure time
     }
     """One-to-one mappings"""
 

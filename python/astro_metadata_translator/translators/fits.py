@@ -37,10 +37,10 @@ class FitsTranslator(MetadataTranslator):
     """
 
     # Direct translation from header key to standard form
-    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = dict(
-        instrument="INSTRUME",
-        telescope="TELESCOP",
-    )
+    _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
+        "instrument": "INSTRUME",
+        "telescope": "TELESCOP",
+    }
 
     @classmethod
     def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:

@@ -58,7 +58,7 @@ class IndexingTestCase(unittest.TestCase):
         self.assertIsInstance(obs_group, ObservationGroup)
         self.assertEqual(len(obs_group), 2)
         self.assertEqual(obs_group[0].instrument, "HSC")
-        self.assertEqual(set([obs_group[0].filename, obs_group[1].filename]), set(files))
+        self.assertEqual({obs_group[0].filename, obs_group[1].filename}, set(files))
         self.assertEqual(externally_processed, obs_group)
 
         metadata = process_index_data(index, force_metadata=True)
