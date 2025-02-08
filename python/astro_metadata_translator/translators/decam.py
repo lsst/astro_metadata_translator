@@ -241,7 +241,7 @@ class DecamTranslator(FitsTranslator):
             The value extracted from the calibration header for that field.
         """
         data = self._header["CALIB_ID"]
-        match = re.search(r".*%s=(\S+)" % field, data)
+        match = re.search(rf".*{field}=(\S+)", data)
         if not match:
             raise RuntimeError(f"Header CALIB_ID with value '{data}' has not field '{field}'")
         self._used_these_cards("CALIB_ID")

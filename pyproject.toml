@@ -113,6 +113,7 @@ select = [
     "D",  # pydocstyle
     "I",  # isort
     "RUF022",  # sort __all__
+    "UP",  # pyupgrade
 ]
 extend-select = [
     "RUF100", # Warn about unused noqa

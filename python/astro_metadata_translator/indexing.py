@@ -118,7 +118,7 @@ def index_files(
         # assert Mapping for mypy. We therefore assert that it's not the
         # other 2 options, which we were enforcing with the "simple" parameter
         # in the call to read_file_info.
-        assert not isinstance(simple, (str, ObservationInfo))
+        assert not isinstance(simple, str | ObservationInfo)
         content_by_file[file] = simple
 
     output = calculate_index(content_by_file, content)
