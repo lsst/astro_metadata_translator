@@ -177,7 +177,7 @@ def calculate_index(
         CONTENT_KEY: content_mode,
         COMMON_KEY: merged,
     }
-    for file, diff in zip(headers, diff_dict):
+    for file, diff in zip(headers, diff_dict, strict=True):
         output[file] = diff
 
     return output

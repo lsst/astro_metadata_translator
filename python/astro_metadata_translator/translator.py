@@ -355,8 +355,8 @@ class MetadataTranslator:
                 if checker is not None:
                     try:
                         checker(self)
-                    except Exception:
-                        raise KeyError(f"Could not find {keywords} in header")
+                    except Exception as e:
+                        raise KeyError(f"Could not find {keywords} in header") from e
                     return default
                 elif default is not None:
                     value = default
@@ -1474,7 +1474,7 @@ def _make_forwarded_stub_translator_method(
 
 # Create stub translation methods for each property.  These stubs warn
 # rather than fail and should be overridden by translators.
-for name, description in PROPERTIES.items():
+for name in PROPERTIES:
     setattr(
         StubTranslator,
         f"to_{name}",

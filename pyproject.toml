@@ -114,6 +114,7 @@ select = [
     "I",  # isort
     "RUF022",  # sort __all__
     "UP",  # pyupgrade
+    "B",  # bugbear
 ]
 extend-select = [
     "RUF100", # Warn about unused noqa

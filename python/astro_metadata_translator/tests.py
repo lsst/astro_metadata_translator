@@ -64,7 +64,7 @@ def pl_constructor(loader: yaml.Loader, node: yaml.SequenceNode) -> Any:
     pl: dict[str, Any] = {}
     yield pl
     state = loader.construct_sequence(node, deep=True)
-    for key, dtype, value, comment in state:
+    for key, dtype, value, _ in state:
         if dtype == "Double":
             pl[key] = float(value)
         elif dtype == "Int":
