@@ -20,8 +20,8 @@ define the getter methods.
 from __future__ import annotations
 
 __all__ = (
-    "PropertyDefinition",
     "PROPERTIES",
+    "PropertyDefinition",
 )
 
 from collections.abc import Callable

@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-__all__ = ("read_test_file", "MetadataAssertHelper")
+__all__ = ("MetadataAssertHelper", "read_test_file")
 
 import json
 import os

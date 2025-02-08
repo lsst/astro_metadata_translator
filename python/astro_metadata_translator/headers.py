@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-__all__ = ("merge_headers", "fix_header")
+__all__ = ("fix_header", "merge_headers")
 
 import copy
 import datetime

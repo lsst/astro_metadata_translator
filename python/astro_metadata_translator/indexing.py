@@ -14,12 +14,12 @@
 from __future__ import annotations
 
 __all__ = (
-    "read_index",
-    "read_sidecar",
     "calculate_index",
     "index_files",
     "process_index_data",
     "process_sidecar_data",
+    "read_index",
+    "read_sidecar",
 )
 
 import collections.abc

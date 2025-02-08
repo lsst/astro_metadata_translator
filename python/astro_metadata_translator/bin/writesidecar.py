@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-__all__ = ("write_sidecar_files", "write_sidecar_file")
+__all__ = ("write_sidecar_file", "write_sidecar_files")
 
 import logging
 import os
