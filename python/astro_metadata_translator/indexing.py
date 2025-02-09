@@ -14,12 +14,12 @@
 from __future__ import annotations
 
 __all__ = (
-    "read_index",
-    "read_sidecar",
     "calculate_index",
     "index_files",
     "process_index_data",
     "process_sidecar_data",
+    "read_index",
+    "read_sidecar",
 )
 
 import collections.abc
@@ -118,7 +118,7 @@ def index_files(
         # assert Mapping for mypy. We therefore assert that it's not the
         # other 2 options, which we were enforcing with the "simple" parameter
         # in the call to read_file_info.
-        assert not isinstance(simple, (str, ObservationInfo))
+        assert not isinstance(simple, str | ObservationInfo)
         content_by_file[file] = simple
 
     output = calculate_index(content_by_file, content)
@@ -149,7 +149,7 @@ def calculate_index(
         raise ValueError(f"Unrecognized mode for index creation: {content_mode}")
 
     # Merge all the information into a primary plus diff
-    merged = merge_headers([hdr for hdr in headers.values()], mode="diff")
+    merged = merge_headers(list(headers.values()), mode="diff")
 
     # For a single file it is possible that the merged contents
     # are not a dict but are an LSST-style PropertyList. JSON needs
@@ -169,7 +169,7 @@ def calculate_index(
 
     # if there was only one file there will not be a diff but we
     # want it to look like there was.
-    diff_dict = merged.pop("__DIFF__", [dict()])
+    diff_dict = merged.pop("__DIFF__", [{}])
 
     # Put the common headers first in the output.
     # Store the mode so that we can work out how to read the file in
@@ -177,7 +177,7 @@ def calculate_index(
         CONTENT_KEY: content_mode,
         COMMON_KEY: merged,
     }
-    for file, diff in zip(headers, diff_dict):
+    for file, diff in zip(headers, diff_dict, strict=True):
         output[file] = diff
 
     return output

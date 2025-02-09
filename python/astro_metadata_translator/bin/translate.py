@@ -137,7 +137,7 @@ def read_file(
             output_mode = output_mode[: -len("native")]
         else:
             # Rewrite md as simple dict for output
-            md = {k: v for k, v in md.items()}
+            md = dict(md.items())
 
         if output_mode in ("yaml", "fixed"):
             if output_mode == "fixed":

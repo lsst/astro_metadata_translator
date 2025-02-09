@@ -24,10 +24,10 @@ translation classes without using `MetadataTranslator` properties.
 from __future__ import annotations
 
 __all__ = (
-    "to_location_via_telescope_name",
-    "is_non_science",
-    "tracking_from_degree_headers",
     "altitude_from_zenith_distance",
+    "is_non_science",
+    "to_location_via_telescope_name",
+    "tracking_from_degree_headers",
 )
 
 import logging

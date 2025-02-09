@@ -62,7 +62,7 @@ content_option = click.option(
 
 @click.group(
     name="astrometadata",
-    context_settings=dict(help_option_names=["-h", "--help"]),
+    context_settings={"help_option_names": ["-h", "--help"]},
     invoke_without_command=True,
 )
 @click.option(

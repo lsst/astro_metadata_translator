@@ -62,8 +62,8 @@ class MegaPrimeTranslator(FitsTranslator):
 
     _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
         "physical_filter": "FILTER",
-        "dark_time": ("DARKTIME", dict(unit=u.s)),
-        "exposure_time": ("EXPTIME", dict(unit=u.s)),
+        "dark_time": ("DARKTIME", {"unit": u.s}),
+        "exposure_time": ("EXPTIME", {"unit": u.s}),
         "observation_id": "OBSID",
         "object": "OBJECT",
         "science_program": "RUNID",
@@ -71,7 +71,7 @@ class MegaPrimeTranslator(FitsTranslator):
         "visit_id": "EXPNUM",
         "detector_serial": "CCDNAME",
         "relative_humidity": ["RELHUMID", "HUMIDITY"],
-        "temperature": (["TEMPERAT", "AIRTEMP"], dict(unit=u.deg_C)),
+        "temperature": (["TEMPERAT", "AIRTEMP"], {"unit": u.deg_C}),
         "boresight_airmass": ["AIRMASS", "BORE-AIRMASS"],
     }
 

@@ -17,6 +17,7 @@ __all__ = ("ObservationGroup",)
 
 import logging
 from collections.abc import Callable, Iterable, Iterator, MutableMapping, MutableSequence
+from itertools import zip_longest
 from typing import TYPE_CHECKING, Any
 
 from .observationInfo import ObservationInfo
@@ -135,7 +136,7 @@ class ObservationGroup(MutableSequence):
         if not isinstance(other, ObservationGroup):
             return NotImplemented
 
-        for info1, info2 in zip(self, other):
+        for info1, info2 in zip_longest(self, other):
             if info1 != info2:
                 return False
         return True

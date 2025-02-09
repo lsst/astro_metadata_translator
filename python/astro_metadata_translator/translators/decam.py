@@ -60,23 +60,23 @@ class DecamTranslator(FitsTranslator):
     }
 
     _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
-        "exposure_time": ("EXPTIME", dict(unit=u.s)),
-        "dark_time": ("DARKTIME", dict(unit=u.s)),
-        "boresight_airmass": ("AIRMASS", dict(checker=is_non_science)),
+        "exposure_time": ("EXPTIME", {"unit": u.s}),
+        "dark_time": ("DARKTIME", {"unit": u.s}),
+        "boresight_airmass": ("AIRMASS", {"checker": is_non_science}),
         "observation_id": "OBSID",
         "object": "OBJECT",
         "science_program": "PROPID",
         "detector_num": "CCDNUM",
         "detector_serial": "DETECTOR",
         "detector_unique_name": "DETPOS",
-        "telescope": ("TELESCOP", dict(default="CTIO 4.0-m telescope")),
-        "instrument": ("INSTRUME", dict(default="DECam")),
+        "telescope": ("TELESCOP", {"default": "CTIO 4.0-m telescope"}),
+        "instrument": ("INSTRUME", {"default": "DECam"}),
         # Ensure that reasonable values are always available
-        "relative_humidity": ("HUMIDITY", dict(default=40.0, minimum=0, maximum=100.0)),
-        "temperature": ("OUTTEMP", dict(unit=u.deg_C, default=10.0, minimum=-10.0, maximum=40.0)),
+        "relative_humidity": ("HUMIDITY", {"default": 40.0, "minimum": 0, "maximum": 100.0}),
+        "temperature": ("OUTTEMP", {"unit": u.deg_C, "default": 10.0, "minimum": -10.0, "maximum": 40.0}),
         # Header says torr but seems to be mbar. Use hPa unit
         # which is the SI equivalent of mbar.
-        "pressure": ("PRESSURE", dict(unit=u.hPa, default=771.611, minimum=700.0, maximum=850.0)),
+        "pressure": ("PRESSURE", {"unit": u.hPa, "default": 771.611, "minimum": 700.0, "maximum": 850.0}),
     }
 
     # DECam has no formal concept of an observing day. To ensure that
@@ -241,7 +241,7 @@ class DecamTranslator(FitsTranslator):
             The value extracted from the calibration header for that field.
         """
         data = self._header["CALIB_ID"]
-        match = re.search(r".*%s=(\S+)" % field, data)
+        match = re.search(rf".*{field}=(\S+)", data)
         if not match:
             raise RuntimeError(f"Header CALIB_ID with value '{data}' has not field '{field}'")
         self._used_these_cards("CALIB_ID")

@@ -113,7 +113,7 @@ def find_files(files: Iterable[str], regex: str) -> list[str]:
     # Find all the files of interest
     for file in files:
         if os.path.isdir(file):
-            for root, dirs, files in os.walk(file):
+            for root, _, files in os.walk(file):
                 for name in files:
                     path = os.path.join(root, name)
                     if os.path.isfile(path) and file_regex.search(name):

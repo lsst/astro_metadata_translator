@@ -42,7 +42,7 @@ log = logging.getLogger(__name__)
 CORRECTIONS_RESOURCE_ROOT = "corrections"
 
 """Cache of version strings indexed by class."""
-_VERSION_CACHE: dict[type, str] = dict()
+_VERSION_CACHE: dict[type, str] = {}
 
 
 def cache_translation(func: Callable, method: str | None = None) -> Callable:
@@ -121,7 +121,7 @@ class MetadataTranslator:
     _const_map: dict[str, Any] = {}
     """Dict defining a constant for specified standard properties."""
 
-    translators: dict[str, type[MetadataTranslator]] = dict()
+    translators: dict[str, type[MetadataTranslator]] = {}
     """All registered metadata translation classes."""
 
     supported_instrument: str | None = None
@@ -355,8 +355,8 @@ class MetadataTranslator:
                 if checker is not None:
                     try:
                         checker(self)
-                    except Exception:
-                        raise KeyError(f"Could not find {keywords} in header")
+                    except Exception as e:
+                        raise KeyError(f"Could not find {keywords} in header") from e
                     return default
                 elif default is not None:
                     value = default
@@ -834,7 +834,7 @@ class MetadataTranslator:
         Uses the classes ``default_search_path`` property if defined.
         """
         if self.default_search_path is not None:
-            return [p for p in self.default_search_path]
+            return list(self.default_search_path)
         return []
 
     def is_key_ok(self, keyword: str | None) -> bool:
@@ -1474,11 +1474,15 @@ def _make_forwarded_stub_translator_method(
 
 # Create stub translation methods for each property.  These stubs warn
 # rather than fail and should be overridden by translators.
-for name, description in PROPERTIES.items():
+for name in PROPERTIES:
     setattr(
         StubTranslator,
         f"to_{name}",
         _make_forwarded_stub_translator_method(
-            StubTranslator, name, definition.doc, definition.str_type, definition.py_type  # type: ignore
+            StubTranslator,  # type: ignore
+            name,
+            definition.doc,
+            definition.str_type,
+            definition.py_type,
         ),
     )

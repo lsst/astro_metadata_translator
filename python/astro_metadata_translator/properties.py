@@ -17,11 +17,12 @@ base class can use knowledge of these properties to predefine translation
 stubs with documentation attached, and `ObservationInfo` can automatically
 define the getter methods.
 """
+
 from __future__ import annotations
 
 __all__ = (
-    "PropertyDefinition",
     "PROPERTIES",
+    "PropertyDefinition",
 )
 
 from collections.abc import Callable

@@ -196,7 +196,7 @@ class ObservationInfo:
                 raise ValueError("Cannot request no properties be calculated.")
             if not subset.issubset(full_set):
                 raise ValueError(
-                    "Requested subset is not a subset of known properties. " f"Got extra: {subset - full_set}"
+                    f"Requested subset is not a subset of known properties. Got extra: {subset - full_set}"
                 )
             properties = subset
         else:
@@ -206,7 +206,7 @@ class ObservationInfo:
             required = set()
         else:
             if not required.issubset(full_set):
-                raise ValueError("Requested required properties include unknowns: " f"{required - full_set}")
+                raise ValueError(f"Requested required properties include unknowns: {required - full_set}")
 
         # Loop over each property and request the translated form
         for t in properties:
@@ -218,11 +218,11 @@ class ObservationInfo:
                 value = getattr(translator, method)()
             except NotImplementedError as e:
                 raise NotImplementedError(
-                    f"No translation exists for property '{t}'" f" using translator {translator.__class__}"
+                    f"No translation exists for property '{t}' using translator {translator.__class__}"
                 ) from e
             except Exception as e:
                 err_msg = (
-                    f"Error calculating property '{t}' using translator {translator.__class__}" f"{file_info}"
+                    f"Error calculating property '{t}' using translator {translator.__class__}{file_info}"
                 )
                 if pedantic or t in required:
                     raise KeyError(err_msg) from e
@@ -251,7 +251,7 @@ class ObservationInfo:
 
     @staticmethod
     def _get_all_properties(
-        extensions: dict[str, PropertyDefinition] | None = None
+        extensions: dict[str, PropertyDefinition] | None = None,
     ) -> dict[str, PropertyDefinition]:
         """Return the definitions of all properties.
 
@@ -458,7 +458,7 @@ class ObservationInfo:
         state : `tuple`
             Pickled state.
         """
-        state = dict()
+        state = {}
         for p in self.all_properties:
             state[p] = getattr(self, p)
 
