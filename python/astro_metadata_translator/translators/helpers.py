@@ -149,12 +149,16 @@ def altaz_from_degree_headers(
     altazpairs: tuple[tuple[str, str], ...],
     obstime: astropy.time.Time,
     is_zd: set[str] | None = None,
+    max_alt: float = 90.0,
+    min_alt: float = 0.0,
 ) -> AltAz:
     """Calculate the altitude/azimuth coordinates from lists of headers.
 
-    If the altitude is found but is greater than 90 deg, it will be returned
-    fixed at 90 deg.
-    If the altitude or azimuth are negative and this is a calibration
+    If the altitude is found but is greater than the maximum allowed value,
+    it will be returned fixed at that maximum value.
+    If the altitude is found but is less than the minimum allowed value, it
+    will be returned clipped to that minimum value.
+    If the azimuth is less than -360.0 and this is not a science
     observation, `None` will be returned.
 
     Parameters
@@ -167,6 +171,15 @@ def altaz_from_degree_headers(
     is_zd : `set`, optional
         Contains keywords that correspond to zenith distances rather than
         altitude.
+    max_alt : `float`, optional
+        Maximum allowed altitude in degrees. Will be clamped to this value if
+        out of range. This value will be forced to +90 if it exceeds +90
+        since `astropy.coordinates.AltAz` does not allow a value larger than
+        this even if that is caused by a telescope that can lean back at
+        Zenith.
+    min_alt : `float`, optional
+        Minimum allowed altitude in degrees. Will be clamped to this value if
+        out of range.
 
     Returns
     -------
@@ -181,6 +194,8 @@ def altaz_from_degree_headers(
         No AltAz keywords were found and this observation is a science
         observation.
     """
+    if max_alt > 90.0:
+        max_alt = 90.0
     for alt_key, az_key in altazpairs:
         if self.are_keys_ok([az_key, alt_key]):
             az = self._header[az_key]
@@ -190,13 +205,16 @@ def altaz_from_degree_headers(
             if is_zd and alt_key in is_zd:
                 alt = altitude_from_zenith_distance(alt * u.deg).value
 
-            if az < -360.0 or alt < 0.0:
+            if az < -360.0 or alt < -90.0:
                 # Break out of loop since we have found values but
-                # they are bad.
+                # they are not believable
                 break
-            if alt > 90.0:
-                log.warning("%s: Clipping altitude (%f) at 90 degrees", self._log_prefix, alt)
-                alt = 90.0
+            if alt > max_alt:
+                log.info("%s: Clipping altitude (%f) at %f degrees", self._log_prefix, alt, max_alt)
+                alt = max_alt
+            elif alt < min_alt:
+                log.info("%s: Clipping altitude (%f) at %f degrees", self._log_prefix, alt, min_alt)
+                alt = min_alt
 
             altaz = AltAz(az * u.deg, alt * u.deg, obstime=obstime, location=self.to_location())
             self._used_these_cards(az_key, alt_key)
