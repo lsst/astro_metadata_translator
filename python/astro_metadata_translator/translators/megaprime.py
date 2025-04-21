@@ -64,6 +64,7 @@ class MegaPrimeTranslator(FitsTranslator):
         "physical_filter": "FILTER",
         "dark_time": ("DARKTIME", {"unit": u.s}),
         "exposure_time": ("EXPTIME", {"unit": u.s}),
+        "exposure_time_requested": ("EXPREQ", {"unit": u.s}),
         "observation_id": "OBSID",
         "object": "OBJECT",
         "science_program": "RUNID",

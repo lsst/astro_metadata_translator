@@ -1043,6 +1043,20 @@ class MetadataTranslator:
         return "unknown"
 
     @cache_translation
+    def to_exposure_time_requested(self) -> astropy.units.Quantity:
+        """Return the requested exposure time in seconds.
+
+        Base class implementations returns the same value as ``exposure_time``.
+        This information may not be available for all instruments.
+
+        Returns
+        -------
+        exptime : `astropy.units.Quantity`
+            The recorded exposure time in seconds.
+        """
+        return self.to_exposure_time()
+
+    @cache_translation
     def to_altaz_end(self) -> astropy.coordinates.AltAz | None:
         """Return the AltAz for the end of the observation.
 

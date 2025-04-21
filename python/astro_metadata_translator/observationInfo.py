@@ -115,6 +115,7 @@ class ObservationInfo:
         datetime_end: astropy.time.Time
         exposure_group: str
         exposure_time: astropy.units.Quantity
+        exposure_time_requested: astropy.units.Quantity
         dark_time: astropy.units.Quantity
         boresight_airmass: float
         boresight_rotation_angle: astropy.units.Quantity
