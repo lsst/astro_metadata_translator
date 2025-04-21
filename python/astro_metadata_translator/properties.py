@@ -550,6 +550,13 @@ may not be.""",
         altaz_to_simple,
         simple_to_altaz,
     ),
+    "altaz_end": PropertyDefinition(
+        "Telescope boresight azimuth and elevation at end of observation.",
+        "astropy.coordinates.AltAz",
+        astropy.coordinates.AltAz,
+        altaz_to_simple,
+        simple_to_altaz,
+    ),
     "science_program": PropertyDefinition("Observing program (survey or proposal) identifier.", "str", str),
     "observation_type": PropertyDefinition(
         "Type of observation (currently: science, dark, flat, bias, focus).",

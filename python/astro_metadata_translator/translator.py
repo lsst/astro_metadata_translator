@@ -1042,6 +1042,20 @@ class MetadataTranslator:
             return "science"
         return "unknown"
 
+    @cache_translation
+    def to_altaz_end(self) -> astropy.coordinates.AltAz | None:
+        """Return the AltAz for the end of the observation.
+
+        Base class implementation returns `None`. Subclasses should override
+        if the value is known.
+
+        Returns
+        -------
+        altaz : `astropy.coordinates.AltAz` or `None`
+            The AltAz for the end of the observation.
+        """
+        return None
+
     @classmethod
     def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
         """Calculate the observing day offset to apply for a given observation.

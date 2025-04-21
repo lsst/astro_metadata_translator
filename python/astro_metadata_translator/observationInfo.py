@@ -131,6 +131,7 @@ class ObservationInfo:
         relative_humidity: float
         tracking_radec: astropy.coordinates.SkyCoord
         altaz_begin: astropy.coordinates.AltAz
+        altaz_end: astropy.coordinates.AltAz | None
         science_program: str
         observation_counter: int
         observation_reason: str
