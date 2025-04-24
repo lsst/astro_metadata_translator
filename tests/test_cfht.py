@@ -44,6 +44,7 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                     exposure_id=1038843,
                     exposure_group="1038843",
                     exposure_time=615.037 * u.s,
+                    exposure_time_requested=615.0 * u.s,
                     focus_z=0.0 * u.mm,  # default value
                     group_counter_end=1038843,
                     group_counter_start=1038843,
@@ -79,6 +80,7 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
                     exposure_id=849375,
                     exposure_group="849375",
                     exposure_time=300.202 * u.s,
+                    exposure_time_requested=300.0 * u.s,
                     focus_z=0.0 * u.mm,  # default value
                     group_counter_end=849375,
                     group_counter_start=849375,

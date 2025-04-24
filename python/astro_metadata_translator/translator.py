@@ -1042,6 +1042,34 @@ class MetadataTranslator:
             return "science"
         return "unknown"
 
+    @cache_translation
+    def to_exposure_time_requested(self) -> astropy.units.Quantity:
+        """Return the requested exposure time in seconds.
+
+        Base class implementations returns the same value as ``exposure_time``.
+        This information may not be available for all instruments.
+
+        Returns
+        -------
+        exptime : `astropy.units.Quantity`
+            The recorded exposure time in seconds.
+        """
+        return self.to_exposure_time()
+
+    @cache_translation
+    def to_altaz_end(self) -> astropy.coordinates.AltAz | None:
+        """Return the AltAz for the end of the observation.
+
+        Base class implementation returns `None`. Subclasses should override
+        if the value is known.
+
+        Returns
+        -------
+        altaz : `astropy.coordinates.AltAz` or `None`
+            The AltAz for the end of the observation.
+        """
+        return None
+
     @classmethod
     def observing_date_to_offset(cls, observing_date: astropy.time.Time) -> astropy.time.TimeDelta | None:
         """Calculate the observing day offset to apply for a given observation.

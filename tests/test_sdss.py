@@ -42,6 +42,7 @@ class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
                     exposure_id=6377,
                     exposure_group="6377",
                     exposure_time=53.907456 * u.s,
+                    exposure_time_requested=53.907456 * u.s,
                     group_counter_end=0,
                     group_counter_start=0,
                     has_simulated_content=False,

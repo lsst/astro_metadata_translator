@@ -90,7 +90,7 @@
 - [EXPNUM, Int, 1038843, CFHT odometer number]
 - [OBSID, Int, 1038843, CFHT odometer number]
 - [XPTIME, Double, 615.037, Measured integration time (seconds)]
-- [EXPREQ, Double, 615.0, Requested integration time (seconds)]
+- [XPREQ, Double, 615.0, Requested integration time (seconds)]
 - [EXPMEAS, Double, 615.037, Measured shutter time (seconds)]
 - [DARKTIME, Double, 615.0, Dark current time (seconds)]
 - [ORIGIN, String, CFHT, Canada-France-Hawaii Telescope]

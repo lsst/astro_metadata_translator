@@ -61,6 +61,7 @@ class DecamTranslator(FitsTranslator):
 
     _trivial_map: dict[str, str | list[str] | tuple[Any, ...]] = {
         "exposure_time": ("EXPTIME", {"unit": u.s}),
+        "exposure_time_requested": ("EXPREQ", {"unit": u.s}),
         "dark_time": ("DARKTIME", {"unit": u.s}),
         "boresight_airmass": ("AIRMASS", {"checker": is_non_science}),
         "observation_id": "OBSID",
