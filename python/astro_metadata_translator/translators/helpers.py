@@ -48,6 +48,11 @@ log = logging.getLogger(__name__)
 def to_location_via_telescope_name(self: MetadataTranslator) -> EarthLocation:
     """Calculate the observatory location via the telescope name.
 
+    Parameters
+    ----------
+    self : `MetadataTranslator`
+        The translator being used.
+
     Returns
     -------
     loc : `astropy.coordinates.EarthLocation`
@@ -58,6 +63,11 @@ def to_location_via_telescope_name(self: MetadataTranslator) -> EarthLocation:
 
 def is_non_science(self: MetadataTranslator) -> None:
     """Raise an exception if this is a science observation.
+
+    Parameters
+    ----------
+    self : `MetadataTranslator`
+        The translator being used.
 
     Raises
     ------
@@ -94,6 +104,8 @@ def tracking_from_degree_headers(
 
     Parameters
     ----------
+    self : `MetadataTranslator`
+        The translator being used.
     radecsys : `list` or `tuple`
         Header keywords to try corresponding to the tracking system.  If none
         match ICRS will be assumed.
@@ -163,6 +175,8 @@ def altaz_from_degree_headers(
 
     Parameters
     ----------
+    self : `MetadataTranslator`
+        The translator being used.
     altazpairs : `tuple` of `str`
         Pairs of keywords specifying Alt/Az in degrees. Each pair is tried
         in turn.
