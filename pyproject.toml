@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "astro-metadata-translator"
 requires-python = ">=3.10.0"
 description = "A translator for astronomical metadata."
-license = {text = "BSD 3-Clause License"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 authors = [
     {name="Rubin Observatory Data Management", email="dm-admin@lists.lsst.org"},
 ]
@@ -14,7 +15,6 @@ readme = "README.md"
 classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Astronomy",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
@@ -43,7 +43,6 @@ astrometadata = "astro_metadata_translator.cli.astrometadata:main"
 
 [tool.setuptools]
 zip-safe = true
-license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["python"]
