@@ -78,11 +78,51 @@ jobs:
           password: ${{ secrets.LTD_PASSWORD }}
           username: ${{ secrets.LTD_USERNAME }}
 
-  pypi:
-
+  check-changes:
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
     runs-on: ubuntu-latest
-    needs: [build_and_test]
+    permissions:
+      contents: read
     if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check if weekly changed
+        id: check
+        run: |
+          # Get SHA hashes for all weekly tags
+          weekly_sha=$(git tag -l 'w.*' | while read tag; do
+            git rev-list -n 1 "${tag}"
+          done)
+
+          echo "Weekly tag SHA ${weekly_sha}"
+          # Extract the current tag and its SHA
+          current_tag=${GITHUB_REF#refs/tags/}
+          echo "Current tag: ${current_tag}"
+          current_sha=$(git rev-list -1 "${current_tag}") || echo "no_value"
+          echo "Current sha: ${current_sha}"
+          # Count occurrences of the current SHA in the weekly SHA list
+          n=$(echo "${weekly_sha}" | grep -c "${current_sha}") || echo "0"
+          echo "Current tag ${current_tag} (${current_sha}) SHA found ${n} time(s)"
+
+          # Determine whether to skip the upload based on the count
+          if [ "${n}" -gt 1 ]; then
+            echo "Skip upload"
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Enable upload"
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+  pypi:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    needs: [build_and_test, check-changes]
+    permissions:
+      id-token: write
+    if: "${{ ! startsWith(github.ref, 'refs/tags/w.') || needs.check-changes.outputs.skip == 'false' }}"
 
     steps:
       - uses: actions/checkout@v5
