@@ -14,7 +14,6 @@ from __future__ import annotations
 __all__ = ("MetadataAssertHelper", "read_test_file")
 
 import json
-import os
 import pickle
 import warnings
 from collections.abc import MutableMapping
@@ -26,6 +25,7 @@ import yaml
 from astropy.io.fits import Header
 from astropy.io.fits.verify import VerifyWarning
 from astropy.time import Time
+from lsst.resources import ResourcePath
 
 from astro_metadata_translator import ObservationInfo
 
@@ -42,6 +42,9 @@ try:
     Loader = yaml.FullLoader
 except AttributeError:
     Loader = yaml.Loader
+
+if TYPE_CHECKING:
+    from lsst.resources import ResourcePathExpression
 
 
 # Define a YAML loader for lsst.daf.base.PropertySet serializations that
@@ -79,7 +82,9 @@ if daf_base is None:
     yaml.add_constructor("lsst.daf.base.PropertyList", pl_constructor, Loader=Loader)  # type: ignore
 
 
-def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str, Any]:
+def read_test_file(
+    filename: ResourcePathExpression, dir: ResourcePathExpression | None = None
+) -> MutableMapping[str, Any]:
     """Read the named test file relative to the location of this helper.
 
     Parameters
@@ -95,15 +100,18 @@ def read_test_file(filename: str, dir: str | None = None) -> MutableMapping[str,
     header : `dict`-like
         Header read from file.
     """
-    if dir is not None and not os.path.isabs(filename):
-        filename = os.path.join(dir, filename)
-    with open(filename) as fd:
-        if filename.endswith(".yaml"):
-            header = yaml.load(fd, Loader=Loader)
-        elif filename.endswith(".json"):
-            header = json.load(fd)
-        else:
-            raise RuntimeError(f"Unrecognized file format: {filename}")
+    uri = ResourcePath(filename, forceAbsolute=False, forceDirectory=False)
+    if dir is not None and not uri.isabs():
+        test_dir = ResourcePath(dir, forceDirectory=True)
+        uri = test_dir.join(uri, forceDirectory=False)
+    content = uri.read()
+    ext = uri.getExtension()
+    if ext == ".yaml":
+        header = yaml.load(content, Loader=Loader)
+    elif ext == ".json":
+        header = json.loads(content)
+    else:
+        raise RuntimeError(f"Unrecognized file format: {uri}")
 
     # Cannot directly check for Mapping because PropertyList is not one
     if not hasattr(header, "items"):

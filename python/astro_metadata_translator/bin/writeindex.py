@@ -19,6 +19,8 @@ import os
 from collections.abc import MutableMapping, Sequence
 from typing import IO
 
+from lsst.resources import ResourcePath
+
 from ..file_helpers import find_files
 from ..indexing import index_files
 
@@ -87,15 +89,19 @@ def write_index_files(
 
     failed = []
     okay = []
-    files_per_directory: MutableMapping[str, list[str]] = {}
+    files_per_directory: MutableMapping[ResourcePath, list[ResourcePath]] = {}
 
     # Group each file by directory if no explicit output path
     if outpath is None:
         for path in found_files:
-            head, tail = os.path.split(path)
-            files_per_directory.setdefault(head, []).append(tail)
+            head, tail = path.split()
+            files_per_directory.setdefault(head, []).append(ResourcePath(tail, forceAbsolute=False))
     else:
-        files_per_directory["."] = list(found_files)
+        # We want the requested files to be paths relative to the current
+        # directory. For now this assumes that all the input files are
+        # local -- we are not trying to discover a shared root directory.
+        cwd = ResourcePath(".", forceAbsolute=True, forceDirectory=True)
+        files_per_directory[cwd] = list(found_files)
 
     # Extract translated metadata for each file in each directory
     for directory, files_in_dir in files_per_directory.items():
@@ -113,11 +119,10 @@ def write_index_files(
 
         # Write the index file
         if outpath is None:
-            index_file = os.path.join(directory, "_index.json")
+            index_file = directory.join("_index.json")
         else:
-            index_file = outpath
-        with open(index_file, "w") as fd:
-            print(json.dumps(output), file=fd)
-            log.info("Wrote index file to %s", index_file)
+            index_file = ResourcePath(outpath, forceAbsolute=False)
+        index_file.write(json.dumps(output).encode())
+        log.info("Wrote index file to %s", index_file)
 
     return okay, failed

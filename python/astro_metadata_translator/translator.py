@@ -35,6 +35,7 @@ from .properties import PROPERTIES, PropertyDefinition
 
 if TYPE_CHECKING:
     import astropy.coordinates
+    from lsst.resources import ResourcePathExpression
 
 log = logging.getLogger(__name__)
 
@@ -1298,7 +1299,7 @@ class MetadataTranslator:
 
     @classmethod
     def determine_translatable_headers(
-        cls, filename: str, primary: MutableMapping[str, Any] | None = None
+        cls, filename: ResourcePathExpression, primary: MutableMapping[str, Any] | None = None
     ) -> Iterator[MutableMapping[str, Any]]:
         """Given a file return all the headers usable for metadata translation.
 
