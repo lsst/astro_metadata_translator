@@ -72,7 +72,7 @@ def _read_fits_metadata_astropy(
 
     Parameters
     ----------
-    file : `str`
+    file : `str` or `lsst.resources.ResourcePathExpression`
         The file to read.
     hdu : `int`
         The header number to read.
@@ -113,7 +113,7 @@ def _read_fits_metadata(
 
     Parameters
     ----------
-    file : `str`
+    file : `str` or `lsst.resources.ResourcePathExpression`
         The file to read.
     hdu : `int`
         The header number to read.
@@ -139,7 +139,7 @@ def find_files(files: Iterable[ResourcePathExpression], regex: str) -> list[Reso
 
     Parameters
     ----------
-    files : iterable of `str`
+    files : iterable of `lsst.resources.ResourcePathExpression`
         The files or directories from which the headers are to be read.
     regex : `str`
         Regular expression string used to filter files when a directory is
@@ -147,7 +147,7 @@ def find_files(files: Iterable[ResourcePathExpression], regex: str) -> list[Reso
 
     Returns
     -------
-    found_files : `list` of `ResourcePath`
+    found_files : `list` of `lsst.resources.ResourcePath`
         The files that were found.
     """
     file_regex = re.compile(regex)
@@ -171,7 +171,7 @@ def read_basic_metadata_from_file(
 
     Parameters
     ----------
-    file : `str`
+    file : `str` or `lsst.resources.ResourcePathExpression`
         Name of file to read. Can be FITS, YAML or JSON. YAML or JSON must be
         a simple top-level dict.
     hdrnum : `int`

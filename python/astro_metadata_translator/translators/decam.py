@@ -440,7 +440,7 @@ class DecamTranslator(FitsTranslator):
 
         Parameters
         ----------
-        filename : `str`
+        filename : `str` or `lsst.resources.ResourcePathExpression`
             Path to a file in a format understood by this translator.
         primary : `dict`-like, optional
             The primary header obtained by the caller. This is sometimes

@@ -59,7 +59,7 @@ def index_files(
 
     Parameters
     ----------
-    files : iterable of `str`
+    files : iterable of `lsst.resources.ResourcePathExpression`
         Paths to the files to be indexed. They do not have to all be
         in a single directory but all content will be indexed into a single
         index.

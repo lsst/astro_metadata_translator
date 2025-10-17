@@ -89,7 +89,7 @@ def read_test_file(
 
     Parameters
     ----------
-    filename : `str`
+    filename : `str` or `lsst.resources.ResourcePathExpression`
         Name of file in the data directory.
     dir : `str`, optional
         Directory from which to read file. Current directory used if none

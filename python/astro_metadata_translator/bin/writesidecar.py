@@ -39,7 +39,7 @@ def write_sidecar_file(
 
     Parameters
     ----------
-    file : `str`
+    file : `str` or `lsst.resources.ResourcePathExpression`
         The file from which the header is to be read.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
