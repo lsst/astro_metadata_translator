@@ -68,11 +68,11 @@ Standard output:
         self.assertEqual((len(okay), len(failed)), expected, msg=msg)
 
     def test_translate_header(self):
-        """Translate some header files."""
+        """Translate some header files. Use URI for test dir."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.INFO) as cm:
                 okay, failed = translate_or_dump_headers(
-                    [TESTDATA],
+                    [f"file://localhost{TESTDATA}"],
                     r"^fitsheader.*yaml$",
                     0,
                     False,
