@@ -1,2 +1,4 @@
 documenteer[pipelines]>=0.8.0,<0.9.0
 ltd-conveyor
+sphinx-automodapi==0.19
+sphinx-prompt==1.6.0
