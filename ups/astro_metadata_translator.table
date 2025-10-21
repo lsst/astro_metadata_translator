@@ -1,4 +1,5 @@
 setupRequired(sconsUtils)
+setupRequired(resources)
 setupOptional(daf_base)
 
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
