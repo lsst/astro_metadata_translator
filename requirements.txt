@@ -1,3 +1,5 @@
 astropy >=3.0.5
 pyyaml >=3.13
 click >=8
+lsst-resources
+fsspec

@@ -25,6 +25,7 @@ import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle, EarthLocation, UnknownSiteException
 from astropy.io import fits
+from lsst.resources import ResourcePath
 
 from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
@@ -32,6 +33,7 @@ from .helpers import altaz_from_degree_headers, is_non_science, tracking_from_de
 
 if TYPE_CHECKING:
     import astropy.coordinates
+    from lsst.resources import ResourcePathExpression
 
 log = logging.getLogger(__name__)
 
@@ -425,7 +427,7 @@ class DecamTranslator(FitsTranslator):
 
     @classmethod
     def determine_translatable_headers(
-        cls, filename: str, primary: MutableMapping[str, Any] | None = None
+        cls, filename: ResourcePathExpression, primary: MutableMapping[str, Any] | None = None
     ) -> Iterator[MutableMapping[str, Any]]:
         """Given a file return all the headers usable for metadata translation.
 
@@ -438,7 +440,7 @@ class DecamTranslator(FitsTranslator):
 
         Parameters
         ----------
-        filename : `str`
+        filename : `str` or `lsst.resources.ResourcePathExpression`
             Path to a file in a format understood by this translator.
         primary : `dict`-like, optional
             The primary header obtained by the caller. This is sometimes
@@ -472,7 +474,9 @@ class DecamTranslator(FitsTranslator):
         # Since we want to scan many HDUs we use astropy directly to keep
         # the file open rather than continually opening and closing it
         # as we go to each HDU.
-        with fits.open(filename) as fits_file:
+        uri = ResourcePath(filename, forceDirectory=False)
+        fs, fspath = uri.to_fsspec()
+        with fs.open(fspath) as f, fits.open(f) as fits_file:
             # Astropy does not automatically handle the INHERIT=T in
             # DECam headers so the primary header must be merged.
             first_pass = True

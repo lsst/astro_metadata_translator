@@ -22,18 +22,21 @@ __all__ = (
     "read_sidecar",
 )
 
-import collections.abc
 import json
 import logging
-import os
 from collections.abc import MutableMapping, Sequence
 from copy import deepcopy
-from typing import IO, Any, Literal, overload
+from typing import IO, TYPE_CHECKING, Any, Literal, overload
+
+from lsst.resources import ResourcePath
 
 from .file_helpers import read_file_info
 from .headers import merge_headers
 from .observationGroup import ObservationGroup
 from .observationInfo import ObservationInfo
+
+if TYPE_CHECKING:
+    from lsst.resources import ResourcePathExpression
 
 log = logging.getLogger(__name__)
 
@@ -42,8 +45,8 @@ CONTENT_KEY = "__CONTENT__"
 
 
 def index_files(
-    files: Sequence[str],
-    root: str | None,
+    files: Sequence[ResourcePathExpression],
+    root: ResourcePathExpression | None,
     hdrnum: int,
     print_trace: bool,
     content: str,
@@ -56,7 +59,7 @@ def index_files(
 
     Parameters
     ----------
-    files : iterable of `str`
+    files : iterable of `lsst.resources.ResourcePathExpression`
         Paths to the files to be indexed. They do not have to all be
         in a single directory but all content will be indexed into a single
         index.
@@ -99,19 +102,22 @@ def index_files(
 
     failed: list[str] = []
     okay: list[str] = []
+    root_uri = ResourcePath(root, forceDirectory=True) if root else None
 
     content_by_file: MutableMapping[str, MutableMapping[str, Any]] = {}  # Mapping of path to file content
     for file in sorted(files):
-        if root is not None:
-            path = os.path.join(root, file)
+        uri = ResourcePath(file, forceAbsolute=False, forceDirectory=False)
+        if root_uri is not None:
+            path = root_uri.join(uri)
         else:
-            path = file
+            path = uri
         simple = read_file_info(path, hdrnum, print_trace, content, "simple", outstream)
+        path_key = path.ospath if path.isLocal else str(path)
         if simple is None:
-            failed.append(path)
+            failed.append(path_key)
             continue
         else:
-            okay.append(path)
+            okay.append(path_key)
 
         # Store the information indexed by the filename within dir
         # We may get a PropertyList here and can therefore not just
@@ -119,7 +125,13 @@ def index_files(
         # other 2 options, which we were enforcing with the "simple" parameter
         # in the call to read_file_info.
         assert not isinstance(simple, str | ObservationInfo)
-        content_by_file[file] = simple
+        # Force string as key since this is required to be a relative path.
+        # Make it relative to the given directory, else it might be absolute.
+        if root_uri is not None:
+            relative = path.relative_to(root_uri)
+            if relative is not None:
+                path_key = relative
+        content_by_file[path_key] = simple
 
     output = calculate_index(content_by_file, content)
 
@@ -154,9 +166,10 @@ def calculate_index(
     # For a single file it is possible that the merged contents
     # are not a dict but are an LSST-style PropertyList. JSON needs
     # dict though.  mypy can't know about PropertyList so we must ignore
-    # the type error.
-    if not isinstance(merged, collections.abc.Mapping):
-        merged = dict(merged)  # type: ignore
+    # the type error. We also need to force Astropy Header to a dict.
+    if not isinstance(merged, dict):
+        # dict(Header) brings along additional keys that can't be serialized.
+        merged = {k: v for k, v in merged.items()}
 
     # The structure to write to file is intended to look like (in YAML):
     # __COMMON__:

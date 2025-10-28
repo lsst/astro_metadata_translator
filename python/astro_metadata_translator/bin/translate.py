@@ -23,17 +23,21 @@ import math
 import traceback
 from collections import defaultdict
 from collections.abc import Sequence
-from typing import IO, Any
+from typing import IO, TYPE_CHECKING, Any
 
 import astropy.time
 import astropy.units as u
 import yaml
 from astropy.table import Column, MaskedColumn, QTable
+from lsst.resources import ResourcePath
 
 from astro_metadata_translator import MetadataTranslator, ObservationInfo, fix_header
 
 from ..file_helpers import find_files, read_basic_metadata_from_file
 from ..properties import PROPERTIES
+
+if TYPE_CHECKING:
+    from lsst.resources import ResourcePathExpression
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +78,7 @@ TABLE_COLUMNS = (
 
 
 def read_file(
-    file: str,
+    file: ResourcePathExpression,
     hdrnum: int,
     print_trace: bool,
     output_columns: defaultdict[str, list],
@@ -86,7 +90,7 @@ def read_file(
 
     Parameters
     ----------
-    file : `str`
+    file : `str` or `lsst.resources.ResourcePathExpression`
         The file from which the header is to be read.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
@@ -127,10 +131,11 @@ def read_file(
     if output_mode != "table":
         log.info("Analyzing %s...", file)
 
+    uri = ResourcePath(file, forceDirectory=False)
     try:
-        md = read_basic_metadata_from_file(file, hdrnum, can_raise=True)
+        md = read_basic_metadata_from_file(uri, hdrnum, can_raise=True)
         if md is None:
-            raise RuntimeError(f"Failed to read file {file} HDU={hdrnum}")
+            raise RuntimeError(f"Failed to read file {uri} HDU={hdrnum}")
 
         if output_mode.endswith("native"):
             # Strip native and don't change type of md
@@ -141,21 +146,21 @@ def read_file(
 
         if output_mode in ("yaml", "fixed"):
             if output_mode == "fixed":
-                fix_header(md, filename=file)
+                fix_header(md, filename=str(uri))
 
             # The header should be written out in the insertion order
             print(yaml.dump(md, sort_keys=False), file=outstream)
             return True
 
         # Try to work out a translator class.
-        translator_class = MetadataTranslator.determine_translator(md, filename=file)
+        translator_class = MetadataTranslator.determine_translator(md, filename=str(uri))
 
         # Work out which headers to translate, assuming the default if
         # we have a YAML test file.
-        if file.endswith(".yaml"):
+        if uri.getExtension() == ".yaml":
             headers = [md]
         else:
-            headers = list(translator_class.determine_translatable_headers(file, md))
+            headers = list(translator_class.determine_translatable_headers(uri, md))
         if output_mode == "auto":
             output_mode = "table" if len(headers) > 1 else "verbose"
 
@@ -163,7 +168,7 @@ def read_file(
             raise ValueError("Table mode requires output columns")
 
         for md in headers:
-            obs_info = ObservationInfo(md, pedantic=False, filename=file)
+            obs_info = ObservationInfo(md, pedantic=False, filename=str(uri))
             if output_mode == "table":
                 for c in TABLE_COLUMNS:
                     output_columns[c["label"]].append(getattr(obs_info, c["attr"]))
@@ -178,7 +183,7 @@ def read_file(
         if print_trace:
             traceback.print_exc(file=outstream)
         else:
-            print(f"Failure processing {file}: {e}", file=outstream)
+            print(f"Failure processing {uri}: {e}", file=outstream)
         return False
     return True
 
@@ -308,9 +313,9 @@ def translate_or_dump_headers(
         isok = read_file(path, hdrnum, print_trace, output_columns, outstream, output_mode, heading)
         heading = False
         if isok:
-            okay.append(path)
+            okay.append(str(path))
         else:
-            failed.append(path)
+            failed.append(str(path))
 
         # Check if we have exceeded the page size and should dump the table.
         if output_mode == "table" and len(output_columns[TABLE_COLUMNS[0]["label"]]) >= MAX_TABLE_PAGE_SIZE:

@@ -17,6 +17,12 @@ try:
 except KeyError:
     pass
 
+# As a temporary hack until we move to documenteer 2 delete scipy
+# (since it no longer works)
+try:
+    del intersphinx_mapping["scipy"]  # noqa: F405
+except KeyError:
+    pass
 
 # Add pipelines.lsst.io to the intersphinx configuration.
 # NOTE: we might want to be more sophisticated about mapping corresponding
@@ -29,4 +35,6 @@ nitpick_ignore_regex = [
     ("py:.*", r"lsst\..*"),  # Ignore warnings from links to other lsst packages.
     ("py:class", "(None|item) -- remove.*"),  # MutableSequence
     ("py:class", "integer -- return.*"),  # Sequence
+    ("py:class", "ResourcePathExpression"),
+    ("py:class", "ResourcePath"),
 ]

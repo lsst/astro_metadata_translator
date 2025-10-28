@@ -14,45 +14,22 @@ from __future__ import annotations
 __all__ = ("write_sidecar_file", "write_sidecar_files")
 
 import logging
-import os
 import traceback
 from collections.abc import Sequence
-from typing import IO
+from typing import IO, TYPE_CHECKING
+
+from lsst.resources import ResourcePath
 
 from ..file_helpers import find_files, read_file_info
+
+if TYPE_CHECKING:
+    from lsst.resources import ResourcePathExpression
 
 log = logging.getLogger(__name__)
 
 
-def _split_ext(file: str) -> tuple[str, str]:
-    """Split the extension from the file name and return it and the root.
-
-    Parameters
-    ----------
-    file : `str`
-        The file name to examine.
-
-    Returns
-    -------
-    root : `str`
-        The root of the file name.
-    ext : `str`
-        The file extension. There is special case handling of .gz and other
-        compression extensions.
-    """
-    special = {".gz", ".bz2", ".xz", ".fz"}
-
-    root, ext = os.path.splitext(file)
-
-    if ext in special:
-        root, second_ext = os.path.splitext(root)
-        ext = second_ext + ext
-
-    return root, ext
-
-
 def write_sidecar_file(
-    file: str,
+    file: ResourcePathExpression,
     hdrnum: int,
     content_mode: str,
     print_trace: bool,
@@ -62,7 +39,7 @@ def write_sidecar_file(
 
     Parameters
     ----------
-    file : `str`
+    file : `str` or `lsst.resources.ResourcePathExpression`
         The file from which the header is to be read.
     hdrnum : `int`
         The HDU number to read. The primary header is always read and
@@ -103,12 +80,11 @@ def write_sidecar_file(
             return False
 
         # Calculate sidecar file name derived from this file.
-        # Match the ButlerURI behavior in that .fits.gz should be replaced
+        # .fits.gz should be replaced
         # with .json, and not resulting in .fits.json.
-        root, ext = _split_ext(file)
-        newfile = root + ".json"
-        with open(newfile, "w") as fd:
-            print(json_str, file=fd)
+        uri = ResourcePath(file)
+        newfile = uri.updatedExtension(".json")
+        newfile.write(str(json_str).encode())
         log.debug("Writing sidecar file %s", newfile)
 
     except Exception as e:
@@ -169,8 +145,8 @@ def write_sidecar_files(
     for path in sorted(found_files):
         isok = write_sidecar_file(path, hdrnum, content_mode, print_trace, outstream)
         if isok:
-            okay.append(path)
+            okay.append(str(path))
         else:
-            failed.append(path)
+            failed.append(str(path))
 
     return okay, failed

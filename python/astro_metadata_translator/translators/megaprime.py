@@ -24,6 +24,7 @@ import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle, EarthLocation, UnknownSiteException
 from astropy.io import fits
+from lsst.resources import ResourcePath
 
 from ..translator import CORRECTIONS_RESOURCE_ROOT, cache_translation
 from .fits import FitsTranslator
@@ -32,6 +33,7 @@ from .helpers import altaz_from_degree_headers, tracking_from_degree_headers
 if TYPE_CHECKING:
     import astropy.coordinates
     import astropy.units
+    from lsst.resources import ResourcePathExpression
 
 _MK_FALLBACK_LOCATION = EarthLocation.from_geocentric(
     -5464301.77135369, -2493489.8730419, 2151085.16950589, unit=u.m
@@ -213,7 +215,7 @@ class MegaPrimeTranslator(FitsTranslator):
 
     @classmethod
     def determine_translatable_headers(
-        cls, filename: str, primary: MutableMapping[str, Any] | None = None
+        cls, filename: ResourcePathExpression, primary: MutableMapping[str, Any] | None = None
     ) -> Iterator[MutableMapping[str, Any]]:
         """Given a file return all the headers usable for metadata translation.
 
@@ -224,7 +226,7 @@ class MegaPrimeTranslator(FitsTranslator):
 
         Parameters
         ----------
-        filename : `str`
+        filename : `str` or `lsst.resources.ResourcePathExpression`
             Path to a file in a format understood by this translator.
         primary : `dict`-like, optional
             The primary header obtained by the caller. This is sometimes
@@ -250,7 +252,9 @@ class MegaPrimeTranslator(FitsTranslator):
         # Since we want to scan many HDUs we use astropy directly to keep
         # the file open rather than continually opening and closing it
         # as we go to each HDU.
-        with fits.open(filename) as fits_file:
+        uri = ResourcePath(filename, forceDirectory=False)
+        fs, fspath = uri.to_fsspec()
+        with fs.open(fspath) as f, fits.open(f) as fits_file:
             for hdu in fits_file:
                 # Astropy <=4.2 strips the EXTNAME header but some CFHT data
                 # have two EXTNAME headers and the CCD number is in the
