@@ -157,9 +157,24 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertIsNone(v2.location)
         self.assertIsNone(v2.observation_id)
 
+        # Use the new, explicit constructor.
+        v3 = ObservationInfo.from_header(
+            header,
+            translator_class=InstrumentTestTranslator,
+            subset={"telescope", "datetime_begin", "exposure_group"},
+        )
+        self.assertEqual(v3, v2)
+
+        with self.assertRaises(TypeError):
+            # This fails a not-a-class check.
+            ObservationInfo(header, translator_class={})
         with self.assertRaises(TypeError):
             # Check that the translator class is checked.
-            ObservationInfo(header, translator_class={})
+            ObservationInfo(header, translator_class=dict)
+        with self.assertRaises(ValueError):
+            ObservationInfo(header, keyword="unknown")
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_header(header, subset=set())
 
     def test_corrections(self) -> None:
         """Apply corrections before translation."""

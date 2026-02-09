@@ -265,7 +265,7 @@ def read_file_info(
     -------
     simple : `dict` of `str` or `~astro_metadata_translator.ObservationInfo`
         The return value of
-        `~astro_metadata_translator.ObservationInfoBase.to_simple`. Returns
+        `~astro_metadata_translator.ObservationInfo.to_simple`. Returns
         `None` if there was a problem and ``print_trace`` is not `None`.
     """
     if content_mode not in ("metadata", "translated"):

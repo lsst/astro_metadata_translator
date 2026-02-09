@@ -468,7 +468,7 @@ class MetadataTranslator:
 
         properties = set(PROPERTIES) | {"ext_" + pp for pp in cls.extensions}
         cls.all_properties = dict(PROPERTIES)
-        cls.all_properties.update(cls.extensions)
+        cls.all_properties.update({"ext_" + pp: dd for pp, dd in cls.extensions.items()})
 
         # Go through the trival mappings for this class and create
         # corresponding translator methods

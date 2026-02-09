@@ -26,7 +26,6 @@ __all__ = (
 )
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any
 
 import astropy.coordinates
@@ -395,25 +394,65 @@ def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
     return astropy.time.TimeDelta(simple, format="sec", scale="tai")
 
 
-@dataclass
 class PropertyDefinition:
-    """Definition of an instrumental property."""
+    """Definition of an instrumental property.
+
+    Supports both signatures:
+
+    - ``(doc, py_type, to_simple=None, from_simple=None)``
+    - ``(doc, legacy_str_type, py_type, to_simple=None, from_simple=None)``
+
+    Modern preference is to not specify the string type since that can be
+    derived directly from the python type.
+
+    Parameters
+    ----------
+    doc : `str`
+        Documentation string for the property.
+    *args : `typing.Any`
+        Remaining constructor arguments in one of the supported
+        signatures.
+    """
+
+    __slots__ = ("doc", "py_type", "to_simple", "from_simple")
 
     doc: str
-    """Docstring for the property."""
-
-    str_type: str
-    """Python type of property as a string (suitable for docstrings)."""
-
     py_type: type
-    """Actual python type."""
+    to_simple: Callable[[Any], Any] | None
+    from_simple: Callable[[Any], Any] | None
 
-    to_simple: Callable[[Any], Any] | None = None
-    """Function to convert value to simple form (can be ``None``)."""
+    def __init__(self, doc: str, *args: Any) -> None:
+        if not args:
+            raise TypeError("PropertyDefinition requires at least a py_type argument")
 
-    from_simple: Callable[[Any], Any] | None = None
-    """Function to convert from simple form back to required type (can be
-    ``None``)."""
+        if isinstance(args[0], str):
+            if len(args) < 2 or not isinstance(args[1], type):
+                raise TypeError("Legacy PropertyDefinition signature requires (doc, str_type, py_type, ...)")
+            py_type = args[1]
+            rest = args[2:]
+        else:
+            if not isinstance(args[0], type):
+                raise TypeError("PropertyDefinition py_type must be a type")
+            py_type = args[0]
+            rest = args[1:]
+
+        if len(rest) > 2:
+            raise TypeError("PropertyDefinition accepts at most two converter callables")
+
+        to_simple: Callable[[Any], Any] | None = rest[0] if rest else None
+        from_simple: Callable[[Any], Any] | None = rest[1] if len(rest) > 1 else None
+
+        self.doc = doc
+        self.py_type = py_type
+        self.to_simple = to_simple
+        self.from_simple = from_simple
+
+    @property
+    def str_type(self) -> str:
+        """Python type of property as a string suitable for messages/docs."""
+        if self.py_type.__module__ == "builtins":
+            return self.py_type.__name__
+        return f"{self.py_type.__module__}.{self.py_type.__qualname__}"
 
 
 # Dict of properties to tuple where tuple is:
