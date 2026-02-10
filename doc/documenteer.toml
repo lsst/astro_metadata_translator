@@ -11,6 +11,10 @@ clean = true
 extensions = [
     "sphinx_click"
 ]
+nitpick_ignore = [
+    ["py:obj", "lsst.resources.ResourcePathExpression"],  # type alias.
+    ["py:obj", "lsst.daf.base.PropertyList"],
+]
 
 [sphinx.intersphinx.projects]
 astropy = "https://docs.astropy.org/en/stable"
