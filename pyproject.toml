@@ -29,7 +29,8 @@ dependencies = [
     "pyyaml >=3.13",
     "lsst-resources",
     "fsspec",  # Do not include S3/http variants by default.
-    "click >= 8"
+    "click >= 8",
+    "pydantic >2.0,<3.0",
 ]
 
 [project.optional-dependencies]
