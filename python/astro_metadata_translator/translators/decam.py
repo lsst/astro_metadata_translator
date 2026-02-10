@@ -372,7 +372,7 @@ class DecamTranslator(FitsTranslator):
 
         Returns
         -------
-        modified = `bool`
+        modified : `bool`
             Returns `True` if the header was updated.
 
         Notes

@@ -117,7 +117,7 @@ def tracking_from_degree_headers(
 
     Returns
     -------
-    radec = `astropy.coordinates.SkyCoord`
+    radec : `astropy.coordinates.SkyCoord`
         The RA/Dec coordinates. None if this is a moving target or a
         non-science observation without any RA/Dec definition.
 
@@ -199,7 +199,7 @@ def altaz_from_degree_headers(
 
     Returns
     -------
-    altaz = `astropy.coordinates.AltAz`
+    altaz : `astropy.coordinates.AltAz`
         The AltAz coordinates associated with the telescope location
         and provided time.  Returns `None` if this observation is not
         a science observation and no AltAz keys were located.
