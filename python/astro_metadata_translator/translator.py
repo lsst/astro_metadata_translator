@@ -21,6 +21,7 @@ import inspect
 import logging
 import math
 import numbers
+import textwrap
 import warnings
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
@@ -279,11 +280,11 @@ class MetadataTranslator:
         else:
             full_name = f"{return_type.__module__}.{return_type.__qualname__}"
 
-        constant_translator.__doc__ = f"""{property_doc}
+        constant_translator.__doc__ = f"""{textwrap.dedent(property_doc)}
 
-        :returns: Translated property.
-        :rtype: `{full_name}`
-        """
+:returns: Translated property.
+:rtype: `{full_name}`
+"""
         return constant_translator
 
     @classmethod
@@ -389,11 +390,11 @@ class MetadataTranslator:
 
         # Docstring inheritance means it is confusing to specify here
         # exactly which header value is being used.
-        trivial_translator.__doc__ = f"""{property_doc}
+        trivial_translator.__doc__ = f"""{textwrap.dedent(property_doc)}
 
-        :returns: Translated value derived from the header.
-        :rtype: {return_type}
-        """
+:returns: Translated value derived from the header.
+:rtype: {return_type}
+"""
         return trivial_translator
 
     @classmethod
@@ -1407,10 +1408,10 @@ def _make_abstract_translator_method(
 
     to_property.__doc__ = f"""Return value of {property} from headers.
 
-    {doc}
+{textwrap.dedent(doc)}
 
-    :returns: The translated property.
-    :rtype: `{return_typedoc}`
+:returns: The translated property.
+:rtype: `{return_typedoc}`
     """
     return to_property
 
@@ -1493,15 +1494,15 @@ def _make_forwarded_stub_translator_method(
 
     to_stub.__doc__ = f"""Unimplemented forwarding translator for {property}.
 
-    {doc}
+{textwrap.dedent(doc)}
 
-    Calls the base class translation method and if that fails with
-    `NotImplementedError` issues a warning reminding the implementer to
-    override this method.
+Calls the base class translation method and if that fails with
+`NotImplementedError` issues a warning reminding the implementer to
+override this method.
 
-    :returns: Always returns `None`.
-    :rtype: `None` or `{return_typedoc}`
-    """
+:returns: Always returns `None`.
+:rtype: `None` or `{return_typedoc}`
+"""
     return to_stub
 
 
