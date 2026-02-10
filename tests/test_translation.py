@@ -157,6 +157,10 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertIsNone(v2.location)
         self.assertIsNone(v2.observation_id)
 
+        with self.assertRaises(TypeError):
+            # Check that the translator class is checked.
+            ObservationInfo(header, translator_class={})
+
     def test_corrections(self) -> None:
         """Apply corrections before translation."""
         header = self.header
