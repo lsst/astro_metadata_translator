@@ -266,10 +266,8 @@ class MetadataTranslator:
 
         constant_translator.__doc__ = f"""{property_doc}
 
-        Returns
-        -------
-        translation : `{full_name}`
-            Translated property.
+        :returns: Translated property.
+        :rtype: `{full_name}`
         """
         return constant_translator
 
@@ -378,10 +376,8 @@ class MetadataTranslator:
         # exactly which header value is being used.
         trivial_translator.__doc__ = f"""{property_doc}
 
-        Returns
-        -------
-        translation : `{return_type}`
-            Translated value derived from the header.
+        :returns: Translated value derived from the header.
+        :rtype: {return_type}
         """
         return trivial_translator
 
@@ -1397,10 +1393,8 @@ def _make_abstract_translator_method(
 
     {doc}
 
-    Returns
-    -------
-    {property} : `{return_typedoc}`
-        The translated property.
+    :returns: The translated property.
+    :rtype: `{return_typedoc}`
     """
     return to_property
 
@@ -1495,10 +1489,8 @@ def _make_forwarded_stub_translator_method(
     `NotImplementedError` issues a warning reminding the implementer to
     override this method.
 
-    Returns
-    -------
-    {property} : `None` or `{return_typedoc}`
-        Always returns `None`.
+    :returns: Always returns `None`.
+    :rtype: `None` or `{return_typedoc}`
     """
     return to_stub
 
