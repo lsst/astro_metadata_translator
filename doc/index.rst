@@ -43,6 +43,14 @@ For details on the format of header correction files see `~astro_metadata_transl
   Some of the names could yet be changed for consistency with other data
   dictionaries.
 
+Changes
+=======
+
+.. toctree::
+   :maxdepth: 1
+
+   CHANGES.rst
+
 Entry Points
 ============
 
