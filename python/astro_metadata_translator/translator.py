@@ -565,7 +565,7 @@ class MetadataTranslator:
 
         Returns
         -------
-        translator : `MetadataTranslator`
+        translator : `type` [`MetadataTranslator`]
             Translation class that knows how to extract metadata from
             the supplied header.
 
@@ -1156,13 +1156,6 @@ class MetadataTranslator:
     def to_observing_day(self) -> int:
         """Return the YYYYMMDD integer corresponding to the observing day.
 
-        Base class implementation uses the TAI date of the start of the
-        observation corrected by the observing day offset. If that offset
-        is `None` no offset will be applied.
-
-        The offset is subtracted from the time of observation before
-        calculating the year, month and day.
-
         Returns
         -------
         day : `int`
@@ -1173,6 +1166,13 @@ class MetadataTranslator:
 
         Notes
         -----
+        Base class implementation uses the TAI date of the start of the
+        observation corrected by the observing day offset. If that offset
+        is `None` no offset will be applied.
+
+        The offset is subtracted from the time of observation before
+        calculating the year, month and day.
+
         For example, if the offset is +12 hours both 2023-07-06T13:00 and
         2023-07-07T11:00 will return an observing day of 20230706 because
         the observing day goes from 2023-07-06T12:00 to 2023-07-07T12:00.
@@ -1188,16 +1188,18 @@ class MetadataTranslator:
         """Return an integer corresponding to how this observation relates
         to other observations.
 
+        Returns
+        -------
+        sequence : `int`
+            The observation counter. Always ``0`` for this implementation.
+
+        Notes
+        -----
         Base class implementation returns ``0`` to indicate that it is not
         known how an observatory will define a counter. Some observatories
         may not use the concept, others may use a counter that increases
         for every observation taken for that instrument, and others may
         define it to be a counter within an observing day.
-
-        Returns
-        -------
-        sequence : `int`
-            The observation counter. Always ``0`` for this implementation.
         """
         return 0
 
