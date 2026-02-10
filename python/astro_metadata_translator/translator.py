@@ -15,6 +15,7 @@ from __future__ import annotations
 
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
+import functools
 import importlib
 import inspect
 import logging
@@ -77,14 +78,28 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
     """
     name = func.__name__ if method is None else method
 
+    @functools.wraps(func)
     def func_wrapper(self: MetadataTranslator) -> Any:
         if name not in self._translation_cache:
             self._translation_cache[name] = func(self)
         return self._translation_cache[name]
 
-    func_wrapper.__doc__ = func.__doc__
-    func_wrapper.__name__ = f"{name}_cached"
     return func_wrapper
+
+
+def _set_method_metadata(func: Callable, cls: type, method: str) -> None:
+    target_qualname = f"{cls.__qualname__}.{method}"
+    target_module = cls.__module__
+    target_name = method
+    current = func
+    while True:
+        current.__name__ = target_name
+        current.__qualname__ = target_qualname
+        current.__module__ = target_module
+        wrapped = getattr(current, "__wrapped__", None)
+        if wrapped is None or wrapped is current:
+            break
+        current = wrapped
 
 
 class MetadataTranslator:
@@ -461,10 +476,11 @@ class MetadataTranslator:
             if type(header_key) is tuple:
                 kwargs = header_key[1]
                 header_key = header_key[0]
-            translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
             method = f"to_{property_key}"
-            translator.__name__ = f"{method}_trivial_in_{cls.__name__}"
-            setattr(cls, method, cache_translation(translator, method=method))
+            translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
+            translator = cache_translation(translator, method=method)
+            _set_method_metadata(translator, cls, method)
+            setattr(cls, method, translator)
             if property_key not in properties:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
 
@@ -473,7 +489,7 @@ class MetadataTranslator:
         for property_key, constant in const_map.items():
             translator = cls._make_const_mapping(property_key, constant)
             method = f"to_{property_key}"
-            translator.__name__ = f"{method}_constant_in_{cls.__name__}"
+            _set_method_metadata(translator, cls, method)
             setattr(cls, method, translator)
             if property_key not in properties:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
@@ -1415,15 +1431,9 @@ CONCRETE = set()
 for name, definition in PROPERTIES.items():
     method = f"to_{name}"
     if not MetadataTranslator.defined_in_this_class(method):
-        setattr(
-            MetadataTranslator,
-            f"to_{name}",
-            abstractmethod(
-                _make_abstract_translator_method(
-                    name, definition.doc, definition.str_type, definition.py_type
-                )
-            ),
-        )
+        func = _make_abstract_translator_method(name, definition.doc, definition.str_type, definition.py_type)
+        _set_method_metadata(func, MetadataTranslator, method)
+        setattr(MetadataTranslator, method, abstractmethod(func))
     else:
         CONCRETE.add(method)
 
@@ -1498,14 +1508,14 @@ def _make_forwarded_stub_translator_method(
 # Create stub translation methods for each property.  These stubs warn
 # rather than fail and should be overridden by translators.
 for name in PROPERTIES:
-    setattr(
-        StubTranslator,
-        f"to_{name}",
-        _make_forwarded_stub_translator_method(
-            StubTranslator,  # type: ignore
-            name,
-            definition.doc,
-            definition.str_type,
-            definition.py_type,
-        ),
+    definition = PROPERTIES[name]
+    method = f"to_{name}"
+    func = _make_forwarded_stub_translator_method(
+        StubTranslator,  # type: ignore
+        name,
+        definition.doc,
+        definition.str_type,
+        definition.py_type,
     )
+    _set_method_metadata(func, StubTranslator, method)
+    setattr(StubTranslator, method, func)
