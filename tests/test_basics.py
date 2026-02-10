@@ -21,11 +21,11 @@ from astro_metadata_translator import ObservationInfo, makeObservationInfo
 class BasicTestCase(unittest.TestCase):
     """Test basic metadata translation functionality."""
 
-    def test_basic(self):
+    def test_basic(self) -> None:
         version = astro_metadata_translator.__version__
         self.assertIsNotNone(version)
 
-    def test_obsinfo(self):
+    def test_obsinfo(self) -> None:
         """Test construction of ObservationInfo without header."""
         obsinfo = makeObservationInfo(boresight_airmass=1.5, tracking_radec=None)
         self.assertIsInstance(obsinfo, ObservationInfo)
@@ -41,7 +41,7 @@ class BasicTestCase(unittest.TestCase):
         with self.assertRaises(KeyError):
             obsinfo = ObservationInfo.makeObservationInfo(unrecognized=1.5, keys="unknown")
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         """Test that we can simplify an ObservationInfo."""
         reference = dict(
             boresight_airmass=1.5,

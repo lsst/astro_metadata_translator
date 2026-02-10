@@ -11,7 +11,7 @@
 
 import unittest
 
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import AltAz, EarthLocation
 from astropy.time import Time
 
 from astro_metadata_translator import StubTranslator
@@ -21,34 +21,34 @@ from astro_metadata_translator.translators.helpers import altaz_from_degree_head
 class HelperTranslator(StubTranslator):
     """Base class for testing shadowing."""
 
-    def to_instrument(self):
+    def to_instrument(self) -> str:
         return "BaseInstrument"
 
-    def to_observation_type(self):
+    def to_observation_type(self) -> str:
         return "flat"
 
-    def to_observation_id(self):
+    def to_observation_id(self) -> str:
         return "OBSID"
 
-    def to_location(self):
+    def to_location(self) -> EarthLocation:
         return EarthLocation.from_geodetic(0.0, 0.0)
 
 
 class ScienceTranslator(HelperTranslator):
     """Translator corresponding to science observation."""
 
-    def to_observation_type(self):
+    def to_observation_type(self) -> str:
         return "science"
 
 
 class HelperTestCase(unittest.TestCase):
     """Test translator helpers."""
 
-    def assert_azel(self, azel, az, alt):
+    def assert_azel(self, azel: AltAz, az: float, alt: float) -> None:
         self.assertAlmostEqual(float(azel.az.to_value("deg")), az)
         self.assertAlmostEqual(float(azel.alt.to_value("deg")), alt)
 
-    def test_altaz(self):
+    def test_altaz(self) -> None:
         """Test altaz extraction."""
         translator = HelperTranslator({})
         now = Time.now()
@@ -86,7 +86,7 @@ class HelperTestCase(unittest.TestCase):
             value = altaz_from_degree_headers(translator, [("ELSTART", "AZSTART")], now, max_alt=95.0)
         self.assert_azel(value, 22.0, 90.0)
 
-    def test_science_altaz(self):
+    def test_science_altaz(self) -> None:
         """Test science altaz."""
         translator = ScienceTranslator({})
         now = Time.now()

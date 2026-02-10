@@ -17,7 +17,7 @@ from astro_metadata_translator import StubTranslator
 class ShadowBase(StubTranslator):
     """Base class for testing shadowing."""
 
-    def to_instrument(self):
+    def to_instrument(self) -> str:
         return "BaseInstrument"
 
 
@@ -45,21 +45,21 @@ class ExplicitTranslator(TrivialTranslator):
     and not inherit the _trivial_map from parent.
     """
 
-    def to_instrument(self):
+    def to_instrument(self) -> str:
         return "InstrumentE"
 
 
 class TranslatorShadowing(unittest.TestCase):
     """Test that shadowed translations are detected."""
 
-    def test_shadowing(self):
+    def test_shadowing(self) -> None:
         with self.assertLogs("astro_metadata_translator", level="WARN") as cm:
 
             class ShadowTranslator(StubTranslator):
                 _const_map = {"instrument": "InstrumentC"}
                 _trivial_map = {"instrument": "INSTRUME"}
 
-                def to_instrument(self):
+                def to_instrument(self) -> str:
                     return "Instrument3"
 
         self.assertIn("defined in both", cm.output[0])
@@ -73,7 +73,7 @@ class TranslatorShadowing(unittest.TestCase):
             class ShadowTranslator(StubTranslator):
                 _trivial_map = {"instrument": "INSTRUME"}
 
-                def to_instrument(self):
+                def to_instrument(self) -> str:
                     return "Instrument3"
 
         self.assertIn("replaced by _trivial_map", cm.output[0])
@@ -81,11 +81,11 @@ class TranslatorShadowing(unittest.TestCase):
         s = ShadowTranslator({"INSTRUME": "InstrumentT"})
         self.assertEqual(s.to_instrument(), "InstrumentT")
 
-    def test_auto_maps1(self):
+    def test_auto_maps1(self) -> None:
         t = TrivialTranslator({"INSTRUME": "InstrumentX"})
         self.assertEqual(t.to_instrument(), "InstrumentX")
 
-    def test_auto_maps2(self):
+    def test_auto_maps2(self) -> None:
         t = ExplicitTranslator({})
         self.assertEqual(t.to_instrument(), "InstrumentE")
 

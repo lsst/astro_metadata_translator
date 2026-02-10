@@ -98,7 +98,7 @@ class TestCLI(unittest.TestCase):
         parsed = yaml.safe_load(result.output)
         self.assertEqual(parsed["T_EFMN32"], 50)
 
-    def test_write_sidecar(self):
+    def test_write_sidecar(self) -> None:
         """Write a simple sidecar file."""
         # Sidecar files are written next to file.
         with self.runner.isolated_filesystem():
@@ -125,7 +125,7 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(result.exit_code, 1, click_result_msg(result))
             self.assertIn("No files processed", result.output, click_result_msg(result))
 
-    def test_write_index(self):
+    def test_write_index(self) -> None:
         """Write a simple index file."""
         with tempfile.NamedTemporaryFile(suffix=".json") as temp:
             temp.close()
@@ -147,7 +147,7 @@ class TestCLI(unittest.TestCase):
             self.assertIsInstance(ind, ObservationGroup)
             self.assertGreaterEqual(len(ind), 10)
 
-    def test_list_plugins(self):
+    def test_list_plugins(self) -> None:
         """Test that --list-plugins runs."""
         result = self.runner.invoke(astrometadata, ["--list-plugins"])
         self.assertEqual(result.exit_code, 0, click_result_msg(result))

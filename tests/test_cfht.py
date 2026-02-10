@@ -26,7 +26,7 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
 
     datadir = os.path.join(TESTDIR, "data")
 
-    def test_megaprime_translator(self):
+    def test_megaprime_translator(self) -> None:
         test_data = (
             (
                 "fitsheader-megaprime.yaml",
@@ -104,7 +104,7 @@ class MegaPrimeTestCase(unittest.TestCase, MetadataAssertHelper):
             with self.subTest(f"Testing {file}"):
                 self.assertObservationInfoFromYaml(file, self.datadir, **expected)
 
-    def test_megaprime_stripping(self):
+    def test_megaprime_stripping(self) -> None:
         header = read_test_file("fitsheader-megaprime.yaml", dir=self.datadir)
         v1 = ObservationInfo(header)
 

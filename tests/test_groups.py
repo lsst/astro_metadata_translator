@@ -11,6 +11,8 @@
 
 import os.path
 import unittest
+from collections.abc import MutableMapping, Sequence
+from typing import Any
 
 from astro_metadata_translator import ObservationGroup
 from astro_metadata_translator.serialize import group_to_fits, info_to_fits
@@ -24,7 +26,7 @@ class ObservationGroupTestCase(unittest.TestCase):
 
     datadir = os.path.join(TESTDIR, "data")
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.decam_files = (
             "fitsheader-decam.yaml",
             "fitsheader-decam-0160496.yaml",
@@ -32,10 +34,10 @@ class ObservationGroupTestCase(unittest.TestCase):
         )
         self.hsc_files = ("fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml")
 
-    def _files_to_headers(self, files):
+    def _files_to_headers(self, files: Sequence[str]) -> Sequence[MutableMapping[str, Any]]:
         return [read_test_file(os.path.join(self.datadir, f)) for f in files]
 
-    def test_groups(self):
+    def test_groups(self) -> None:
         headers = self._files_to_headers(self.decam_files)
 
         obs_group = ObservationGroup(headers)
@@ -79,7 +81,7 @@ class ObservationGroupTestCase(unittest.TestCase):
         # Check that simplified form round trips
         self.assertEqual(ObservationGroup.from_simple(obs_group.to_simple()), obs_group)
 
-    def test_fits_group(self):
+    def test_fits_group(self) -> None:
         headers = self._files_to_headers(self.decam_files)
 
         obs_group = ObservationGroup(headers)
@@ -99,7 +101,7 @@ class ObservationGroupTestCase(unittest.TestCase):
         }
         self.assertEqual(cards, expected)
 
-    def test_fits_info(self):
+    def test_fits_info(self) -> None:
         header = self._files_to_headers(self.decam_files)[0]
         obs_group = ObservationGroup([header])
         cards, comments = info_to_fits(obs_group[0])

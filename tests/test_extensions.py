@@ -11,6 +11,8 @@
 
 import pickle
 import unittest
+from collections.abc import Mapping
+from typing import Any
 
 from astro_metadata_translator import ObservationInfo, PropertyDefinition, StubTranslator, makeObservationInfo
 
@@ -34,10 +36,10 @@ class DummyTranslator(StubTranslator):
     }
 
     @classmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         return "INSTRUME" in header and header["INSTRUME"] == "dummy"
 
-    def to_ext_number(self):
+    def to_ext_number(self) -> int:
         """Return the combination on my luggage."""
         return NUMBER
 
@@ -45,14 +47,14 @@ class DummyTranslator(StubTranslator):
 class ExtensionsTestCase(unittest.TestCase):
     """Test support for extended properties."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.header = dict(INSTRUME="dummy")
         # The test translator is incomplete so it will issue warnings
         # about missing translations. Catch them.
         with self.assertWarns(UserWarning):
             self.obsinfo = ObservationInfo(self.header)
 
-    def assert_observation_info(self, obsinfo):
+    def assert_observation_info(self, obsinfo: ObservationInfo) -> None:
         """Check that the `ObservationInfo` is as expected.
 
         Parameters
@@ -64,7 +66,7 @@ class ExtensionsTestCase(unittest.TestCase):
         self.assertEqual(obsinfo.ext_foo, FOO)
         self.assertEqual(obsinfo.ext_number, NUMBER)
 
-    def test_basic(self):
+    def test_basic(self) -> None:
         """Test construction of extended ObservationInfo."""
         # Behaves like the original
         self.assert_observation_info(self.obsinfo)
@@ -84,12 +86,12 @@ class ExtensionsTestCase(unittest.TestCase):
             # Type checking is applied, like in the original
             makeObservationInfo(extensions=DummyTranslator.extensions, ext_foo=98765)
 
-    def test_pickle(self):
+    def test_pickle(self) -> None:
         """Test that pickling works on ObservationInfo with extensions."""
         obsinfo = pickle.loads(pickle.dumps(self.obsinfo))
         self.assert_observation_info(obsinfo)
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         """Test that simple representation works."""
         simple = self.obsinfo.to_simple()
         self.assertIn("ext_foo", simple)
@@ -97,7 +99,7 @@ class ExtensionsTestCase(unittest.TestCase):
         obsinfo = ObservationInfo.from_simple(simple)
         self.assert_observation_info(obsinfo)
 
-    def test_json(self):
+    def test_json(self) -> None:
         """Test that JSON representation works."""
         json = self.obsinfo.to_json()
         self.assertIn("ext_foo", json)

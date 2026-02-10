@@ -106,6 +106,7 @@ ignore = [
     "D102",  # Can inherit docstrings.
     "D100",  # Modules are not required to include documentation.
     "D205",  # Does not understand if a summary is two lines long.
+    "ANN401",  # We do allow typing.Any.
 ]
 select = [
     "E",  # pycodestyle
@@ -117,6 +118,7 @@ select = [
     "RUF022",  # sort __all__
     "UP",  # pyupgrade
     "B",  # bugbear
+    "ANN",  # annotations
 ]
 extend-select = [
     "RUF100", # Warn about unused noqa

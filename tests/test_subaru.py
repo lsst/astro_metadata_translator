@@ -26,7 +26,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
 
     datadir = os.path.join(TESTDIR, "data")
 
-    def test_hsc_translator(self):
+    def test_hsc_translator(self) -> None:
         test_data = (
             (
                 "fitsheader-hsc.yaml",
@@ -102,7 +102,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
             with self.subTest(f"Testing {file}"):
                 self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
-    def test_suprimecam_translator(self):
+    def test_suprimecam_translator(self) -> None:
         # In this case the airmass is average during observation
         # but it looks like ALTITUDE is from a different time so loosen amdelta
         test_data = (
@@ -145,7 +145,7 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
             with self.subTest(f"Testing {file}"):
                 self.assertObservationInfoFromYaml(file, dir=self.datadir, **expected)
 
-    def test_merging_hsc(self):
+    def test_merging_hsc(self) -> None:
         files = ("fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml")
         headers = [read_test_file(f, dir=self.datadir) for f in files]
         merged = merge_headers(headers, mode="first", sort=False)

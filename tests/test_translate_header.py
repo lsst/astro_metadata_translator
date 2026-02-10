@@ -23,7 +23,7 @@ TESTDATA = os.path.join(TESTDIR, "data")
 class TestTranslateHeader(unittest.TestCase):
     """Test that the astrometadata translate and dump logic works."""
 
-    def _readlines(self, stream):
+    def _readlines(self, stream: io.StringIO) -> list[str]:
         """Return the lines written to the stream.
 
         Parameters
@@ -41,7 +41,7 @@ class TestTranslateHeader(unittest.TestCase):
 
     def assert_ok_fail(
         self, okay: list[str], failed: list[str], stdout: list[str], expected: tuple[int, int]
-    ):
+    ) -> None:
         """Check that we have the expected numbers of successes and
         failures.
 
@@ -67,7 +67,7 @@ Standard output:
 """
         self.assertEqual((len(okay), len(failed)), expected, msg=msg)
 
-    def test_translate_header(self):
+    def test_translate_header(self) -> None:
         """Translate some header files. Use URI for test dir."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.INFO) as cm:
@@ -87,7 +87,7 @@ Standard output:
 
         self.assert_ok_fail(okay, failed, output, (11, 0))
 
-    def test_translate_header_table(self):
+    def test_translate_header_table(self) -> None:
         """Translate some header files with table output."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.WARNING) as cm:
@@ -107,7 +107,7 @@ Standard output:
 
         self.assert_ok_fail(okay, failed, output, (11, 0))
 
-    def test_translate_bad_header_table(self):
+    def test_translate_bad_header_table(self) -> None:
         """Translate a header that has a bad translation in the table."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.WARNING):
@@ -118,7 +118,7 @@ Standard output:
                 self.assertIn(" -- ", output[3])  # String masked value.
                 self.assertIn(" ———", output[3])  # Quantity masked value.
 
-    def test_translate_header_fails(self):
+    def test_translate_header_fails(self) -> None:
         """Translate some header files that fail."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.INFO) as cm:
@@ -139,7 +139,7 @@ Standard output:
 
         self.assert_ok_fail(okay, failed, out_lines, (12, 3))
 
-    def test_translate_header_traceback(self):
+    def test_translate_header_traceback(self) -> None:
         """Translate some header files that fail and trigger traceback."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.INFO) as cm:
@@ -157,7 +157,7 @@ Standard output:
 
         self.assert_ok_fail(okay, failed, out_lines, (12, 3))
 
-    def test_translate_header_dump(self):
+    def test_translate_header_dump(self) -> None:
         """Check that a header is dumped."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.INFO) as cm:
@@ -181,7 +181,7 @@ Standard output:
 
         self.assert_ok_fail(okay, failed, out_lines, (1, 0))
 
-    def test_translate_header_loud(self):
+    def test_translate_header_loud(self) -> None:
         """Check that ObservationInfo content is displayed."""
         with io.StringIO() as out:
             with self.assertLogs(level=logging.INFO) as cm:

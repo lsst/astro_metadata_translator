@@ -25,7 +25,7 @@ class DecamTestCase(unittest.TestCase, MetadataAssertHelper):
 
     datadir = os.path.join(TESTDIR, "data")
 
-    def test_decam_translator(self):
+    def test_decam_translator(self) -> None:
         test_data = (
             (
                 "fitsheader-decam.yaml",
