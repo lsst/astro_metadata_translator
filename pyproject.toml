@@ -39,6 +39,7 @@ test = [
 
 [project.urls]
 "Homepage" = "https://github.com/lsst/astro_metadata_translator"
+"Source" = "https://github.com/lsst/astro_metadata_translator"
 
 [project.scripts]
 astrometadata = "astro_metadata_translator.cli.astrometadata:main"
