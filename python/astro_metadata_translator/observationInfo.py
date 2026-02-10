@@ -65,7 +65,7 @@ class ObservationInfo:
         If True the translation must succeed for all properties.  If False
         individual property translations must all be implemented but can fail
         and a warning will be issued.
-    search_path : iterable, optional
+    search_path : `~collections.abc.Iterable`, optional
         Override search paths to use during header fix up.
     required : `set`, optional
         This parameter can be used to confirm that all properties contained
@@ -498,7 +498,7 @@ class ObservationInfo:
 
         Any properties with `None` value will be skipped.
 
-        Can be converted back to an `ObservationInfo` using `from_simple()`.
+        Can be converted back to an `ObservationInfo` using `from_simple`.
 
         Returns
         -------
@@ -558,7 +558,7 @@ class ObservationInfo:
         Parameters
         ----------
         simple : `dict` [`str`, `~typing.Any`]
-            The dict returned by `to_simple()`.
+            The dict returned by `to_simple`.
 
         Returns
         -------

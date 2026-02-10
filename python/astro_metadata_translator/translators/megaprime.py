@@ -245,9 +245,10 @@ class MegaPrimeTranslator(FitsTranslator):
         This translator class is specifically tailored to raw MegaPrime data
         and is not designed to work with general FITS files. The normal
         paradigm is for the caller to have read the first header and then
-        called `determine_translator()` on the result to work out which
-        translator class to then call to obtain the real headers to be used for
-        translation.
+        called
+        `~astro_metadata_translator.MetadataTranslator.determine_translator` on
+        the result to work out which translator class to then call to obtain
+        the real headers to be used for translation.
         """
         # Since we want to scan many HDUs we use astropy directly to keep
         # the file open rather than continually opening and closing it

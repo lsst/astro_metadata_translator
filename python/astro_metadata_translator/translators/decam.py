@@ -460,9 +460,9 @@ class DecamTranslator(FitsTranslator):
         This translator class is specifically tailored to raw DECam data and
         is not designed to work with general FITS files. The normal paradigm
         is for the caller to have read the first header and then called
-        `determine_translator()` on the result to work out which translator
-        class to then call to obtain the real headers to be used for
-        translation.
+        `~astro_metadata_translator.MetadataTranslator.determine_translator` on
+        the result to work out which translator class to then call to obtain
+        the real headers to be used for translation.
         """
         # Circular dependency so must defer import.
         from ..headers import merge_headers
