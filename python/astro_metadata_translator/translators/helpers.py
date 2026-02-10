@@ -45,12 +45,12 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def to_location_via_telescope_name(self: MetadataTranslator) -> EarthLocation:
+def to_location_via_telescope_name(translator: MetadataTranslator) -> EarthLocation:
     """Calculate the observatory location via the telescope name.
 
     Parameters
     ----------
-    self : `MetadataTranslator`
+    translator : `MetadataTranslator`
         The translator being used.
 
     Returns
@@ -58,15 +58,15 @@ def to_location_via_telescope_name(self: MetadataTranslator) -> EarthLocation:
     loc : `astropy.coordinates.EarthLocation`
         Location of the observatory.
     """
-    return EarthLocation.of_site(self.to_telescope())
+    return EarthLocation.of_site(translator.to_telescope())
 
 
-def is_non_science(self: MetadataTranslator) -> None:
+def is_non_science(translator: MetadataTranslator) -> None:
     """Raise an exception if this is a science observation.
 
     Parameters
     ----------
-    self : `MetadataTranslator`
+    translator : `MetadataTranslator`
         The translator being used.
 
     Raises
@@ -74,8 +74,8 @@ def is_non_science(self: MetadataTranslator) -> None:
     KeyError
         Is a science observation.
     """
-    if self.to_observation_type() == "science":
-        raise KeyError(f"{self._log_prefix}: Header represents science observation and can not default")
+    if translator.to_observation_type() == "science":
+        raise KeyError(f"{translator._log_prefix}: Header represents science observation and can not default")
 
 
 def altitude_from_zenith_distance(zd: astropy.units.Quantity) -> astropy.units.Quantity:
@@ -95,7 +95,7 @@ def altitude_from_zenith_distance(zd: astropy.units.Quantity) -> astropy.units.Q
 
 
 def tracking_from_degree_headers(
-    self: MetadataTranslator,
+    translator: MetadataTranslator,
     radecsys: Sequence[str],
     radecpairs: tuple[tuple[str, str], ...],
     unit: astropy.units.Unit = u.deg,
@@ -104,7 +104,7 @@ def tracking_from_degree_headers(
 
     Parameters
     ----------
-    self : `MetadataTranslator`
+    translator : `MetadataTranslator`
         The translator being used.
     radecsys : `list` or `tuple`
         Header keywords to try corresponding to the tracking system.  If none
@@ -129,35 +129,37 @@ def tracking_from_degree_headers(
     """
     used = []
     for k in radecsys:
-        if self.is_key_ok(k):
-            frame = self._header[k].strip().lower()
+        if translator.is_key_ok(k):
+            frame = translator._header[k].strip().lower()
             used.append(k)
             if frame == "gappt":
-                self._used_these_cards(*used)
+                translator._used_these_cards(*used)
                 # Moving target
                 return None
             break
     else:
         frame = "icrs"
     for ra_key, dec_key in radecpairs:
-        if self.are_keys_ok([ra_key, dec_key]):
+        if translator.are_keys_ok([ra_key, dec_key]):
             radec = SkyCoord(
-                self._header[ra_key],
-                self._header[dec_key],
+                translator._header[ra_key],
+                translator._header[dec_key],
                 frame=frame,
                 unit=unit,
-                obstime=self.to_datetime_begin(),
-                location=self.to_location(),
+                obstime=translator.to_datetime_begin(),
+                location=translator.to_location(),
             )
-            self._used_these_cards(ra_key, dec_key, *used)
+            translator._used_these_cards(ra_key, dec_key, *used)
             return radec
-    if self.to_observation_type() == "science":
-        raise KeyError(f"{self._log_prefix}: Unable to determine tracking RA/Dec of science observation")
+    if translator.to_observation_type() == "science":
+        raise KeyError(
+            f"{translator._log_prefix}: Unable to determine tracking RA/Dec of science observation"
+        )
     return None
 
 
 def altaz_from_degree_headers(
-    self: MetadataTranslator,
+    translator: MetadataTranslator,
     altazpairs: tuple[tuple[str, str], ...],
     obstime: astropy.time.Time,
     is_zd: set[str] | None = None,
@@ -175,7 +177,7 @@ def altaz_from_degree_headers(
 
     Parameters
     ----------
-    self : `MetadataTranslator`
+    translator : `MetadataTranslator`
         The translator being used.
     altazpairs : `tuple` of `str`
         Pairs of keywords specifying Alt/Az in degrees. Each pair is tried
@@ -211,9 +213,9 @@ def altaz_from_degree_headers(
     if max_alt > 90.0:
         max_alt = 90.0
     for alt_key, az_key in altazpairs:
-        if self.are_keys_ok([az_key, alt_key]):
-            az = self._header[az_key]
-            alt = self._header[alt_key]
+        if translator.are_keys_ok([az_key, alt_key]):
+            az = translator._header[az_key]
+            alt = translator._header[alt_key]
 
             # Check for zenith distance
             if is_zd and alt_key in is_zd:
@@ -224,15 +226,15 @@ def altaz_from_degree_headers(
                 # they are not believable
                 break
             if alt > max_alt:
-                log.info("%s: Clipping altitude (%f) at %f degrees", self._log_prefix, alt, max_alt)
+                log.info("%s: Clipping altitude (%f) at %f degrees", translator._log_prefix, alt, max_alt)
                 alt = max_alt
             elif alt < min_alt:
-                log.info("%s: Clipping altitude (%f) at %f degrees", self._log_prefix, alt, min_alt)
+                log.info("%s: Clipping altitude (%f) at %f degrees", translator._log_prefix, alt, min_alt)
                 alt = min_alt
 
-            altaz = AltAz(az * u.deg, alt * u.deg, obstime=obstime, location=self.to_location())
-            self._used_these_cards(az_key, alt_key)
+            altaz = AltAz(az * u.deg, alt * u.deg, obstime=obstime, location=translator.to_location())
+            translator._used_these_cards(az_key, alt_key)
             return altaz
-    if self.to_observation_type() == "science":
-        raise KeyError(f"{self._log_prefix}: Unable to determine AltAz of science observation")
+    if translator.to_observation_type() == "science":
+        raise KeyError(f"{translator._log_prefix}: Unable to determine AltAz of science observation")
     return None
