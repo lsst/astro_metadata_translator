@@ -126,7 +126,7 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertEqual(v1.telescope, "LSST")
 
         location = v1.location.to_geodetic()
-        self.assertAlmostEqual(location.height.to("m").to_value(), 4123.0, places=1)
+        self.assertAlmostEqual(float(location.height.to("m").to_value()), 4123.0, places=1)
 
         # Check that headers have been removed
         new_hdr = v1.stripped_header()

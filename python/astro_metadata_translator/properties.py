@@ -54,7 +54,7 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tupl
         The geocentric location as three floats in meters.
     """
     geocentric = location.to_geocentric()
-    return tuple(c.to_value(astropy.units.m) for c in geocentric)
+    return tuple(float(c.to_value(astropy.units.m)) for c in geocentric)
 
 
 def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
@@ -123,7 +123,7 @@ def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
     e : `float`
         Exposure time in seconds.
     """
-    return exptime.to_value(astropy.units.s)
+    return float(exptime.to_value(astropy.units.s))
 
 
 def simple_to_exptime(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -157,7 +157,7 @@ def angle_to_simple(angle: astropy.coordinates.Angle) -> float:
     a : `float`
         The angle in degrees.
     """
-    return angle.to_value(astropy.units.deg)
+    return float(angle.to_value(astropy.units.deg))
 
 
 def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
@@ -191,7 +191,7 @@ def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
     f : `float`
         The z-focus in meters.
     """
-    return focusz.to_value(astropy.units.m)
+    return float(focusz.to_value(astropy.units.m))
 
 
 def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -225,7 +225,7 @@ def temperature_to_simple(temp: astropy.units.Quantity) -> float:
     t : `float`
         The temperature in kelvin.
     """
-    return temp.to(astropy.units.K, equivalencies=astropy.units.temperature()).to_value()
+    return float(temp.to(astropy.units.K, equivalencies=astropy.units.temperature()).to_value())
 
 
 def simple_to_temperature(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -259,7 +259,7 @@ def pressure_to_simple(press: astropy.units.Quantity) -> float:
     hpa : `float`
         The pressure in units of hPa.
     """
-    return press.to_value(astropy.units.hPa)
+    return float(press.to_value(astropy.units.hPa))
 
 
 def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -294,7 +294,7 @@ def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, f
         Sky coordinates as a tuple of two floats in units of degrees.
     """
     icrs = skycoord.icrs
-    return (icrs.ra.to_value(astropy.units.deg), icrs.dec.to_value(astropy.units.deg))
+    return (float(icrs.ra.to_value(astropy.units.deg)), float(icrs.dec.to_value(astropy.units.deg)))
 
 
 def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.SkyCoord:
@@ -332,7 +332,7 @@ def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
         The Alt/Az as a tuple of two floats representing the position in
         units of degrees.
     """
-    return (altaz.az.to_value(astropy.units.deg), altaz.alt.to_value(astropy.units.deg))
+    return (float(altaz.az.to_value(astropy.units.deg)), float(altaz.alt.to_value(astropy.units.deg)))
 
 
 def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.AltAz:
@@ -374,7 +374,7 @@ def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
     sec : `int`
         Offset in integer seconds.
     """
-    return round(delta.to_value("s"))
+    return round(float(delta.to_value("s")))
 
 
 def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
