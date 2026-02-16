@@ -14,7 +14,7 @@ import unittest
 from collections.abc import MutableMapping, Sequence
 from typing import Any
 
-from astro_metadata_translator import ObservationGroup
+from astro_metadata_translator import ObservationGroup, ObservationInfo
 from astro_metadata_translator.serialize import group_to_fits, info_to_fits
 from astro_metadata_translator.tests import read_test_file
 
@@ -48,6 +48,9 @@ class ObservationGroupTestCase(unittest.TestCase):
             " (DECam, 2015-02-20T00:47:21.127)]",
         )
 
+        # Ensure that pedantic conversion is allowed.
+        obs_group = ObservationGroup(headers, pedantic=True)
+
         sorted_group = ObservationGroup(sorted(obs_group))
         self.assertIsInstance(sorted_group, ObservationGroup)
         self.assertEqual(len(sorted_group), 3)
@@ -80,6 +83,43 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         # Check that simplified form round trips
         self.assertEqual(ObservationGroup.from_simple(obs_group.to_simple()), obs_group)
+
+        # Delete some entries.
+        first = obs_group.pop()
+        self.assertIsInstance(first, ObservationInfo)
+        self.assertEqual(len(obs_group), 4)
+
+        # Override an entry with type coercion.
+        obs_group[0] = headers[-1]
+        self.assertIsInstance(obs_group[0], ObservationInfo)
+
+        with self.assertRaises(ValueError):
+            # None is not allowed here.
+            ObservationGroup([None, *headers])
+
+        with self.assertRaises(ValueError):
+            # Passing in a bad translator class.
+            ObservationGroup(headers, translator_class=[])
+
+    def test_sort_key(self) -> None:
+        """Sorting with keys."""
+        headers = self._files_to_headers(self.decam_files)
+
+        obs_group = ObservationGroup(headers)
+
+        # Force sorting.
+        obs_group.sort()
+        self.assertIsNotNone(obs_group._sorted)
+
+        def by_airmass(value: ObservationInfo) -> float:
+            am = value.boresight_airmass
+            print(am)
+            if am is None:
+                return 0.0
+            return am
+
+        obs_group.sort(key=by_airmass, reverse=True)
+        self.assertEqual(obs_group[0].boresight_airmass, 1.67)
 
     def test_fits_group(self) -> None:
         headers = self._files_to_headers(self.decam_files)
@@ -119,6 +159,15 @@ class ObservationGroupTestCase(unittest.TestCase):
             "DATE-END": "2013-09-01T06:08:31.000",
         }
         self.assertEqual(cards, expected)
+
+    def test_pydantic_roundtrip(self) -> None:
+        """Test that ObservationGroup can round trip using Pydantic APIs."""
+        headers = self._files_to_headers(self.decam_files)
+
+        obs_group = ObservationGroup(headers)
+        j_str = obs_group.model_dump_json()
+        new_group = ObservationGroup.model_validate_json(j_str)
+        self.assertEqual(new_group, obs_group)
 
 
 if __name__ == "__main__":

@@ -16,9 +16,11 @@ from __future__ import annotations
 __all__ = ("ObservationGroup",)
 
 import logging
-from collections.abc import Callable, Iterable, Iterator, MutableMapping, MutableSequence
+from collections.abc import Callable, Iterable, Iterator, MutableMapping, MutableSequence, Sequence
 from itertools import zip_longest
 from typing import TYPE_CHECKING, Any
+
+from pydantic import ConfigDict, PrivateAttr, RootModel
 
 from .observationInfo import ObservationInfo
 
@@ -28,7 +30,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class ObservationGroup(MutableSequence):
+class ObservationGroup(RootModel[list[ObservationInfo]], MutableSequence[ObservationInfo]):
     """A collection of `ObservationInfo` headers.
 
     Parameters
@@ -48,32 +50,33 @@ class ObservationGroup(MutableSequence):
         `ObservationInfo` constructor default should be used.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    _sorted: list[ObservationInfo] | None = PrivateAttr(default=None)
+
     def __init__(
         self,
         members: Iterable[ObservationInfo | MutableMapping[str, Any]],
         translator_class: type[MetadataTranslator] | None = None,
         pedantic: bool | None = None,
     ) -> None:
-        self._members = [
+        coerced = [
             self._coerce_value(m, translator_class=translator_class, pedantic=pedantic) for m in members
         ]
-
-        # Cache of members in time order
-        self._sorted: list[ObservationInfo] | None = None
+        super().__init__(coerced)
 
     def __len__(self) -> int:
-        return len(self._members)
+        return len(self.root)
 
     def __delitem__(self, index: int) -> None:  # type: ignore
-        del self._members[index]
+        del self.root[index]
         self._sorted = None
 
     def __getitem__(self, index: int) -> ObservationInfo:  # type: ignore
-        return self._members[index]
+        return self.root[index]
 
     def __str__(self) -> str:
         results = []
-        for obs_info in self._members:
+        for obs_info in self.root:
             results.append(f"({obs_info.instrument}, {obs_info.datetime_begin})")
         return "[" + ", ".join(results) + "]"
 
@@ -120,8 +123,8 @@ class ObservationGroup(MutableSequence):
 
         return value
 
-    def __iter__(self) -> Iterator[ObservationInfo]:
-        return iter(self._members)
+    def __iter__(self) -> Iterator[ObservationInfo]:  # type: ignore[override]
+        return iter(self.root)
 
     def __eq__(self, other: Any) -> bool:
         """Check equality with another group.
@@ -156,22 +159,26 @@ class ObservationGroup(MutableSequence):
             constructor.
         """
         value = self._coerce_value(value)
-        self._members[index] = value
+        self.root[index] = value
         self._sorted = None
 
     def insert(self, index: int, value: ObservationInfo | MutableMapping[str, Any]) -> None:
         value = self._coerce_value(value)
-        self._members.insert(index, value)
+        self.root.insert(index, value)
         self._sorted = None
 
     def reverse(self) -> None:
-        self._members.reverse()
+        self.root.reverse()
 
     def sort(self, key: Callable | None = None, reverse: bool = False) -> None:
-        self._members.sort(key=key, reverse=reverse)
+        self.root.sort(key=key, reverse=reverse)
         if key is None and not reverse and self._sorted is None:
-            # Store sorted order in cache
-            self._sorted = self._members.copy()
+            # Store sorted order in cache. We only cache the sorted order
+            # if we are doing a default time-based sort so that newest
+            # and oldest can work properly without having to resort each time.
+            # We know that if the cache is populated that that is already
+            # the correct answer so no need to re-copy.
+            self._sorted = self.root.copy()
 
     def extremes(self) -> tuple[ObservationInfo, ObservationInfo]:
         """Return the oldest observation in the group and the newest.
@@ -187,7 +194,7 @@ class ObservationGroup(MutableSequence):
             Newest observation.
         """
         if self._sorted is None:
-            self._sorted = sorted(self._members)
+            self._sorted = sorted(self.root)
         return self._sorted[0], self._sorted[-1]
 
     def newest(self) -> ObservationInfo:
@@ -225,7 +232,7 @@ class ObservationGroup(MutableSequence):
         """
         return {getattr(obs_info, property) for obs_info in self}
 
-    def to_simple(self) -> list[MutableMapping[str, Any]]:
+    def to_simple(self) -> MutableSequence[MutableMapping[str, Any]]:
         """Convert the group to simplified form.
 
         Returns
@@ -237,7 +244,7 @@ class ObservationGroup(MutableSequence):
         return [obsinfo.to_simple() for obsinfo in self]
 
     @classmethod
-    def from_simple(cls, simple: list[dict[str, Any]]) -> ObservationGroup:
+    def from_simple(cls, simple: Sequence[MutableMapping[str, Any]]) -> ObservationGroup:
         """Convert simplified form back to `ObservationGroup`.
 
         Parameters
