@@ -275,6 +275,7 @@ class MetadataTranslator:
             return_type = type(constant)
             property_doc = f"Returns constant value for '{property_key}' property"
 
+        constant_translator.__annotations__["return"] = return_type
         if return_type.__module__ == "builtins":
             full_name = return_type.__name__
         else:
@@ -342,8 +343,10 @@ class MetadataTranslator:
         if property_key in cls.all_properties:
             property_doc = cls.all_properties[property_key].doc
             return_type = cls.all_properties[property_key].str_type
+            return_pytype = cls.all_properties[property_key].py_type
         else:
             return_type = "str` or `numbers.Number"
+            return_pytype = Any
             property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
 
         def trivial_translator(self: MetadataTranslator) -> Any:
@@ -387,6 +390,8 @@ class MetadataTranslator:
                 value = casts[return_type](value)
 
             return value
+
+        trivial_translator.__annotations__["return"] = return_pytype
 
         # Docstring inheritance means it is confusing to specify here
         # exactly which header value is being used.
