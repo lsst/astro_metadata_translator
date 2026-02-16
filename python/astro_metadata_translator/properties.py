@@ -454,6 +454,35 @@ class PropertyDefinition:
             return self.py_type.__name__
         return f"{self.py_type.__module__}.{self.py_type.__qualname__}"
 
+    def is_value_conformant(self, value: Any) -> bool:
+        """Compare the supplied value against the expected type as defined
+        for this property.
+
+        Parameters
+        ----------
+        value : `object`
+            Value of the property to validate. Can be `None`.
+
+        Returns
+        -------
+        is_ok : `bool`
+            `True` if the value is of an appropriate type.
+
+        Notes
+        -----
+        Currently only the type of the property is validated. There is no
+        attempt to check bounds or determine that a Quantity is compatible
+        with the property.
+        """
+        if value is None:
+            return True
+
+        py_type = self.py_type
+        if issubclass(py_type, astropy.coordinates.AltAz) and isinstance(value, astropy.coordinates.SkyCoord):
+            value = value.frame
+
+        return isinstance(value, py_type)
+
 
 # Dict of properties to tuple where tuple is:
 # - description of property

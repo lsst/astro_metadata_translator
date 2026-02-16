@@ -23,7 +23,6 @@ from collections.abc import MutableMapping, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 import astropy.time
-from astropy.coordinates import AltAz, SkyCoord
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -337,7 +336,7 @@ class ObservationInfo(BaseModel):
                     continue
 
             definition = self.all_properties[property]
-            if not self._is_property_ok(definition, value):
+            if not definition.is_value_conformant(value):
                 err_msg = (
                     f"Value calculated for property '{property}' is wrong type "
                     f"({type(value)} != {definition.str_type}) using translator {translator.__class__}"
@@ -645,7 +644,7 @@ class ObservationInfo(BaseModel):
     ) -> Any:
         definition = properties[key]
         converted = cls._coerce_from_simple(definition, value, processed)
-        if not cls._is_property_ok(definition, converted):
+        if not definition.is_value_conformant(converted):
             raise TypeError(
                 f"Supplied value {value} for property {key} "
                 f"should be of class {definition.str_type} not {converted.__class__}"
@@ -659,50 +658,13 @@ class ObservationInfo(BaseModel):
         value: Any,
         processed: dict[str, Any],
     ) -> Any:
-        if cls._is_property_ok(definition, value):
+        if definition.is_value_conformant(value):
             return value
         complexifier = definition.from_simple
         if complexifier is None:
             # Not the correct type, assumes caller will check.
             return value
         return complexifier(value, **processed)
-
-    @classmethod
-    def _is_property_ok(cls, definition: PropertyDefinition, value: Any) -> bool:
-        """Compare the supplied value against the expected type as defined
-        for the corresponding property.
-
-        Parameters
-        ----------
-        definition : `PropertyDefinition`
-            Property definition.
-        value : `object`
-            Value of the property to validate.
-
-        Returns
-        -------
-        is_ok : `bool`
-            `True` if the value is of an appropriate type.
-
-        Notes
-        -----
-        Currently only the type of the property is validated. There is no
-        attempt to check bounds or determine that a Quantity is compatible
-        with the property.
-        """
-        if value is None:
-            return True
-
-        # For AltAz coordinates, they can either arrive as AltAz or
-        # as SkyCoord(frame=AltAz) so try to find the frame inside
-        # the SkyCoord.
-        if issubclass(definition.py_type, AltAz) and isinstance(value, SkyCoord):
-            value = value.frame
-
-        if not isinstance(value, definition.py_type):
-            return False
-
-        return True
 
     @property
     def cards_used(self) -> frozenset[str]:
