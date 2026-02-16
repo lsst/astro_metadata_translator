@@ -32,6 +32,7 @@ import astropy.io.fits.card
 import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle
+from lsst.utils.iteration import ensure_iterable
 
 from .properties import PROPERTIES, PropertyDefinition
 
@@ -359,8 +360,7 @@ class MetadataTranslator:
                     q = Angle(q)
                 return q
 
-            keywords = header_key if isinstance(header_key, list) else [header_key]
-            for key in keywords:
+            for key in ensure_iterable(header_key):
                 if self.is_key_ok(key):
                     value = self._header[key]
                     if default is not None and not isinstance(value, str):
@@ -374,12 +374,12 @@ class MetadataTranslator:
                     try:
                         checker(self)
                     except Exception as e:
-                        raise KeyError(f"Could not find {keywords} in header") from e
+                        raise KeyError(f"Could not find {header_key} in header") from e
                     return default
                 elif default is not None:
                     value = default
                 else:
-                    raise KeyError(f"Could not find {keywords} in header")
+                    raise KeyError(f"Could not find {header_key} in header")
 
             # If we know this is meant to be a string, force to a string.
             # Sometimes headers represent items as integers which generically
