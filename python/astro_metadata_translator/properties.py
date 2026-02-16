@@ -484,24 +484,23 @@ class PropertyDefinition:
         return isinstance(value, py_type)
 
 
-# Dict of properties to tuple where tuple is:
-# - description of property
-# - Python type of property as a string (suitable for docstrings)
-# - Actual python type as a type
-# - Simplification function (can be None)
-# - Function to convert simple form back to required type (can be None)
+# This dict defines all the core properties of an ObservationInfo.
+# The PropertyDefinition is keyed by the property name.
+# The doc string is used to define the Pydantic model.
+# The py_type/doc are used to create the translator methods.
+# The optional callables are used to convert types for serialization and
+# validation.
 PROPERTIES = {
-    "telescope": PropertyDefinition("Full name of the telescope.", "str", str),
-    "instrument": PropertyDefinition("The instrument used to observe the exposure.", "str", str),
+    "telescope": PropertyDefinition("Full name of the telescope.", str),
+    "instrument": PropertyDefinition("The instrument used to observe the exposure.", str),
     "location": PropertyDefinition(
         "Location of the observatory.",
-        "astropy.coordinates.EarthLocation",
         astropy.coordinates.EarthLocation,
         earthlocation_to_simple,
         simple_to_earthlocation,
     ),
     "exposure_id": PropertyDefinition(
-        "Unique (with instrument) integer identifier for this observation.", "int", int
+        "Unique (with instrument) integer identifier for this observation.", int
     ),
     "visit_id": PropertyDefinition(
         """ID of the Visit this Exposure is associated with.
@@ -509,64 +508,53 @@ PROPERTIES = {
 Science observations should essentially always be
 associated with a visit, but calibration observations
 may not be.""",
-        "int",
         int,
     ),
-    "physical_filter": PropertyDefinition("The bandpass filter used for this observation.", "str", str),
+    "physical_filter": PropertyDefinition("The bandpass filter used for this observation.", str),
     "datetime_begin": PropertyDefinition(
         "Time of the start of the observation.",
-        "astropy.time.Time",
         astropy.time.Time,
         datetime_to_simple,
         simple_to_datetime,
     ),
     "datetime_end": PropertyDefinition(
         "Time of the end of the observation.",
-        "astropy.time.Time",
         astropy.time.Time,
         datetime_to_simple,
         simple_to_datetime,
     ),
     "exposure_time": PropertyDefinition(
         "Actual duration of the exposure (seconds).",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         exptime_to_simple,
         simple_to_exptime,
     ),
     "exposure_time_requested": PropertyDefinition(
         "Requested duration of the exposure (seconds).",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         exptime_to_simple,
         simple_to_exptime,
     ),
     "dark_time": PropertyDefinition(
         "Duration of the exposure with shutter closed (seconds).",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         exptime_to_simple,
         simple_to_exptime,
     ),
-    "boresight_airmass": PropertyDefinition("Airmass of the boresight of the telescope.", "float", float),
+    "boresight_airmass": PropertyDefinition("Airmass of the boresight of the telescope.", float),
     "boresight_rotation_angle": PropertyDefinition(
         "Angle of the instrument in boresight_rotation_coord frame.",
-        "astropy.coordinates.Angle",
         astropy.coordinates.Angle,
         angle_to_simple,
         simple_to_angle,
     ),
     "boresight_rotation_coord": PropertyDefinition(
         "Coordinate frame of the instrument rotation angle (options: sky, unknown).",
-        "str",
         str,
     ),
-    "detector_num": PropertyDefinition(
-        "Unique (for instrument) integer identifier for the sensor.", "int", int
-    ),
+    "detector_num": PropertyDefinition("Unique (for instrument) integer identifier for the sensor.", int),
     "detector_name": PropertyDefinition(
         "Name of the detector within the instrument (might not be unique if there are detector groups).",
-        "str",
         str,
     ),
     "detector_unique_name": PropertyDefinition(
@@ -574,94 +562,80 @@ may not be.""",
             "Unique name of the detector within the focal plane, generally combining detector_group with "
             "detector_name."
         ),
-        "str",
         str,
     ),
-    "detector_serial": PropertyDefinition("Serial number/string associated with this detector.", "str", str),
+    "detector_serial": PropertyDefinition("Serial number/string associated with this detector.", str),
     "detector_group": PropertyDefinition(
         "Collection name of which this detector is a part. Can be None if there are no detector groupings.",
-        "str",
         str,
     ),
     "detector_exposure_id": PropertyDefinition(
         "Unique integer identifier for this detector in this exposure.",
-        "int",
         int,
     ),
     "focus_z": PropertyDefinition(
         "Defocal distance.",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         focusz_to_simple,
         simple_to_focusz,
     ),
-    "object": PropertyDefinition("Object of interest or field name.", "str", str),
+    "object": PropertyDefinition("Object of interest or field name.", str),
     "temperature": PropertyDefinition(
         "Temperature outside the dome.",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         temperature_to_simple,
         simple_to_temperature,
     ),
     "pressure": PropertyDefinition(
         "Atmospheric pressure outside the dome.",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         pressure_to_simple,
         simple_to_pressure,
     ),
-    "relative_humidity": PropertyDefinition("Relative humidity outside the dome.", "float", float),
+    "relative_humidity": PropertyDefinition("Relative humidity outside the dome.", float),
     "tracking_radec": PropertyDefinition(
         "Requested RA/Dec to track.",
-        "astropy.coordinates.SkyCoord",
         astropy.coordinates.SkyCoord,
         skycoord_to_simple,
         simple_to_skycoord,
     ),
     "altaz_begin": PropertyDefinition(
         "Telescope boresight azimuth and elevation at start of observation.",
-        "astropy.coordinates.AltAz",
         astropy.coordinates.AltAz,
         altaz_to_simple,
         simple_to_altaz,
     ),
     "altaz_end": PropertyDefinition(
         "Telescope boresight azimuth and elevation at end of observation.",
-        "astropy.coordinates.AltAz",
         astropy.coordinates.AltAz,
         altaz_to_simple,
         simple_to_altaz,
     ),
-    "science_program": PropertyDefinition("Observing program (survey or proposal) identifier.", "str", str),
+    "science_program": PropertyDefinition("Observing program (survey or proposal) identifier.", str),
     "observation_type": PropertyDefinition(
         "Type of observation (currently: science, dark, flat, bias, focus).",
-        "str",
         str,
     ),
     "observation_id": PropertyDefinition(
         "Label uniquely identifying this observation (can be related to 'exposure_id').",
-        "str",
         str,
     ),
     "observation_reason": PropertyDefinition(
         "Reason this observation was taken, or its purpose ('science' and 'calibration' are common values)",
-        "str",
         str,
     ),
     "exposure_group": PropertyDefinition(
         "Label to use to associate this exposure with others (can be related to 'exposure_id').",
-        "str",
         str,
     ),
     "observing_day": PropertyDefinition(
-        "Integer in YYYYMMDD format corresponding to the day of observation.", "int", int
+        "Integer in YYYYMMDD format corresponding to the day of observation.", int
     ),
     "observing_day_offset": PropertyDefinition(
         (
             "Offset to subtract from an observation date when calculating the observing day. "
             "Conversely, the offset to add to an observing day when calculating the time span of a day."
         ),
-        "astropy.time.TimeDelta",
         astropy.time.TimeDelta,
         timedelta_to_simple,
         simple_to_timedelta,
@@ -671,17 +645,15 @@ may not be.""",
             "Counter of this observation. Can be counter within observing_day or a global counter. "
             "Likely to be observatory specific."
         ),
-        "int",
         int,
     ),
     "has_simulated_content": PropertyDefinition(
-        "Boolean indicating whether any part of this observation was simulated.", "bool", bool, None, None
+        "Boolean indicating whether any part of this observation was simulated.", bool, None, None
     ),
     "group_counter_start": PropertyDefinition(
         "Observation counter for the start of the exposure group."
         "Depending on the instrument the relevant group may be "
         "visit_id or exposure_group.",
-        "int",
         int,
         None,
         None,
@@ -690,7 +662,6 @@ may not be.""",
         "Observation counter for the end of the exposure group. "
         "Depending on the instrument the relevant group may be "
         "visit_id or exposure_group.",
-        "int",
         int,
         None,
         None,
@@ -699,7 +670,6 @@ may not be.""",
         "True if the observation is looking at sky, False if it is definitely"
         " not looking at the sky. None indicates that it is not known whether"
         " sky could be seen.",
-        "bool",
         bool,
     ),
 }
