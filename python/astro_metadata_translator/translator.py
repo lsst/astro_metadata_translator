@@ -283,7 +283,7 @@ class MetadataTranslator:
 
         constant_translator.__doc__ = f"""{textwrap.dedent(property_doc)}
 
-:returns: Translated property.
+:returns: Translated property that is fixed to a single value by the translator.
 :rtype: `{full_name}`
 """
         return constant_translator
@@ -397,8 +397,8 @@ class MetadataTranslator:
         # exactly which header value is being used.
         trivial_translator.__doc__ = f"""{textwrap.dedent(property_doc)}
 
-:returns: Translated value derived from the header.
-:rtype: {return_type}
+:returns: Translated value derived directly from a single header.
+:rtype: `{return_type}`
 """
         return trivial_translator
 
