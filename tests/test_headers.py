@@ -15,7 +15,13 @@ import unittest
 from collections.abc import MutableMapping
 from typing import Any, Never
 
-from astro_metadata_translator import DecamTranslator, HscTranslator, fix_header, merge_headers
+from astro_metadata_translator import (
+    DecamTranslator,
+    HscTranslator,
+    ObservationInfo,
+    fix_header,
+    merge_headers,
+)
 from astro_metadata_translator.file_helpers import read_basic_metadata_from_file
 from astro_metadata_translator.tests import read_test_file
 
@@ -396,6 +402,21 @@ class HeadersTestCase(unittest.TestCase):
         # Order should not matter
         merged = merge_headers([self.h4, self.h3, self.h2, self.h1], mode="append", sort=True)
         self.assertEqual(merged, expected)
+
+    def test_stripped_header_after_mutation(self) -> None:
+        """Check stripping tolerates changes to the original header."""
+        header = read_test_file("fitsheader-hsc.yaml", dir=os.path.join(TESTDIR, "data"))
+        info = ObservationInfo(header, pedantic=False)
+        used = info.cards_used
+        self.assertTrue(used)
+
+        # Mutate original header after translation.
+        key = next(iter(used))
+        header.pop(key, None)
+
+        # Should not raise if cards_used include keys no longer present.
+        stripped = info.stripped_header()
+        self.assertNotIn(key, stripped)
 
 
 class FixHeadersTestCase(unittest.TestCase):

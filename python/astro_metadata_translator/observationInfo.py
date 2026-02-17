@@ -696,7 +696,8 @@ class ObservationInfo(BaseModel):
         hdr = copy.copy(self._header)
         used = self.cards_used
         for c in used:
-            del hdr[c]
+            if c in hdr:
+                del hdr[c]
         return hdr
 
     def __str__(self) -> str:
