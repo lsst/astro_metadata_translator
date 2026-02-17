@@ -316,9 +316,16 @@ def process_index_data(
 
     # The common headers will be copied into each header
     common = unpacked.pop(COMMON_KEY)
+    if not isinstance(common, MutableMapping):
+        raise ValueError(
+            f"Common index metadata stored in '{COMMON_KEY}' must be a mapping, not {type(common)}."
+        )
 
     for file in unpacked:
-        unpacked[file].update(common)
+        file_content = unpacked[file]
+        if not isinstance(file_content, MutableMapping):
+            raise ValueError(f"Index entry for file '{file}' must be a mapping, not {type(file_content)}.")
+        file_content.update(common)
 
     if content_mode == "metadata":
         # nothing more to be done

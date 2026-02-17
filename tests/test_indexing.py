@@ -199,6 +199,14 @@ class IndexingTestCase(unittest.TestCase):
         self.assertIsInstance(json_info, ObservationInfo)
         self.assertEqual(json_info, info)
 
+    def test_bad_index_structure(self) -> None:
+        """Check malformed index structures fail with clear errors."""
+        with self.assertRaises(ValueError):
+            process_index_data({"__COMMON__": 5, "file1": {}})
+
+        with self.assertRaises(ValueError):
+            process_index_data({"__COMMON__": {}, "file1": 5})
+
 
 if __name__ == "__main__":
     unittest.main()
