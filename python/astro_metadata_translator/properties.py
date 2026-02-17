@@ -26,17 +26,60 @@ __all__ = (
 )
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Protocol, SupportsFloat
 
 import astropy.coordinates
 import astropy.time
 import astropy.units
+import numpy as np
 
 # Helper functions to convert complex types to simple form suitable
 # for JSON serialization
 # All take the complex type and return simple python form using str, float,
 # int, dict, or list.
 # All assume the supplied parameter is not None.
+
+
+class _ToValueProtocol(Protocol):
+    """Protocol for Quantity-like class that has to_value method."""
+
+    def to_value(self, unit: astropy.units.UnitBase | None = None) -> SupportsFloat | np.ndarray:
+        """Return converted value that might be ndarray or a single number.
+
+        Parameters
+        ----------
+        unit : `astropy.units.UnitBase` or `None`, optional
+            Optional unit to use when converting the values to floats.
+        """
+        ...
+
+
+def _quantity_to_float(q: _ToValueProtocol, unit: astropy.units.UnitBase | None = None) -> float:
+    """Convert a quantity to a float, in a type safe manner, returning
+    a single float.
+
+    Parameters
+    ----------
+    q : `_ToValueProtocol`
+        The Astropy object to extract the float value from. Must support a
+        ``to_value()`` method.
+    unit : `astropy.units.UnitBase` or `None`, optional
+        Optional unit to use when converting the values to floats.
+
+    Returns
+    -------
+    value : `float`
+        Single float corresponding to the quantity-like input.
+    """
+    # Quantity.to_value is typed to return np.ndarray or a scalar-like value
+    # that supports float conversion.
+    # We only went a single float and it is an error to return multiples.
+    values = q.to_value(unit=unit)
+    if isinstance(values, np.ndarray):
+        raise ValueError(
+            f"Converting quantity to a float failed because unexpectedly got more than one float: {values}"
+        )
+    return float(values)
 
 
 def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tuple[float, ...]:
@@ -53,7 +96,7 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tupl
         The geocentric location as three floats in meters.
     """
     geocentric = location.to_geocentric()
-    return tuple(float(c.to_value(astropy.units.m)) for c in geocentric)
+    return tuple(_quantity_to_float(c, astropy.units.m) for c in geocentric)
 
 
 def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
@@ -106,7 +149,7 @@ def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.ti
     t : `astropy.time.Time`
         An astropy time object.
     """
-    return astropy.time.Time(*simple, format="jd", scale="tai")
+    return astropy.time.Time(simple[0], val2=simple[1], format="jd", scale="tai")
 
 
 def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
@@ -122,7 +165,7 @@ def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
     e : `float`
         Exposure time in seconds.
     """
-    return float(exptime.to_value(astropy.units.s))
+    return _quantity_to_float(exptime, astropy.units.s)
 
 
 def simple_to_exptime(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -156,7 +199,7 @@ def angle_to_simple(angle: astropy.coordinates.Angle) -> float:
     a : `float`
         The angle in degrees.
     """
-    return float(angle.to_value(astropy.units.deg))
+    return _quantity_to_float(angle, astropy.units.deg)
 
 
 def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
@@ -195,7 +238,7 @@ def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
     f : `float`
         The z-focus in meters.
     """
-    return float(focusz.to_value(astropy.units.m))
+    return _quantity_to_float(focusz, astropy.units.m)
 
 
 def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -229,7 +272,8 @@ def temperature_to_simple(temp: astropy.units.Quantity) -> float:
     t : `float`
         The temperature in kelvin.
     """
-    return float(temp.to(astropy.units.K, equivalencies=astropy.units.temperature()).to_value())
+    q = temp.to(astropy.units.K, equivalencies=astropy.units.temperature())
+    return _quantity_to_float(q)
 
 
 def simple_to_temperature(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -263,7 +307,7 @@ def pressure_to_simple(press: astropy.units.Quantity) -> float:
     hpa : `float`
         The pressure in units of hPa.
     """
-    return float(press.to_value(astropy.units.hPa))
+    return _quantity_to_float(press, astropy.units.hPa)
 
 
 def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -298,7 +342,13 @@ def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, f
         Sky coordinates as a tuple of two floats in units of degrees.
     """
     icrs = skycoord.icrs
-    return (float(icrs.ra.to_value(astropy.units.deg)), float(icrs.dec.to_value(astropy.units.deg)))
+    if not isinstance(icrs, astropy.coordinates.SkyCoord):
+        raise ValueError(f"Could not extract ICRS coordinates from SkyCoord {skycoord}")
+    ra = icrs.ra
+    assert isinstance(ra, astropy.coordinates.Longitude)
+    dec = icrs.dec
+    assert isinstance(dec, astropy.coordinates.Latitude)
+    return (_quantity_to_float(ra, astropy.units.deg), _quantity_to_float(dec, astropy.units.deg))
 
 
 def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.SkyCoord:
@@ -336,7 +386,7 @@ def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
         The Alt/Az as a tuple of two floats representing the position in
         units of degrees.
     """
-    return (float(altaz.az.to_value(astropy.units.deg)), float(altaz.alt.to_value(astropy.units.deg)))
+    return (_quantity_to_float(altaz.az, astropy.units.deg), _quantity_to_float(altaz.alt, astropy.units.deg))
 
 
 def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.AltAz:
@@ -388,7 +438,7 @@ def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
     sec : `int`
         Offset in integer seconds.
     """
-    return round(float(delta.to_value("s")))
+    return round(_quantity_to_float(delta, astropy.units.s))
 
 
 def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
