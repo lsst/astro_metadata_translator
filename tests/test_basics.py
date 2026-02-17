@@ -14,6 +14,8 @@ import unittest
 
 import astropy.time
 import astropy.units as u
+from astropy.coordinates import EarthLocation, SkyCoord
+from astropy.time import Time
 from pydantic import BaseModel, ValidationError
 
 import astro_metadata_translator
@@ -151,6 +153,47 @@ class BasicTestCase(unittest.TestCase):
         from_j = ModelWithObsInfo.model_validate_json(json_str)
         self.assertEqual(from_j.number, 42)
         self.assertEqual(from_j.obs_info.detector_name, "DETECTOR")
+
+    def test_altaz_extraction(self) -> None:
+        """Test that an AltAz embedded in a SkyCoord is extracted correctly."""
+        # This test came originally from ip_diffim
+        lsst_lat = -30.244639 * u.degree
+        lsst_lon = -70.749417 * u.degree
+        lsst_alt = 2663.0 * u.m
+        lsst_temperature = 20.0 * u.Celsius
+        lsst_humidity = 40.0  # in percent
+        lsst_pressure = 73892.0 * u.pascal
+        elevation = 45.0 * u.degree
+        azimuth = 110.0 * u.degree
+        rotangle = 30.0 * u.degree
+
+        loc = EarthLocation(lat=lsst_lat, lon=lsst_lon, height=lsst_alt)
+        airmass = 1.0 / math.sin(elevation.to_value())
+
+        time = Time(2026.0, format="jyear", scale="tai")
+        altaz = SkyCoord(
+            alt=elevation,
+            az=azimuth,
+            obstime=time,
+            frame="altaz",
+            location=loc,
+        )
+        obsinfo = makeObservationInfo(
+            location=loc,
+            detector_exposure_id=12345678,
+            datetime_begin=time,
+            datetime_end=time,
+            boresight_airmass=airmass,
+            boresight_rotation_angle=rotangle,
+            boresight_rotation_coord="sky",
+            temperature=lsst_temperature,
+            pressure=lsst_pressure,
+            relative_humidity=lsst_humidity,
+            tracking_radec=altaz.icrs,
+            altaz_begin=altaz,
+            observation_type="science",
+        )
+        self.assertIsInstance(obsinfo, ObservationInfo)
 
 
 if __name__ == "__main__":

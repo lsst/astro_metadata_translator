@@ -174,7 +174,12 @@ def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
     a : `astropy.coordinates.Angle`
         The angle as an object.
     """
-    return astropy.coordinates.Angle(simple * astropy.units.deg)
+    # Quantity of 45. deg is not the same as Angle.
+    if isinstance(simple, astropy.units.Quantity):
+        angle = simple
+    else:
+        angle = simple * astropy.units.deg
+    return astropy.coordinates.Angle(angle)
 
 
 def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
@@ -350,6 +355,16 @@ def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coord
     altaz : `astropy.coordinates.AltAz`
         The altaz in astropy form.
     """
+    # Sometimes we get given a SkyCoord that contains an AltAz frame that needs
+    # to be extracted.
+    if isinstance(simple, astropy.coordinates.SkyCoord):
+        frame = simple.frame
+        if isinstance(frame, astropy.coordinates.AltAz):
+            return frame
+        # If there is no AltAz frame, return what we have so that downstream
+        # validation can fail.
+        return simple
+
     location = kwargs.get("location")
     obstime = kwargs.get("datetime_begin")
 
@@ -477,11 +492,7 @@ class PropertyDefinition:
         if value is None:
             return True
 
-        py_type = self.py_type
-        if issubclass(py_type, astropy.coordinates.AltAz) and isinstance(value, astropy.coordinates.SkyCoord):
-            value = value.frame
-
-        return isinstance(value, py_type)
+        return isinstance(value, self.py_type)
 
 
 # This dict defines all the core properties of an ObservationInfo.
