@@ -266,16 +266,21 @@ class ObservationInfo(BaseModel):
         self._header = {}
         self._translator = None
 
+        # Look for translator class before header fixup. fix_header calls
+        # determine_translator immediately on the basis that you need to know
+        # enough of the header to work out the translator before you can fix
+        # it up. There is no gain in asking fix_header to determine the
+        # translator and then trying to work it out again here.
+        if translator_class is None:
+            translator_class = MetadataTranslator.determine_translator(header, filename=filename)
+        elif not issubclass(translator_class, MetadataTranslator):
+            raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
+
         # Fix up the header (if required)
         fix_header(header, translator_class=translator_class, filename=filename, search_path=search_path)
 
         # Store the supplied header for later stripping
         self._header = header
-
-        if translator_class is None:
-            translator_class = MetadataTranslator.determine_translator(header, filename=filename)
-        elif not issubclass(translator_class, MetadataTranslator):
-            raise TypeError(f"Translator class must be a MetadataTranslator, not {translator_class}")
 
         # This configures both self.extensions and self.all_properties.
         self._declare_extensions(translator_class.extensions)

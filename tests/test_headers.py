@@ -16,6 +16,7 @@ from collections.abc import MutableMapping
 from typing import Any, Never
 
 from astro_metadata_translator import DecamTranslator, HscTranslator, fix_header, merge_headers
+from astro_metadata_translator.file_helpers import read_basic_metadata_from_file
 from astro_metadata_translator.tests import read_test_file
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
@@ -506,6 +507,18 @@ class FixHeadersTestCase(unittest.TestCase):
 
         # Test the translator version in provenance
         self.assertEqual(header["HIERARCH ASTRO METADATA FIX VERSION"], "1.0.0")
+
+    def test_bad_file(self) -> None:
+        """Test that we get a log message if no translator can be
+        determined.
+        """
+        bad_file = os.path.join(TESTDIR, "data", "corrections", "SCUBA_test-20000101_00002.yaml")
+        md = read_basic_metadata_from_file(bad_file, 0)
+        assert md is not None  # for mypy.
+        with self.assertLogs(level="DEBUG") as cm:
+            result = fix_header(md)
+        self.assertFalse(result)
+        self.assertIn("Unable to determine translator class", "\n".join(cm.output))
 
 
 if __name__ == "__main__":
