@@ -48,6 +48,11 @@ class BasicTestCase(unittest.TestCase):
         # Check NaN equality.
         obsinfo1 = ObservationInfo(relative_humidity=math.nan, detector_name="det1")
         self.assertEqual(obsinfo1, obsinfo1)
+        self.assertNotEqual(ObservationInfo(observation_id="A"), ObservationInfo(observation_id="B"))
+        self.assertEqual(
+            ObservationInfo(observation_id="A") == ObservationInfo(observation_id="A", instrument="HSC"),
+            ObservationInfo(observation_id="A", instrument="HSC") == ObservationInfo(observation_id="A"),
+        )
 
         with self.assertRaises(TypeError):
             _ = obsinfo > obsinfo

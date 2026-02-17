@@ -738,10 +738,15 @@ class ObservationInfo(BaseModel):
         self_simple.pop("_translator", None)
         other_simple.pop("_translator", None)
 
-        for k, self_value in self_simple.items():
+        for k in self_simple.keys() & other_simple.keys():
+            self_value = self_simple[k]
             other_value = other_simple[k]
             if self_value != other_value:
-                if math.isnan(self_value) and math.isnan(other_value):
+                try:
+                    both_nan = math.isnan(self_value) and math.isnan(other_value)
+                except TypeError:
+                    both_nan = False
+                if both_nan:
                     # If both are nan this is fine
                     continue
                 return False
