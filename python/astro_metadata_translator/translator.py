@@ -32,6 +32,7 @@ import astropy.io.fits.card
 import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle
+from lsst.resources import ResourcePath
 from lsst.utils.iteration import ensure_iterable
 
 from .properties import PROPERTIES, PropertyDefinition
@@ -118,10 +119,11 @@ class MetadataTranslator:
     header : `dict`-like
         Representation of an instrument header that can be manipulated
         as if it was a `dict`.
-    filename : `str`, optional
+    filename : `str` or `~lsst.resources.ResourcePathExpression`, optional
         Name of the file whose header is being translated.  For some
         datasets with missing header information this can sometimes
-        allow for some fixups in translations.
+        allow for some fixups in translations. It is usually used for error
+        reporting and logging.
     """
 
     # These are all deliberately empty in the base class.
@@ -515,8 +517,10 @@ class MetadataTranslator:
             if property_key not in properties:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
 
-    def __init__(self, header: Mapping[str, Any], filename: str | None = None) -> None:
+    def __init__(self, header: Mapping[str, Any], filename: ResourcePathExpression | None = None) -> None:
         self._header = header
+        if filename is not None:
+            filename = str(ResourcePath(filename, forceAbsolute=True))
         self.filename = filename
         self._used_cards: set[str] = set()
 

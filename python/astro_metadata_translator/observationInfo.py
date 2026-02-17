@@ -23,6 +23,7 @@ from collections.abc import MutableMapping, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 import astropy.time
+from lsst.resources import ResourcePath
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -222,7 +223,7 @@ class ObservationInfo(BaseModel):
     def __init__(
         self,
         header: MutableMapping[str, Any] | None = None,
-        filename: str | None = None,
+        filename: str | ResourcePath | None = None,
         translator_class: type[MetadataTranslator] | None = None,
         pedantic: bool = False,
         search_path: Sequence[str] | None = None,
@@ -230,6 +231,8 @@ class ObservationInfo(BaseModel):
         subset: set[str] | None = None,
         **kwargs: Any,
     ) -> None:
+        if filename is not None:
+            filename = str(ResourcePath(filename, forceAbsolute=True))
         if header is not None:
             if kwargs:
                 raise ValueError(
