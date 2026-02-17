@@ -207,6 +207,14 @@ class IndexingTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             process_index_data({"__COMMON__": {}, "file1": 5})
 
+    def test_bad_content_mode(self) -> None:
+        """Check malformed content mode values are rejected."""
+        with self.assertRaises(ValueError):
+            process_index_data({"__COMMON__": {}, "__CONTENT__": "unknown", "file1": {}})
+
+        with self.assertRaises(ValueError):
+            process_sidecar_data({"__CONTENT__": "unknown"})
+
 
 if __name__ == "__main__":
     unittest.main()

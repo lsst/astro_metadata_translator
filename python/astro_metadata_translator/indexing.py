@@ -313,6 +313,8 @@ def process_index_data(
     elif content_mode is None:
         log.warning("No '%s' key in data structure, assuming 'metadata'", CONTENT_KEY)
         content_mode = "metadata"
+    elif content_mode not in ("metadata", "translated"):
+        raise ValueError(f"Unrecognized mode '{content_mode}' in index data structure.")
 
     # The common headers will be copied into each header
     common = unpacked.pop(COMMON_KEY)
@@ -432,6 +434,8 @@ def process_sidecar_data(
         else:
             content_mode = "metadata"
         log.warning("No '%s' key in data structure, assuming '%s'", CONTENT_KEY, content_mode)
+    elif content_mode not in ("metadata", "translated"):
+        raise ValueError(f"Unrecognized mode '{content_mode}' in sidecar data structure.")
 
     if content_mode == "metadata":
         # nothing more to be done
