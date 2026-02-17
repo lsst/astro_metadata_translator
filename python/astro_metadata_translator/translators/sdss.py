@@ -216,14 +216,14 @@ class SdssTranslator(FitsTranslator):
         return obstype
 
     @cache_translation
-    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord:
+    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord | None:
         # Docstring will be inherited. Property defined in properties.py
         radecsys = ("RADECSYS",)
         radecpairs = (("RA", "DEC"),)
         return tracking_from_degree_headers(self, radecsys, radecpairs, unit=u.deg)
 
     @cache_translation
-    def to_altaz_begin(self) -> AltAz:
+    def to_altaz_begin(self) -> AltAz | None:
         # Docstring will be inherited. Property defined in properties.py
         try:
             az = self._header["AZ"]
@@ -253,13 +253,13 @@ class SdssTranslator(FitsTranslator):
     @cache_translation
     def to_detector_exposure_id(self) -> int | None:
         # Docstring will be inherited. Property defined in properties.py
+        run = self.to_exposure_id()
+        filt = self.to_physical_filter()
         try:
             frame_field_map = {"r": 0, "i": 2, "u": 4, "z": 6, "g": 8}
-            run = self._header["RUN"]
-            filt = self._header["FILTER"]
             camcol = self._header["CAMCOL"]
             field = self._header["FRAME"] - frame_field_map[filt]
-            self._used_these_cards("RUN", "FILTER", "CAMCOL", "FRAME")
+            self._used_these_cards("CAMCOL", "FRAME")
         except Exception as e:
             if self.to_observation_type() != "science":
                 return None

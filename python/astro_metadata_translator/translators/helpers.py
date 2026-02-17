@@ -98,8 +98,8 @@ def tracking_from_degree_headers(
     translator: MetadataTranslator,
     radecsys: Sequence[str],
     radecpairs: tuple[tuple[str, str], ...],
-    unit: astropy.units.Unit = u.deg,
-) -> SkyCoord:
+    unit: astropy.units.Unit | tuple[astropy.units.Unit, ...] = u.deg,
+) -> SkyCoord | None:
     """Calculate the tracking coordinates from lists of headers.
 
     Parameters
@@ -117,8 +117,8 @@ def tracking_from_degree_headers(
 
     Returns
     -------
-    radec : `astropy.coordinates.SkyCoord`
-        The RA/Dec coordinates. None if this is a moving target or a
+    radec : `astropy.coordinates.SkyCoord` or `None`
+        The RA/Dec coordinates. `None` if this is a moving target or a
         non-science observation without any RA/Dec definition.
 
     Raises
@@ -165,7 +165,7 @@ def altaz_from_degree_headers(
     is_zd: set[str] | None = None,
     max_alt: float = 90.0,
     min_alt: float = 0.0,
-) -> AltAz:
+) -> AltAz | None:
     """Calculate the altitude/azimuth coordinates from lists of headers.
 
     If the altitude is found but is greater than the maximum allowed value,
@@ -199,7 +199,7 @@ def altaz_from_degree_headers(
 
     Returns
     -------
-    altaz : `astropy.coordinates.AltAz`
+    altaz : `astropy.coordinates.AltAz` or `None`
         The AltAz coordinates associated with the telescope location
         and provided time.  Returns `None` if this observation is not
         a science observation and no AltAz keys were located.

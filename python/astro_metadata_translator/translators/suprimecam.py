@@ -215,7 +215,7 @@ class SuprimeCamTranslator(SubaruTranslator):
         return radec
 
     @cache_translation
-    def to_altaz_begin(self) -> astropy.coordinates.AltAz:
+    def to_altaz_begin(self) -> astropy.coordinates.AltAz | None:
         # Docstring will be inherited. Property defined in properties.py
         return altaz_from_degree_headers(self, (("ALTITUDE", "AZIMUTH"),), self.to_datetime_begin())
 
@@ -223,7 +223,7 @@ class SuprimeCamTranslator(SubaruTranslator):
     def to_boresight_rotation_angle(self) -> Angle:
         # Docstring will be inherited. Property defined in properties.py
         angle = Angle(self.quantity_from_card("INR-STR", u.deg))
-        angle = angle.wrap_at("360d")
+        angle.wrap_at("360d", inplace=True)
         return angle
 
     @cache_translation

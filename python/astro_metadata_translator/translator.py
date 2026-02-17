@@ -26,7 +26,7 @@ import warnings
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
 from importlib.metadata import entry_points
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Concatenate, ParamSpec, TypeVar, cast
 
 import astropy.io.fits.card
 import astropy.time
@@ -48,8 +48,14 @@ CORRECTIONS_RESOURCE_ROOT = "corrections"
 """Cache of version strings indexed by class."""
 _VERSION_CACHE: dict[type, str] = {}
 
+P = ParamSpec("P")
+R = TypeVar("R")
+SelfT = TypeVar("SelfT", bound="MetadataTranslator")
 
-def cache_translation(func: Callable, method: str | None = None) -> Callable:
+
+def cache_translation(
+    func: Callable[Concatenate[SelfT, P], R], method: str | None = None
+) -> Callable[Concatenate[SelfT, P], R]:
     """Cache the result of a translation method.
 
     Parameters
@@ -81,10 +87,10 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
     name = func.__name__ if method is None else method
 
     @functools.wraps(func)
-    def func_wrapper(self: MetadataTranslator) -> Any:
+    def func_wrapper(self: SelfT, *args: P.args, **kwargs: P.kwargs) -> R:
         if name not in self._translation_cache:
-            self._translation_cache[name] = func(self)
-        return self._translation_cache[name]
+            self._translation_cache[name] = func(self, *args, **kwargs)
+        return cast(R, self._translation_cache[name])
 
     return func_wrapper
 
@@ -171,7 +177,12 @@ class MetadataTranslator:
     ``can_see_sky`` determination."""
 
     # Static typing requires that we define the standard dynamic properties
-    # statically.
+    # statically. Translator methods that refer to on-sky observations can
+    # return None if the observation is a calibration. It seems that SDSS
+    # can sometimes fail to calculate a detector_exposure_id so we allow None
+    # there too. That is effectively a deprecated property anyhow. The
+    # date calculations currently allow a value to not be found to allow
+    # subclasses to try alternative options.
     if TYPE_CHECKING:
         to_telescope: ClassVar[Callable[[MetadataTranslator], str]]
         to_instrument: ClassVar[Callable[[MetadataTranslator], str]]
@@ -179,24 +190,24 @@ class MetadataTranslator:
         to_exposure_id: ClassVar[Callable[[MetadataTranslator], int]]
         to_visit_id: ClassVar[Callable[[MetadataTranslator], int]]
         to_physical_filter: ClassVar[Callable[[MetadataTranslator], str]]
-        to_datetime_begin: ClassVar[Callable[[MetadataTranslator], astropy.time.Time]]
-        to_datetime_end: ClassVar[Callable[[MetadataTranslator], astropy.time.Time]]
+        to_datetime_begin: ClassVar[Callable[[MetadataTranslator], astropy.time.Time | None]]
+        to_datetime_end: ClassVar[Callable[[MetadataTranslator], astropy.time.Time | None]]
         to_exposure_time: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
         to_dark_time: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
-        to_boresight_airmass: ClassVar[Callable[[MetadataTranslator], float]]
-        to_boresight_rotation_angle: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_boresight_airmass: ClassVar[Callable[[MetadataTranslator], float | None]]
+        to_boresight_rotation_angle: ClassVar[Callable[[MetadataTranslator], u.Quantity | None]]
         to_boresight_rotation_coord: ClassVar[Callable[[MetadataTranslator], str]]
         to_detector_num: ClassVar[Callable[[MetadataTranslator], int]]
         to_detector_name: ClassVar[Callable[[MetadataTranslator], str]]
         to_detector_serial: ClassVar[Callable[[MetadataTranslator], str]]
         to_detector_group: ClassVar[Callable[[MetadataTranslator], str | None]]
-        to_detector_exposure_id: ClassVar[Callable[[MetadataTranslator], int]]
+        to_detector_exposure_id: ClassVar[Callable[[MetadataTranslator], int | None]]
         to_object: ClassVar[Callable[[MetadataTranslator], str]]
         to_temperature: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
         to_pressure: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
         to_relative_humidity: ClassVar[Callable[[MetadataTranslator], float]]
-        to_tracking_radec: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.SkyCoord]]
-        to_altaz_begin: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.AltAz]]
+        to_tracking_radec: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.SkyCoord | None]]
+        to_altaz_begin: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.AltAz | None]]
         to_science_program: ClassVar[Callable[[MetadataTranslator], str]]
         to_observation_type: ClassVar[Callable[[MetadataTranslator], str]]
         to_observation_id: ClassVar[Callable[[MetadataTranslator], str]]
@@ -356,8 +367,12 @@ class MetadataTranslator:
                     header_key, unit, default=default, minimum=minimum, maximum=maximum, checker=checker
                 )
                 # Convert to Angle if this quantity is an angle
-                if return_type == "astropy.coordinates.Angle":
-                    q = Angle(q)
+                # The extra checks come from pylance complaining about the
+                # else branch above assigning Any to return_pytype.
+                if isinstance(return_pytype, type):
+                    return_pytype_cls = cast(type[Any], return_pytype)
+                    if issubclass(return_pytype_cls, Angle):
+                        q = Angle(q)
                 return q
 
             for key in ensure_iterable(header_key):

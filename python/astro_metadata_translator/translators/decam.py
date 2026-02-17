@@ -246,16 +246,13 @@ class DecamTranslator(FitsTranslator):
         data = self._header["CALIB_ID"]
         match = re.search(rf".*{field}=(\S+)", data)
         if not match:
-            raise RuntimeError(f"Header CALIB_ID with value '{data}' has not field '{field}'")
+            raise RuntimeError(f"Header CALIB_ID with value '{data}' has no field '{field}'")
         self._used_these_cards("CALIB_ID")
         return match.groups()[0]
 
     @cache_translation
-    def to_physical_filter(self) -> str | None:
+    def to_physical_filter(self) -> str:
         """Calculate physical filter.
-
-        Return `None` if the keyword FILTER does not exist in the header,
-        which can happen for some valid Community Pipeline products.
 
         Returns
         -------
@@ -266,10 +263,7 @@ class DecamTranslator(FitsTranslator):
             value = self._header["FILTER"].strip()
             self._used_these_cards("FILTER")
             return value
-        elif self.is_key_ok("CALIB_ID"):
-            return self._translate_from_calib_id("filter")
-        else:
-            return None
+        raise KeyError(f"{self._log_prefix}: Unable to find FILTER keyword in header")
 
     @cache_translation
     def to_location(self) -> astropy.coordinates.EarthLocation:
@@ -312,23 +306,21 @@ class DecamTranslator(FitsTranslator):
         return obstype
 
     @cache_translation
-    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord:
+    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord | None:
         # Docstring will be inherited. Property defined in properties.py
         radecsys = ("RADESYS",)
         radecpairs = (("TELRA", "TELDEC"),)
         return tracking_from_degree_headers(self, radecsys, radecpairs, unit=(u.hourangle, u.deg))
 
     @cache_translation
-    def to_altaz_begin(self) -> astropy.coordinates.AltAz:
+    def to_altaz_begin(self) -> astropy.coordinates.AltAz | None:
         # Docstring will be inherited. Property defined in properties.py
         return altaz_from_degree_headers(self, (("ZD", "AZ"),), self.to_datetime_begin(), is_zd={"ZD"})
 
     @cache_translation
-    def to_detector_exposure_id(self) -> int | None:
+    def to_detector_exposure_id(self) -> int:
         # Docstring will be inherited. Property defined in properties.py
         exposure_id = self.to_exposure_id()
-        if exposure_id is None:
-            return None
         return int(f"{exposure_id:07d}{self.to_detector_num():02d}")
 
     @cache_translation

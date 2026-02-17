@@ -162,7 +162,7 @@ class MegaPrimeTranslator(FitsTranslator):
         return obstype
 
     @cache_translation
-    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord:
+    def to_tracking_radec(self) -> astropy.coordinates.SkyCoord | None:
         """Calculate the tracking RA/Dec for this observation.
 
         Currently will be `None` for geocentric apparent coordinates.
@@ -173,7 +173,7 @@ class MegaPrimeTranslator(FitsTranslator):
 
         Returns
         -------
-        coords : `astropy.coordinates.SkyCoord`
+        coords : `astropy.coordinates.SkyCoord` or `None`
             The tracking coordinates.
         """
         radecsys = ("RADECSYS", "OBJRADEC", "RADESYS")
@@ -181,7 +181,7 @@ class MegaPrimeTranslator(FitsTranslator):
         return tracking_from_degree_headers(self, radecsys, radecpairs)
 
     @cache_translation
-    def to_altaz_begin(self) -> astropy.coordinates.AltAz:
+    def to_altaz_begin(self) -> astropy.coordinates.AltAz | None:
         # Docstring will be inherited. Property defined in properties.py
         return altaz_from_degree_headers(
             self, (("TELALT", "TELAZ"), ("BORE-ALT", "BORE-AZ")), self.to_datetime_begin()
