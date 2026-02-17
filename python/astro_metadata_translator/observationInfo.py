@@ -341,6 +341,12 @@ class ObservationInfo(BaseModel):
                     continue
 
             definition = self.all_properties[property]
+            # Some translators can return a compatible form that needs to
+            # be coerced to the correct type (e.g., returning SkyCoord when you
+            # need AltAz). In theory we could patch the translators to return
+            # AltAz but code has historically not been as picky about this
+            # until pydantic turned up.
+            value = self._coerce_from_simple(definition, value, {})
             if not definition.is_value_conformant(value):
                 err_msg = (
                     f"Value calculated for property '{property}' is wrong type "
