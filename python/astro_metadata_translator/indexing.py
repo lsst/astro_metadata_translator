@@ -98,7 +98,7 @@ def index_files(
         ``print_trace`` is not `None`.
     """
     if content not in ("translated", "metadata"):
-        raise ValueError("Unrecognized mode {mode}")
+        raise ValueError(f"Unrecognized mode {content}")
 
     failed: list[str] = []
     okay: list[str] = []
