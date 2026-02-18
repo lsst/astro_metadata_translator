@@ -15,11 +15,24 @@ import unittest
 from collections.abc import MutableMapping, Sequence
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from astro_metadata_translator import ObservationGroup, ObservationInfo
 from astro_metadata_translator.serialize import group_to_fits, info_to_fits
 from astro_metadata_translator.tests import read_test_file
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+class ModelWithObsGroup(BaseModel):
+    """Pydantic model that contains an ObservationGroup."""
+
+    model_config = ConfigDict(
+        ser_json_inf_nan="constants",  # Pydantic does not preserve NaN support from child models.
+    )
+
+    obs_group: ObservationGroup
+    number: int
 
 
 class ObservationGroupTestCase(unittest.TestCase):
@@ -172,6 +185,19 @@ class ObservationGroupTestCase(unittest.TestCase):
         new_group = ObservationGroup.model_validate_json(j_str)
         self.assertEqual(new_group, obs_group)
         self.assertTrue(math.isnan(new_group[-1].boresight_airmass))
+
+        # Now try a model containing a group.
+        test_model = ModelWithObsGroup(obs_group=new_group, number=42)
+        j_str = test_model.model_dump_json()
+        new_model = ModelWithObsGroup.model_validate_json(j_str)
+        self.assertEqual(new_model, test_model)
+        self.assertTrue(math.isnan(new_model.obs_group[-1].boresight_airmass))
+
+    def test_iteration_semantics(self) -> None:
+        """Test that iterating the group yields ObservationInfo members."""
+        headers = self._files_to_headers(self.decam_files)
+        obs_group = ObservationGroup(headers)
+        self.assertEqual(list(obs_group), obs_group.root)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ from __future__ import annotations
 __all__ = ("ObservationGroup",)
 
 import logging
-from collections.abc import Callable, Iterable, Iterator, MutableMapping, MutableSequence, Sequence
+from collections.abc import Callable, Iterable, MutableMapping, MutableSequence, Sequence
 from itertools import zip_longest
 from typing import TYPE_CHECKING, Any
 
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class ObservationGroup(RootModel[list[ObservationInfo]], MutableSequence[ObservationInfo]):
+class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[ObservationInfo]]):
     """A collection of `ObservationInfo` headers.
 
     Parameters
@@ -123,9 +123,6 @@ class ObservationGroup(RootModel[list[ObservationInfo]], MutableSequence[Observa
                 raise ValueError("Could not convert value to ObservationInfo") from e
 
         return value
-
-    def __iter__(self) -> Iterator[ObservationInfo]:  # type: ignore[override]
-        return iter(self.root)
 
     def __eq__(self, other: Any) -> bool:
         """Check equality with another group.
