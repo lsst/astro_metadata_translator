@@ -54,26 +54,6 @@ class ObservationInfo(BaseModel):
     """Standardized representation of an instrument header for a single
     exposure observation.
 
-    There is a core set of instrumental properties that are pre-defined.
-    Additional properties may be defined, either through the
-    `makeObservationInfo` factory function by providing the ``extensions``
-    definitions, or through the regular `ObservationInfo` constructor when
-    the extensions have been defined in the `MetadataTranslator` for the
-    instrument of interest (or in the provided ``translator_class``).
-
-    There are two forms of the constructor. If the ``header`` is given
-    then a translator will be determined and the properties will be populated
-    accordingly. No generic keyword arguments will be expected and the
-    remaining parameters control the behavior of the translator.
-
-    If the header is not given it is assumed that the keyword arguments
-    are direct specifications of observation properties. In this mode only
-    the ``filename`` and ``translator_class`` parameters will be used. The
-    latter is used to determine any extensions that are being provided,
-    although when using standard serializations the special ``_translator``
-    key will be used instead to specify the name of the registered translator
-    from which to extract extension definitions.
-
     Parameters
     ----------
     header : `dict`-like
@@ -129,8 +109,29 @@ class ObservationInfo(BaseModel):
 
     Notes
     -----
+    There is a core set of instrumental properties that are pre-defined.
+    Additional properties may be defined, either through the
+    `makeObservationInfo` factory function by providing the ``extensions``
+    definitions, or through the regular `ObservationInfo` constructor when
+    the extensions have been defined in the `MetadataTranslator` for the
+    instrument of interest (or in the provided ``translator_class``).
+
+    There are two forms of the constructor. If the ``header`` is given
+    then a translator will be determined and the properties will be populated
+    accordingly. No generic keyword arguments will be expected and the
+    remaining parameters control the behavior of the translator.
+
+    If the header is not given it is assumed that the keyword arguments
+    are direct specifications of observation properties. In this mode only
+    the ``filename`` and ``translator_class`` parameters will be used. The
+    latter is used to determine any extensions that are being provided,
+    although when using standard serializations the special ``_translator``
+    key will be used instead to specify the name of the registered translator
+    from which to extract extension definitions.
+
     Headers will be corrected if correction files are located and this will
-    modify the header provided to the constructor.
+    modify the header provided to the constructor. Modifying the supplied
+    header after construction will modify the internal cached header.
 
     Values of the properties are read-only.
     """
