@@ -9,6 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+import math
 import os.path
 import unittest
 from collections.abc import MutableMapping, Sequence
@@ -113,7 +114,6 @@ class ObservationGroupTestCase(unittest.TestCase):
 
         def by_airmass(value: ObservationInfo) -> float:
             am = value.boresight_airmass
-            print(am)
             if am is None:
                 return 0.0
             return am
@@ -164,10 +164,14 @@ class ObservationGroupTestCase(unittest.TestCase):
         """Test that ObservationGroup can round trip using Pydantic APIs."""
         headers = self._files_to_headers(self.decam_files)
 
+        obsinfo = ObservationInfo(detector_name="detA", boresight_airmass=math.nan)
+        headers.append(obsinfo)
+
         obs_group = ObservationGroup(headers)
         j_str = obs_group.model_dump_json()
         new_group = ObservationGroup.model_validate_json(j_str)
         self.assertEqual(new_group, obs_group)
+        self.assertTrue(math.isnan(new_group[-1].boresight_airmass))
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ import astropy.time
 import astropy.units as u
 from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.time import Time
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 import astro_metadata_translator
 from astro_metadata_translator import ObservationInfo, makeObservationInfo
@@ -24,6 +24,10 @@ from astro_metadata_translator import ObservationInfo, makeObservationInfo
 
 class ModelWithObsInfo(BaseModel):
     """Pydantic model that contains an ObservationInfo."""
+
+    model_config = ConfigDict(
+        ser_json_inf_nan="constants",  # Pydantic does not preserve NaN support from child models.
+    )
 
     obs_info: ObservationInfo
     number: int
@@ -144,15 +148,16 @@ class BasicTestCase(unittest.TestCase):
 
     def test_embedded_pydantic(self) -> None:
         """Test that ObservationInfo can be used inside another model."""
-        obsinfo = makeObservationInfo(boresight_airmass=1.5, detector_name="DETECTOR")
+        obsinfo = makeObservationInfo(boresight_airmass=math.nan, detector_name="DETECTOR")
 
         test = ModelWithObsInfo(obs_info=obsinfo, number=42)
 
         json_str = test.model_dump_json()
-        print(json_str)
         from_j = ModelWithObsInfo.model_validate_json(json_str)
         self.assertEqual(from_j.number, 42)
         self.assertEqual(from_j.obs_info.detector_name, "DETECTOR")
+        self.assertTrue(math.isnan(from_j.obs_info.boresight_airmass))
+        self.assertEqual(from_j.obs_info, obsinfo)
 
     def test_altaz_extraction(self) -> None:
         """Test that an AltAz embedded in a SkyCoord is extracted correctly."""

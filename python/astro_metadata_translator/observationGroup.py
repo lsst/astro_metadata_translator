@@ -50,7 +50,8 @@ class ObservationGroup(RootModel[list[ObservationInfo]], MutableSequence[Observa
         `ObservationInfo` constructor default should be used.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    # We want inf and nan to round trip.
+    model_config = ConfigDict(arbitrary_types_allowed=True, ser_json_inf_nan="constants")
     _sorted: list[ObservationInfo] | None = PrivateAttr(default=None)
 
     def __init__(

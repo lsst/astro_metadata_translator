@@ -139,6 +139,7 @@ class ObservationInfo(BaseModel):
         extra="forbid",
         arbitrary_types_allowed=True,
         validate_assignment=False,
+        ser_json_inf_nan="constants",  # Allow for inf and nan to round trip.
     )
 
     filename: str | None = Field(default=None, exclude=True)
