@@ -134,7 +134,6 @@ class ExtensionsTestCase(unittest.TestCase):
         """Test that pydantic model APIs work."""
         jstr = self.obsinfo.model_dump_json()
         from_j = ObservationInfo.model_validate_json(jstr)
-        print(type(from_j))
         self.assert_observation_info(from_j)
         self.assertEqual(from_j, self.obsinfo)
 
