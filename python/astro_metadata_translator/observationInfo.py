@@ -20,7 +20,7 @@ import itertools
 import logging
 import math
 from collections.abc import MutableMapping, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import astropy.time
 from lsst.resources import ResourcePath
@@ -219,6 +219,27 @@ class ObservationInfo(BaseModel):
         definition = PROPERTIES[info.field_name]
         context = info.data if isinstance(info.data, dict) else {}
         return cls._coerce_from_simple(definition, value, context)
+
+    @overload
+    def __init__(
+        self,
+        header: MutableMapping[str, Any],
+        filename: str | ResourcePath | None = None,
+        translator_class: type[MetadataTranslator] | None = None,
+        pedantic: bool = False,
+        search_path: Sequence[str] | None = None,
+        required: set[str] | None = None,
+        subset: set[str] | None = None,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        header: None = None,
+        filename: str | ResourcePath | None = None,
+        translator_class: type[MetadataTranslator] | None = None,
+        **kwargs: Any,
+    ) -> None: ...
 
     def __init__(
         self,
