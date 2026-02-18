@@ -18,9 +18,10 @@ __all__ = ("ObservationGroup",)
 import logging
 from collections.abc import Callable, Iterable, MutableMapping, MutableSequence, Sequence
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast, overload
 
-from pydantic import ConfigDict, PrivateAttr, RootModel
+from pydantic import ConfigDict, GetCoreSchemaHandler, RootModel
+from pydantic_core import CoreSchema, core_schema
 
 from .observationInfo import ObservationInfo
 
@@ -30,7 +31,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[ObservationInfo]]):
+class _ObservationGroupPydanticModel(RootModel[list[ObservationInfo]]):
+    """Private helper model for Pydantic interoperability."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, ser_json_inf_nan="constants")
+
+
+class ObservationGroup(MutableSequence[ObservationInfo]):
     """A collection of `ObservationInfo` headers.
 
     Parameters
@@ -50,40 +57,42 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
         `ObservationInfo` constructor default should be used.
     """
 
-    # We want inf and nan to round trip.
-    model_config = ConfigDict(arbitrary_types_allowed=True, ser_json_inf_nan="constants")
-    _sorted: list[ObservationInfo] | None = PrivateAttr(default=None)
-
     def __init__(
         self,
         members: Iterable[ObservationInfo | MutableMapping[str, Any]],
         translator_class: type[MetadataTranslator] | None = None,
         pedantic: bool | None = None,
     ) -> None:
-        coerced = [
+        self._members = [
             self._coerce_value(m, translator_class=translator_class, pedantic=pedantic) for m in members
         ]
-        super().__init__(coerced)
+        self._sorted: list[ObservationInfo] | None = None
 
     def __len__(self) -> int:
-        return len(self.root)
+        return len(self._members)
 
-    def __delitem__(self, index: int) -> None:  # type: ignore
-        del self.root[index]
+    def __delitem__(self, index: int | slice) -> None:
+        del self._members[index]
         self._sorted = None
 
-    def __getitem__(self, index: int) -> ObservationInfo:  # type: ignore
-        return self.root[index]
+    @overload
+    def __getitem__(self, index: int) -> ObservationInfo: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[ObservationInfo]: ...
+
+    def __getitem__(self, index: int | slice) -> ObservationInfo | list[ObservationInfo]:
+        return self._members[index]
 
     def __str__(self) -> str:
         results = []
-        for obs_info in self.root:
+        for obs_info in self:
             results.append(f"({obs_info.instrument}, {obs_info.datetime_begin})")
         return "[" + ", ".join(results) + "]"
 
     def _coerce_value(
         self,
-        value: ObservationInfo | MutableMapping[str, Any],
+        value: object,
         translator_class: type[MetadataTranslator] | None = None,
         pedantic: bool | None = None,
     ) -> ObservationInfo:
@@ -115,6 +124,11 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
 
         if not isinstance(value, ObservationInfo):
             try:
+                if not isinstance(value, MutableMapping):
+                    if hasattr(value, "items"):
+                        value = cast(MutableMapping[str, Any], dict(cast(Any, value).items()))
+                    else:
+                        raise TypeError(f"Value is not dict-like: {type(value)}")
                 kwargs: dict[str, Any] = {"translator_class": translator_class}
                 if pedantic is not None:
                     kwargs["pedantic"] = pedantic
@@ -142,8 +156,20 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
                 return False
         return True
 
-    def __setitem__(  # type: ignore
-        self, index: int, value: ObservationInfo | MutableMapping[str, Any]
+    @overload
+    def __setitem__(self, index: int, value: ObservationInfo | MutableMapping[str, Any]) -> None: ...
+
+    @overload
+    def __setitem__(
+        self, index: slice, value: Iterable[ObservationInfo | MutableMapping[str, Any]]
+    ) -> None: ...
+
+    def __setitem__(
+        self,
+        index: int | slice,
+        value: ObservationInfo
+        | MutableMapping[str, Any]
+        | Iterable[ObservationInfo | MutableMapping[str, Any]],
     ) -> None:
         """Store item in group.
 
@@ -156,27 +182,31 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
             or something that can be passed to an `ObservationInfo`
             constructor.
         """
-        value = self._coerce_value(value)
-        self.root[index] = value
+        if isinstance(index, slice):
+            if isinstance(value, ObservationInfo) or hasattr(value, "items"):
+                raise TypeError("Can only assign an iterable to an ObservationGroup slice")
+            self._members[index] = [self._coerce_value(v) for v in value]
+        else:
+            self._members[index] = self._coerce_value(value)
         self._sorted = None
 
     def insert(self, index: int, value: ObservationInfo | MutableMapping[str, Any]) -> None:
         value = self._coerce_value(value)
-        self.root.insert(index, value)
+        self._members.insert(index, value)
         self._sorted = None
 
     def reverse(self) -> None:
-        self.root.reverse()
+        self._members.reverse()
 
     def sort(self, key: Callable | None = None, reverse: bool = False) -> None:
-        self.root.sort(key=key, reverse=reverse)
+        self._members.sort(key=key, reverse=reverse)
         if key is None and not reverse and self._sorted is None:
             # Store sorted order in cache. We only cache the sorted order
             # if we are doing a default time-based sort so that newest
             # and oldest can work properly without having to resort each time.
             # We know that if the cache is populated that that is already
             # the correct answer so no need to re-copy.
-            self._sorted = self.root.copy()
+            self._sorted = self._members.copy()
 
     def extremes(self) -> tuple[ObservationInfo, ObservationInfo]:
         """Return the oldest observation in the group and the newest.
@@ -192,7 +222,7 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
             Newest observation.
         """
         if self._sorted is None:
-            self._sorted = sorted(self.root)
+            self._sorted = sorted(self._members)
         return self._sorted[0], self._sorted[-1]
 
     def newest(self) -> ObservationInfo:
@@ -230,7 +260,7 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
         """
         return {getattr(obs_info, property) for obs_info in self}
 
-    def to_simple(self) -> MutableSequence[MutableMapping[str, Any]]:
+    def to_simple(self) -> list[MutableMapping[str, Any]]:
         """Convert the group to simplified form.
 
         Returns
@@ -240,6 +270,65 @@ class ObservationGroup(MutableSequence[ObservationInfo], RootModel[list[Observat
             each `ObservationInfo`.
         """
         return [obsinfo.to_simple() for obsinfo in self]
+
+    def model_dump_json(self, **kwargs: Any) -> str:
+        """Serialize to JSON using Pydantic-compatible semantics.
+
+        Parameters
+        ----------
+        **kwargs : `~typing.Any`
+            Parameters passed to `pydantic.BaseModel.model_dump_json`.
+
+        Returns
+        -------
+        json_data : `str`
+            JSON string representing the model.
+        """
+        return _ObservationGroupPydanticModel(self._members).model_dump_json(**kwargs)
+
+    @classmethod
+    def model_validate_json(cls, json_data: str | bytes | bytearray, **kwargs: Any) -> ObservationGroup:
+        """Deserialize from JSON using Pydantic-compatible semantics.
+
+        Parameters
+        ----------
+        json_data : `str` | `bytes` | `bytearray`
+            JSON representation of the model.
+        **kwargs : `~typing.Any`
+            Parameters passed to `pydantic.BaseModel.model_validate_json`.
+
+        Returns
+        -------
+        group : `ObservationGroup`
+            Model constructed from the JSON.
+        """
+        model = _ObservationGroupPydanticModel.model_validate_json(json_data, **kwargs)
+        return cls(model.root)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        # Integrate ObservationGroup as a custom type in Pydantic models.
+        list_schema = core_schema.list_schema(handler.generate_schema(ObservationInfo))
+
+        return core_schema.no_info_after_validator_function(
+            cls._validate_pydantic,
+            list_schema,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                cls._serialize_pydantic, return_schema=list_schema
+            ),
+        )
+
+    @classmethod
+    def _validate_pydantic(cls, value: Any) -> ObservationGroup:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, list):
+            return cls(value)
+        raise TypeError(f"Unexpected type for {cls.__name__}: {type(value)}")
+
+    @staticmethod
+    def _serialize_pydantic(value: ObservationGroup) -> list[ObservationInfo]:
+        return value._members
 
     @classmethod
     def from_simple(cls, simple: Sequence[MutableMapping[str, Any]]) -> ObservationGroup:

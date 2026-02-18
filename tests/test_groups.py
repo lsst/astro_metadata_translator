@@ -197,7 +197,7 @@ class ObservationGroupTestCase(unittest.TestCase):
         """Test that iterating the group yields ObservationInfo members."""
         headers = self._files_to_headers(self.decam_files)
         obs_group = ObservationGroup(headers)
-        self.assertEqual(list(obs_group), obs_group.root)
+        self.assertEqual(list(obs_group), obs_group._members)
 
 
 if __name__ == "__main__":
