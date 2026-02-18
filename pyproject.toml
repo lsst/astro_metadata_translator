@@ -28,8 +28,10 @@ dependencies = [
     "astropy >=3.0.5",
     "pyyaml >=3.13",
     "lsst-resources",
+    "lsst-utils",
     "fsspec",  # Do not include S3/http variants by default.
-    "click >= 8"
+    "click >= 8",
+    "pydantic >2.0,<3.0",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +41,7 @@ test = [
 
 [project.urls]
 "Homepage" = "https://github.com/lsst/astro_metadata_translator"
+"Source" = "https://github.com/lsst/astro_metadata_translator"
 
 [project.scripts]
 astrometadata = "astro_metadata_translator.cli.astrometadata:main"
@@ -105,6 +108,7 @@ ignore = [
     "D102",  # Can inherit docstrings.
     "D100",  # Modules are not required to include documentation.
     "D205",  # Does not understand if a summary is two lines long.
+    "ANN401",  # We do allow typing.Any.
 ]
 select = [
     "E",  # pycodestyle
@@ -116,6 +120,7 @@ select = [
     "RUF022",  # sort __all__
     "UP",  # pyupgrade
     "B",  # bugbear
+    "ANN",  # annotations
 ]
 extend-select = [
     "RUF100", # Warn about unused noqa
@@ -151,3 +156,41 @@ checks = [
 exclude = [
     '^astrometadata\.'  # CLI does not conform to numpydoc
 ]
+
+[tool.towncrier]
+    package = "astro-metadata-translator"
+    package_dir = "python"
+    filename = "doc/CHANGES.rst"
+    directory = "doc/changes"
+    title_format = "{version} ({project_date})"
+    issue_format = "`{issue} <https://rubinobs.atlassian.net/browse/{issue}>`_"
+
+    [[tool.towncrier.type]]
+        directory = "feature"
+        name = "New Features"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "api"
+        name = "API Changes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "bugfix"
+        name = "Bug Fixes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "perf"
+        name = "Performance Enhancement"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "misc"
+        name = "Other Changes and Additions"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "removal"
+        name = "An API Removal or Deprecation"
+        showcontent = true

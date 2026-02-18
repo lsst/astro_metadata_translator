@@ -15,21 +15,25 @@ from __future__ import annotations
 
 __all__ = ("MetadataTranslator", "StubTranslator", "cache_translation")
 
+import functools
 import importlib
 import inspect
 import logging
 import math
 import numbers
+import textwrap
 import warnings
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping, Sequence
 from importlib.metadata import entry_points
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Concatenate, ParamSpec, TypeVar, cast
 
 import astropy.io.fits.card
 import astropy.time
 import astropy.units as u
 from astropy.coordinates import Angle
+from lsst.resources import ResourcePath
+from lsst.utils.iteration import ensure_iterable
 
 from .properties import PROPERTIES, PropertyDefinition
 
@@ -45,8 +49,14 @@ CORRECTIONS_RESOURCE_ROOT = "corrections"
 """Cache of version strings indexed by class."""
 _VERSION_CACHE: dict[type, str] = {}
 
+P = ParamSpec("P")
+R = TypeVar("R")
+SelfT = TypeVar("SelfT", bound="MetadataTranslator")
 
-def cache_translation(func: Callable, method: str | None = None) -> Callable:
+
+def cache_translation(
+    func: Callable[Concatenate[SelfT, P], R], method: str | None = None
+) -> Callable[Concatenate[SelfT, P], R]:
     """Cache the result of a translation method.
 
     Parameters
@@ -77,14 +87,28 @@ def cache_translation(func: Callable, method: str | None = None) -> Callable:
     """
     name = func.__name__ if method is None else method
 
-    def func_wrapper(self: MetadataTranslator) -> Any:
+    @functools.wraps(func)
+    def func_wrapper(self: SelfT, *args: P.args, **kwargs: P.kwargs) -> R:
         if name not in self._translation_cache:
-            self._translation_cache[name] = func(self)
-        return self._translation_cache[name]
+            self._translation_cache[name] = func(self, *args, **kwargs)
+        return cast(R, self._translation_cache[name])
 
-    func_wrapper.__doc__ = func.__doc__
-    func_wrapper.__name__ = f"{name}_cached"
     return func_wrapper
+
+
+def _set_method_metadata(func: Callable, cls: type, method: str) -> None:
+    target_qualname = f"{cls.__qualname__}.{method}"
+    target_module = cls.__module__
+    target_name = method
+    current = func
+    while True:
+        current.__name__ = target_name
+        current.__qualname__ = target_qualname
+        current.__module__ = target_module
+        wrapped = getattr(current, "__wrapped__", None)
+        if wrapped is None or wrapped is current:
+            break
+        current = wrapped
 
 
 class MetadataTranslator:
@@ -95,10 +119,11 @@ class MetadataTranslator:
     header : `dict`-like
         Representation of an instrument header that can be manipulated
         as if it was a `dict`.
-    filename : `str`, optional
+    filename : `str` or `~lsst.resources.ResourcePathExpression`, optional
         Name of the file whose header is being translated.  For some
         datasets with missing header information this can sometimes
-        allow for some fixups in translations.
+        allow for some fixups in translations. It is usually used for error
+        reporting and logging.
     """
 
     # These are all deliberately empty in the base class.
@@ -154,7 +179,12 @@ class MetadataTranslator:
     ``can_see_sky`` determination."""
 
     # Static typing requires that we define the standard dynamic properties
-    # statically.
+    # statically. Translator methods that refer to on-sky observations can
+    # return None if the observation is a calibration. It seems that SDSS
+    # can sometimes fail to calculate a detector_exposure_id so we allow None
+    # there too. That is effectively a deprecated property anyhow. The
+    # date calculations currently allow a value to not be found to allow
+    # subclasses to try alternative options.
     if TYPE_CHECKING:
         to_telescope: ClassVar[Callable[[MetadataTranslator], str]]
         to_instrument: ClassVar[Callable[[MetadataTranslator], str]]
@@ -162,24 +192,24 @@ class MetadataTranslator:
         to_exposure_id: ClassVar[Callable[[MetadataTranslator], int]]
         to_visit_id: ClassVar[Callable[[MetadataTranslator], int]]
         to_physical_filter: ClassVar[Callable[[MetadataTranslator], str]]
-        to_datetime_begin: ClassVar[Callable[[MetadataTranslator], astropy.time.Time]]
-        to_datetime_end: ClassVar[Callable[[MetadataTranslator], astropy.time.Time]]
+        to_datetime_begin: ClassVar[Callable[[MetadataTranslator], astropy.time.Time | None]]
+        to_datetime_end: ClassVar[Callable[[MetadataTranslator], astropy.time.Time | None]]
         to_exposure_time: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
         to_dark_time: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
-        to_boresight_airmass: ClassVar[Callable[[MetadataTranslator], float]]
-        to_boresight_rotation_angle: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
+        to_boresight_airmass: ClassVar[Callable[[MetadataTranslator], float | None]]
+        to_boresight_rotation_angle: ClassVar[Callable[[MetadataTranslator], u.Quantity | None]]
         to_boresight_rotation_coord: ClassVar[Callable[[MetadataTranslator], str]]
         to_detector_num: ClassVar[Callable[[MetadataTranslator], int]]
         to_detector_name: ClassVar[Callable[[MetadataTranslator], str]]
         to_detector_serial: ClassVar[Callable[[MetadataTranslator], str]]
         to_detector_group: ClassVar[Callable[[MetadataTranslator], str | None]]
-        to_detector_exposure_id: ClassVar[Callable[[MetadataTranslator], int]]
+        to_detector_exposure_id: ClassVar[Callable[[MetadataTranslator], int | None]]
         to_object: ClassVar[Callable[[MetadataTranslator], str]]
         to_temperature: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
         to_pressure: ClassVar[Callable[[MetadataTranslator], u.Quantity]]
         to_relative_humidity: ClassVar[Callable[[MetadataTranslator], float]]
-        to_tracking_radec: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.SkyCoord]]
-        to_altaz_begin: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.AltAz]]
+        to_tracking_radec: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.SkyCoord | None]]
+        to_altaz_begin: ClassVar[Callable[[MetadataTranslator], astropy.coordinates.AltAz | None]]
         to_science_program: ClassVar[Callable[[MetadataTranslator], str]]
         to_observation_type: ClassVar[Callable[[MetadataTranslator], str]]
         to_observation_id: ClassVar[Callable[[MetadataTranslator], str]]
@@ -259,18 +289,17 @@ class MetadataTranslator:
             return_type = type(constant)
             property_doc = f"Returns constant value for '{property_key}' property"
 
+        constant_translator.__annotations__["return"] = return_type
         if return_type.__module__ == "builtins":
             full_name = return_type.__name__
         else:
             full_name = f"{return_type.__module__}.{return_type.__qualname__}"
 
-        constant_translator.__doc__ = f"""{property_doc}
+        constant_translator.__doc__ = f"""{textwrap.dedent(property_doc)}
 
-        Returns
-        -------
-        translation : `{full_name}`
-            Translated property.
-        """
+:returns: Translated property that is fixed to a single value by the translator.
+:rtype: `{full_name}`
+"""
         return constant_translator
 
     @classmethod
@@ -328,8 +357,10 @@ class MetadataTranslator:
         if property_key in cls.all_properties:
             property_doc = cls.all_properties[property_key].doc
             return_type = cls.all_properties[property_key].str_type
+            return_pytype = cls.all_properties[property_key].py_type
         else:
             return_type = "str` or `numbers.Number"
+            return_pytype = Any
             property_doc = f"Map '{header_key}' header keyword to '{property_key}' property"
 
         def trivial_translator(self: MetadataTranslator) -> Any:
@@ -338,12 +369,15 @@ class MetadataTranslator:
                     header_key, unit, default=default, minimum=minimum, maximum=maximum, checker=checker
                 )
                 # Convert to Angle if this quantity is an angle
-                if return_type == "astropy.coordinates.Angle":
-                    q = Angle(q)
+                # The extra checks come from pylance complaining about the
+                # else branch above assigning Any to return_pytype.
+                if isinstance(return_pytype, type):
+                    return_pytype_cls = cast(type[Any], return_pytype)
+                    if issubclass(return_pytype_cls, Angle):
+                        q = Angle(q)
                 return q
 
-            keywords = header_key if isinstance(header_key, list) else [header_key]
-            for key in keywords:
+            for key in ensure_iterable(header_key):
                 if self.is_key_ok(key):
                     value = self._header[key]
                     if default is not None and not isinstance(value, str):
@@ -357,12 +391,12 @@ class MetadataTranslator:
                     try:
                         checker(self)
                     except Exception as e:
-                        raise KeyError(f"Could not find {keywords} in header") from e
+                        raise KeyError(f"Could not find {header_key} in header") from e
                     return default
                 elif default is not None:
                     value = default
                 else:
-                    raise KeyError(f"Could not find {keywords} in header")
+                    raise KeyError(f"Could not find {header_key} in header")
 
             # If we know this is meant to be a string, force to a string.
             # Sometimes headers represent items as integers which generically
@@ -374,15 +408,15 @@ class MetadataTranslator:
 
             return value
 
+        trivial_translator.__annotations__["return"] = return_pytype
+
         # Docstring inheritance means it is confusing to specify here
         # exactly which header value is being used.
-        trivial_translator.__doc__ = f"""{property_doc}
+        trivial_translator.__doc__ = f"""{textwrap.dedent(property_doc)}
 
-        Returns
-        -------
-        translation : `{return_type}`
-            Translated value derived from the header.
-        """
+:returns: Translated value derived directly from a single header.
+:rtype: `{return_type}`
+"""
         return trivial_translator
 
     @classmethod
@@ -456,7 +490,7 @@ class MetadataTranslator:
 
         properties = set(PROPERTIES) | {"ext_" + pp for pp in cls.extensions}
         cls.all_properties = dict(PROPERTIES)
-        cls.all_properties.update(cls.extensions)
+        cls.all_properties.update({"ext_" + pp: dd for pp, dd in cls.extensions.items()})
 
         # Go through the trival mappings for this class and create
         # corresponding translator methods
@@ -465,10 +499,11 @@ class MetadataTranslator:
             if type(header_key) is tuple:
                 kwargs = header_key[1]
                 header_key = header_key[0]
-            translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
             method = f"to_{property_key}"
-            translator.__name__ = f"{method}_trivial_in_{cls.__name__}"
-            setattr(cls, method, cache_translation(translator, method=method))
+            translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
+            translator = cache_translation(translator, method=method)
+            _set_method_metadata(translator, cls, method)
+            setattr(cls, method, translator)
             if property_key not in properties:
                 log.warning(f"Unexpected trivial translator for '{property_key}' defined in {cls}")
 
@@ -477,13 +512,15 @@ class MetadataTranslator:
         for property_key, constant in const_map.items():
             translator = cls._make_const_mapping(property_key, constant)
             method = f"to_{property_key}"
-            translator.__name__ = f"{method}_constant_in_{cls.__name__}"
+            _set_method_metadata(translator, cls, method)
             setattr(cls, method, translator)
             if property_key not in properties:
                 log.warning(f"Unexpected constant translator for '{property_key}' defined in {cls}")
 
-    def __init__(self, header: Mapping[str, Any], filename: str | None = None) -> None:
+    def __init__(self, header: Mapping[str, Any], filename: ResourcePathExpression | None = None) -> None:
         self._header = header
+        if filename is not None:
+            filename = str(ResourcePath(filename, forceAbsolute=True))
         self.filename = filename
         self._used_cards: set[str] = set()
 
@@ -565,7 +602,7 @@ class MetadataTranslator:
 
         Returns
         -------
-        translator : `MetadataTranslator`
+        translator : `type` [`MetadataTranslator`]
             Translation class that knows how to extract metadata from
             the supplied header.
 
@@ -1156,13 +1193,6 @@ class MetadataTranslator:
     def to_observing_day(self) -> int:
         """Return the YYYYMMDD integer corresponding to the observing day.
 
-        Base class implementation uses the TAI date of the start of the
-        observation corrected by the observing day offset. If that offset
-        is `None` no offset will be applied.
-
-        The offset is subtracted from the time of observation before
-        calculating the year, month and day.
-
         Returns
         -------
         day : `int`
@@ -1173,6 +1203,13 @@ class MetadataTranslator:
 
         Notes
         -----
+        Base class implementation uses the TAI date of the start of the
+        observation corrected by the observing day offset. If that offset
+        is `None` no offset will be applied.
+
+        The offset is subtracted from the time of observation before
+        calculating the year, month and day.
+
         For example, if the offset is +12 hours both 2023-07-06T13:00 and
         2023-07-07T11:00 will return an observing day of 20230706 because
         the observing day goes from 2023-07-06T12:00 to 2023-07-07T12:00.
@@ -1188,16 +1225,18 @@ class MetadataTranslator:
         """Return an integer corresponding to how this observation relates
         to other observations.
 
+        Returns
+        -------
+        sequence : `int`
+            The observation counter. Always ``0`` for this implementation.
+
+        Notes
+        -----
         Base class implementation returns ``0`` to indicate that it is not
         known how an observatory will define a counter. Some observatories
         may not use the concept, others may use a counter that increases
         for every observation taken for that instrument, and others may
         define it to be a counter within an observing day.
-
-        Returns
-        -------
-        sequence : `int`
-            The observation counter. Always ``0`` for this implementation.
         """
         return 0
 
@@ -1393,12 +1432,10 @@ def _make_abstract_translator_method(
 
     to_property.__doc__ = f"""Return value of {property} from headers.
 
-    {doc}
+{textwrap.dedent(doc)}
 
-    Returns
-    -------
-    {property} : `{return_typedoc}`
-        The translated property.
+:returns: The translated property.
+:rtype: `{return_typedoc}`
     """
     return to_property
 
@@ -1419,15 +1456,9 @@ CONCRETE = set()
 for name, definition in PROPERTIES.items():
     method = f"to_{name}"
     if not MetadataTranslator.defined_in_this_class(method):
-        setattr(
-            MetadataTranslator,
-            f"to_{name}",
-            abstractmethod(
-                _make_abstract_translator_method(
-                    name, definition.doc, definition.str_type, definition.py_type
-                )
-            ),
-        )
+        func = _make_abstract_translator_method(name, definition.doc, definition.str_type, definition.py_type)
+        _set_method_metadata(func, MetadataTranslator, method)
+        setattr(MetadataTranslator, method, abstractmethod(func))
     else:
         CONCRETE.add(method)
 
@@ -1487,31 +1518,29 @@ def _make_forwarded_stub_translator_method(
 
     to_stub.__doc__ = f"""Unimplemented forwarding translator for {property}.
 
-    {doc}
+{textwrap.dedent(doc)}
 
-    Calls the base class translation method and if that fails with
-    `NotImplementedError` issues a warning reminding the implementer to
-    override this method.
+Calls the base class translation method and if that fails with
+`NotImplementedError` issues a warning reminding the implementer to
+override this method.
 
-    Returns
-    -------
-    {property} : `None` or `{return_typedoc}`
-        Always returns `None`.
-    """
+:returns: Always returns `None`.
+:rtype: `None` or `{return_typedoc}`
+"""
     return to_stub
 
 
 # Create stub translation methods for each property.  These stubs warn
 # rather than fail and should be overridden by translators.
 for name in PROPERTIES:
-    setattr(
-        StubTranslator,
-        f"to_{name}",
-        _make_forwarded_stub_translator_method(
-            StubTranslator,  # type: ignore
-            name,
-            definition.doc,
-            definition.str_type,
-            definition.py_type,
-        ),
+    definition = PROPERTIES[name]
+    method = f"to_{name}"
+    func = _make_forwarded_stub_translator_method(
+        StubTranslator,  # type: ignore
+        name,
+        definition.doc,
+        definition.str_type,
+        definition.py_type,
     )
+    _set_method_metadata(func, StubTranslator, method)
+    setattr(StubTranslator, method, func)

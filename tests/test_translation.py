@@ -38,7 +38,7 @@ class InstrumentTestTranslator(FitsTranslator, StubTranslator):
     }
 
     # Add translator method to test joining
-    def to_physical_filter(self):
+    def to_physical_filter(self) -> str:
         return self._join_keyword_values(["DETNAME", "HUMIDITY"], delim="_")
 
 
@@ -51,7 +51,7 @@ class MissingMethodsTranslator(FitsTranslator):
 class TranslatorTestCase(unittest.TestCase):
     """Test core translation infrastructure."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         # Known simple header
         self.header = {
             "TELESCOP": "JCMT",
@@ -69,7 +69,7 @@ class TranslatorTestCase(unittest.TestCase):
             "BAZ": "bar",
         }
 
-    def test_manual_translation(self):
+    def test_manual_translation(self) -> None:
         header = self.header
         translator = FitsTranslator(header)
 
@@ -102,7 +102,7 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertEqual(translator.to_format(), "HDF5")
         self.assertEqual(translator.to_foobar(), "bar")
 
-    def test_translator(self):
+    def test_translator(self) -> None:
         header = self.header
 
         # Specify a translation class
@@ -126,7 +126,7 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertEqual(v1.telescope, "LSST")
 
         location = v1.location.to_geodetic()
-        self.assertAlmostEqual(location.height.to("m").to_value(), 4123.0, places=1)
+        self.assertAlmostEqual(float(location.height.to("m").to_value()), 4123.0, places=1)
 
         # Check that headers have been removed
         new_hdr = v1.stripped_header()
@@ -157,7 +157,26 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertIsNone(v2.location)
         self.assertIsNone(v2.observation_id)
 
-    def test_corrections(self):
+        # Use the new, explicit constructor.
+        v3 = ObservationInfo.from_header(
+            header,
+            translator_class=InstrumentTestTranslator,
+            subset={"telescope", "datetime_begin", "exposure_group"},
+        )
+        self.assertEqual(v3, v2)
+
+        with self.assertRaises(TypeError):
+            # This fails a not-a-class check.
+            ObservationInfo(header, translator_class={})
+        with self.assertRaises(TypeError):
+            # Check that the translator class is checked.
+            ObservationInfo(header, translator_class=dict)
+        with self.assertRaises(ValueError):
+            ObservationInfo(header, keyword="unknown")
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_header(header, subset=set())
+
+    def test_corrections(self) -> None:
         """Apply corrections before translation."""
         header = self.header
 
@@ -181,7 +200,7 @@ class TranslatorTestCase(unittest.TestCase):
         self.assertEqual(v1.telescope, "AuxTel")
         self.assertEqual(v1.exposure_id, 42)
 
-    def test_failures(self):
+    def test_failures(self) -> None:
         header = {}
 
         with self.assertRaises(TypeError):
@@ -245,7 +264,7 @@ class TranslatorTestCase(unittest.TestCase):
                         required={"boresight_airmass"},
                     )
 
-    def test_observing_date(self):
+    def test_observing_date(self) -> None:
         """Test the observing_date class methods."""
         date1 = Time("2023-07-06T13:00", format="isot", scale="tai")
         day_obs = StubTranslator.observing_date_to_observing_day(date1, 12 * 3600)

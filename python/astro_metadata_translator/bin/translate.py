@@ -193,14 +193,14 @@ def _fill_bad_values(value: Any, fillvalue: Any) -> Any:
 
     Parameters
     ----------
-    value : `Any`
+    value : `~typing.Any`
         Value to check.
-    fillvalue : `Any`
+    fillvalue : `~typing.Any`
         Value to use if `None`.
 
     Returns
     -------
-    filled : `Any`
+    filled : `~typing.Any`
         Original value or the fill value.
     """
     return value if value is not None else fillvalue

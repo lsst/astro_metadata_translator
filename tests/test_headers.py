@@ -12,8 +12,17 @@
 import copy
 import os.path
 import unittest
+from collections.abc import MutableMapping
+from typing import Any, Never
 
-from astro_metadata_translator import DecamTranslator, HscTranslator, fix_header, merge_headers
+from astro_metadata_translator import (
+    DecamTranslator,
+    HscTranslator,
+    ObservationInfo,
+    fix_header,
+    merge_headers,
+)
+from astro_metadata_translator.file_helpers import read_basic_metadata_from_file
 from astro_metadata_translator.tests import read_test_file
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
@@ -25,12 +34,14 @@ class NotDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header, instrument, obsid, filename=None):
+    def fix_header(
+        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: str | None = None
+    ) -> bool:
         header["DTSITE"] = "hi"
         return True
 
     @classmethod
-    def translator_version(cls):
+    def translator_version(cls) -> str:
         # Hardcode a version so we can test for it
         return "1.0.0"
 
@@ -43,7 +54,9 @@ class NotDecamTranslator2(NotDecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header, instrument, obsid, filename=None):
+    def fix_header(
+        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: str | None = None
+    ) -> bool:
         header["DTSITE"] += "hi"
         return True
 
@@ -56,7 +69,9 @@ class AlsoNotDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header, instrument, obsid, filename=None):
+    def fix_header(
+        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: str | None = None
+    ) -> Never:
         raise RuntimeError("Failure to work something out from header")
 
 
@@ -66,14 +81,16 @@ class NullDecamTranslator(DecamTranslator):
     name = None
 
     @classmethod
-    def fix_header(cls, header, instrument, obsid, filename=None):
+    def fix_header(
+        cls, header: MutableMapping[str, Any], instrument: str, obsid: str, filename: str | None = None
+    ) -> bool:
         return False
 
 
 class HeadersTestCase(unittest.TestCase):
     """Test header manipulation utilities."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         # Define reference headers
         self.h1 = dict(
             ORIGIN="LSST",
@@ -103,18 +120,18 @@ class HeadersTestCase(unittest.TestCase):
         self.h3["MJD-OBS"] = 53000.0
         self.h4["MJD-OBS"] = 52000.0
 
-    def test_fail(self):
+    def test_fail(self) -> None:
         with self.assertRaises(ValueError):
             merge_headers([self.h1, self.h2], mode="wrong")
 
         with self.assertRaises(ValueError):
             merge_headers([])
 
-    def test_one(self):
+    def test_one(self) -> None:
         merged = merge_headers([self.h1], mode="drop")
         self.assertEqual(merged, self.h1)
 
-    def test_merging_overwrite(self):
+    def test_merging_overwrite(self) -> None:
         merged = merge_headers([self.h1, self.h2], mode="overwrite")
         # The merged header should be the same type as the first header
         self.assertIsInstance(merged, type(self.h1))
@@ -147,7 +164,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-    def test_merging_first(self):
+    def test_merging_first(self) -> None:
         merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="first")
 
         expected = {
@@ -164,7 +181,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-    def test_merging_drop(self):
+    def test_merging_drop(self) -> None:
         merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="drop")
 
         expected = {
@@ -220,7 +237,7 @@ class HeadersTestCase(unittest.TestCase):
         }
         self.assertEqual(merged, expected)
 
-    def test_merging_diff(self):
+    def test_merging_diff(self) -> None:
         self.maxDiff = None
 
         # Nothing in common for diff
@@ -263,7 +280,7 @@ class HeadersTestCase(unittest.TestCase):
         }
         self.assertEqual(merged, expected)
 
-    def test_merging_append(self):
+    def test_merging_append(self) -> None:
         # Try with two headers first
         merged = merge_headers([self.h1, self.h2], mode="append")
 
@@ -296,7 +313,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-    def test_merging_overwrite_sort(self):
+    def test_merging_overwrite_sort(self) -> None:
         merged = merge_headers([self.h1, self.h2], mode="overwrite", sort=True)
 
         expected = {
@@ -332,7 +349,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-    def test_merging_first_sort(self):
+    def test_merging_first_sort(self) -> None:
         merged = merge_headers([self.h1, self.h2, self.h3, self.h4], mode="first", sort=True)
 
         expected = {
@@ -349,7 +366,7 @@ class HeadersTestCase(unittest.TestCase):
 
         self.assertEqual(merged, expected)
 
-    def test_merging_append_sort(self):
+    def test_merging_append_sort(self) -> None:
         # Try with two headers first
         merged = merge_headers([self.h1, self.h2], mode="append", sort=True)
 
@@ -386,11 +403,26 @@ class HeadersTestCase(unittest.TestCase):
         merged = merge_headers([self.h4, self.h3, self.h2, self.h1], mode="append", sort=True)
         self.assertEqual(merged, expected)
 
+    def test_stripped_header_after_mutation(self) -> None:
+        """Check stripping tolerates changes to the original header."""
+        header = read_test_file("fitsheader-hsc.yaml", dir=os.path.join(TESTDIR, "data"))
+        info = ObservationInfo(header, pedantic=False)
+        used = info.cards_used
+        self.assertTrue(used)
+
+        # Mutate original header after translation.
+        key = next(iter(used))
+        header.pop(key, None)
+
+        # Should not raise if cards_used include keys no longer present.
+        stripped = info.stripped_header()
+        self.assertNotIn(key, stripped)
+
 
 class FixHeadersTestCase(unittest.TestCase):
     """Test header fix up."""
 
-    def test_basic_fix_header(self):
+    def test_basic_fix_header(self) -> None:
         """Test that a header can be fixed if we specify a local path."""
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
         self.assertEqual(header["DETECTOR"], "S3-111_107419-8-3")
@@ -424,7 +456,7 @@ class FixHeadersTestCase(unittest.TestCase):
         fixed = fix_header(copy.copy(header), translator_class=NullDecamTranslator)
         self.assertFalse(fixed)
 
-    def test_hsc_fix_header(self):
+    def test_hsc_fix_header(self) -> None:
         """Check that one of the known HSC corrections is being applied
         properly.
         """
@@ -444,7 +476,7 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertFalse(fixed)
         self.assertEqual(header["DATA-TYP"], "FLAT")
 
-    def test_decam_fix_header(self):
+    def test_decam_fix_header(self) -> None:
         """Check that one of the known DECam corrections is being applied
         properly.
         """
@@ -454,7 +486,7 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertTrue(fixed)
         self.assertEqual(header["FILTER"], "solid plate 0.0 0.0")
 
-    def test_translator_fix_header(self):
+    def test_translator_fix_header(self) -> None:
         """Check that translator classes can fix headers."""
         # Read in a known header
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
@@ -472,7 +504,7 @@ class FixHeadersTestCase(unittest.TestCase):
         self.assertFalse(fixed)
         self.assertEqual(header2["DTSITE"], "reset")
 
-    def test_no_double_fix(self):
+    def test_no_double_fix(self) -> None:
         """Check that header fixup only happens once."""
         # Read in a known header
         header = read_test_file("fitsheader-decam-0160496.yaml", dir=os.path.join(TESTDIR, "data"))
@@ -496,6 +528,18 @@ class FixHeadersTestCase(unittest.TestCase):
 
         # Test the translator version in provenance
         self.assertEqual(header["HIERARCH ASTRO METADATA FIX VERSION"], "1.0.0")
+
+    def test_bad_file(self) -> None:
+        """Test that we get a log message if no translator can be
+        determined.
+        """
+        bad_file = os.path.join(TESTDIR, "data", "corrections", "SCUBA_test-20000101_00002.yaml")
+        md = read_basic_metadata_from_file(bad_file, 0)
+        assert md is not None  # for mypy.
+        with self.assertLogs(level="DEBUG") as cm:
+            result = fix_header(md)
+        self.assertFalse(result)
+        self.assertIn("Unable to determine translator class", "\n".join(cm.output))
 
 
 if __name__ == "__main__":

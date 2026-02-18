@@ -176,7 +176,7 @@ class FitsTranslator(MetadataTranslator):
         return begin
 
     @cache_translation
-    def to_datetime_end(self) -> Time:
+    def to_datetime_end(self) -> Time | None:
         """Calculate end time of observation.
 
         Uses FITS standard ``MJD-END`` or ``DATE-END``, in conjunction

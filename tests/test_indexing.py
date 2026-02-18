@@ -33,7 +33,7 @@ TESTDATA = os.path.join(TESTDIR, "data")
 class IndexingTestCase(unittest.TestCase):
     """Test indexing and sidecar functionality."""
 
-    def test_indexing(self):
+    def test_indexing(self) -> None:
         """Test that we can index two headers."""
         files = ["fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml"]
         files = [os.path.join(TESTDATA, f) for f in files]
@@ -85,7 +85,7 @@ class IndexingTestCase(unittest.TestCase):
         self.assertEqual(metadata[files[0]]["TELESCOP"], index["__COMMON__"]["TELESCOP"])
         self.assertEqual(metadata[files[1]]["TELESCOP"], index["__COMMON__"]["TELESCOP"])
 
-    def test_file_reading(self):
+    def test_file_reading(self) -> None:
         """Test the low-level file reader."""
         # First with a real header (but YAML)
         file = os.path.join(TESTDATA, "fitsheader-hsc-HSCA04090107.yaml")
@@ -155,10 +155,9 @@ class IndexingTestCase(unittest.TestCase):
         # different errors
         bad_file = os.path.join(TESTDATA, "corrections", "SCUBA_test-20000101_00002.yaml")
 
-        with self.assertLogs(level="DEBUG") as cm:
-            with self.assertRaises(ValueError):
-                read_file_info(bad_file, 1)
-        self.assertIn("Unable to determine translator class", "\n".join(cm.output))
+        with self.assertRaises(ValueError) as cm:
+            read_file_info(bad_file, 1)
+        self.assertIn("None of the registered translation classes", str(cm.exception))
 
         with io.StringIO() as out:
             info = read_file_info(bad_file, 1, print_trace=False, outstream=out)
@@ -186,7 +185,7 @@ class IndexingTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             read_index(bad_file)
 
-    def test_obs_info_sidecar(self):
+    def test_obs_info_sidecar(self) -> None:
         """Test reading of older files with missing content."""
         # First with a real header (but YAML)
         file = os.path.join(TESTDATA, "fitsheader-hsc.yaml")
@@ -199,6 +198,22 @@ class IndexingTestCase(unittest.TestCase):
         json_info = read_sidecar(json_file)
         self.assertIsInstance(json_info, ObservationInfo)
         self.assertEqual(json_info, info)
+
+    def test_bad_index_structure(self) -> None:
+        """Check malformed index structures fail with clear errors."""
+        with self.assertRaises(ValueError):
+            process_index_data({"__COMMON__": 5, "file1": {}})
+
+        with self.assertRaises(ValueError):
+            process_index_data({"__COMMON__": {}, "file1": 5})
+
+    def test_bad_content_mode(self) -> None:
+        """Check malformed content mode values are rejected."""
+        with self.assertRaises(ValueError):
+            process_index_data({"__COMMON__": {}, "__CONTENT__": "unknown", "file1": {}})
+
+        with self.assertRaises(ValueError):
+            process_sidecar_data({"__CONTENT__": "unknown"})
 
 
 if __name__ == "__main__":

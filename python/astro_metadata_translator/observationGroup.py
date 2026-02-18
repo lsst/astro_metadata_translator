@@ -16,9 +16,12 @@ from __future__ import annotations
 __all__ = ("ObservationGroup",)
 
 import logging
-from collections.abc import Callable, Iterable, Iterator, MutableMapping, MutableSequence
+from collections.abc import Callable, Iterable, MutableMapping, MutableSequence, Sequence
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast, overload
+
+from pydantic import ConfigDict, GetCoreSchemaHandler, RootModel
+from pydantic_core import CoreSchema, core_schema
 
 from .observationInfo import ObservationInfo
 
@@ -28,7 +31,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class ObservationGroup(MutableSequence):
+class _ObservationGroupPydanticModel(RootModel[list[ObservationInfo]]):
+    """Private helper model for Pydantic interoperability."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, ser_json_inf_nan="constants")
+
+
+class ObservationGroup(MutableSequence[ObservationInfo]):
     """A collection of `ObservationInfo` headers.
 
     Parameters
@@ -57,29 +66,33 @@ class ObservationGroup(MutableSequence):
         self._members = [
             self._coerce_value(m, translator_class=translator_class, pedantic=pedantic) for m in members
         ]
-
-        # Cache of members in time order
         self._sorted: list[ObservationInfo] | None = None
 
     def __len__(self) -> int:
         return len(self._members)
 
-    def __delitem__(self, index: int) -> None:  # type: ignore
+    def __delitem__(self, index: int | slice) -> None:
         del self._members[index]
         self._sorted = None
 
-    def __getitem__(self, index: int) -> ObservationInfo:  # type: ignore
+    @overload
+    def __getitem__(self, index: int) -> ObservationInfo: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[ObservationInfo]: ...
+
+    def __getitem__(self, index: int | slice) -> ObservationInfo | list[ObservationInfo]:
         return self._members[index]
 
     def __str__(self) -> str:
         results = []
-        for obs_info in self._members:
+        for obs_info in self:
             results.append(f"({obs_info.instrument}, {obs_info.datetime_begin})")
         return "[" + ", ".join(results) + "]"
 
     def _coerce_value(
         self,
-        value: ObservationInfo | MutableMapping[str, Any],
+        value: object,
         translator_class: type[MetadataTranslator] | None = None,
         pedantic: bool | None = None,
     ) -> ObservationInfo:
@@ -111,6 +124,11 @@ class ObservationGroup(MutableSequence):
 
         if not isinstance(value, ObservationInfo):
             try:
+                if not isinstance(value, MutableMapping):
+                    if hasattr(value, "items"):
+                        value = cast(MutableMapping[str, Any], dict(cast(Any, value).items()))
+                    else:
+                        raise TypeError(f"Value is not dict-like: {type(value)}")
                 kwargs: dict[str, Any] = {"translator_class": translator_class}
                 if pedantic is not None:
                     kwargs["pedantic"] = pedantic
@@ -119,9 +137,6 @@ class ObservationGroup(MutableSequence):
                 raise ValueError("Could not convert value to ObservationInfo") from e
 
         return value
-
-    def __iter__(self) -> Iterator[ObservationInfo]:
-        return iter(self._members)
 
     def __eq__(self, other: Any) -> bool:
         """Check equality with another group.
@@ -141,8 +156,20 @@ class ObservationGroup(MutableSequence):
                 return False
         return True
 
-    def __setitem__(  # type: ignore
-        self, index: int, value: ObservationInfo | MutableMapping[str, Any]
+    @overload
+    def __setitem__(self, index: int, value: ObservationInfo | MutableMapping[str, Any]) -> None: ...
+
+    @overload
+    def __setitem__(
+        self, index: slice, value: Iterable[ObservationInfo | MutableMapping[str, Any]]
+    ) -> None: ...
+
+    def __setitem__(
+        self,
+        index: int | slice,
+        value: ObservationInfo
+        | MutableMapping[str, Any]
+        | Iterable[ObservationInfo | MutableMapping[str, Any]],
     ) -> None:
         """Store item in group.
 
@@ -155,8 +182,12 @@ class ObservationGroup(MutableSequence):
             or something that can be passed to an `ObservationInfo`
             constructor.
         """
-        value = self._coerce_value(value)
-        self._members[index] = value
+        if isinstance(index, slice):
+            if isinstance(value, ObservationInfo) or hasattr(value, "items"):
+                raise TypeError("Can only assign an iterable to an ObservationGroup slice")
+            self._members[index] = [self._coerce_value(v) for v in value]
+        else:
+            self._members[index] = self._coerce_value(value)
         self._sorted = None
 
     def insert(self, index: int, value: ObservationInfo | MutableMapping[str, Any]) -> None:
@@ -170,7 +201,11 @@ class ObservationGroup(MutableSequence):
     def sort(self, key: Callable | None = None, reverse: bool = False) -> None:
         self._members.sort(key=key, reverse=reverse)
         if key is None and not reverse and self._sorted is None:
-            # Store sorted order in cache
+            # Store sorted order in cache. We only cache the sorted order
+            # if we are doing a default time-based sort so that newest
+            # and oldest can work properly without having to resort each time.
+            # We know that if the cache is populated that that is already
+            # the correct answer so no need to re-copy.
             self._sorted = self._members.copy()
 
     def extremes(self) -> tuple[ObservationInfo, ObservationInfo]:
@@ -236,8 +271,67 @@ class ObservationGroup(MutableSequence):
         """
         return [obsinfo.to_simple() for obsinfo in self]
 
+    def model_dump_json(self, **kwargs: Any) -> str:
+        """Serialize to JSON using Pydantic-compatible semantics.
+
+        Parameters
+        ----------
+        **kwargs : `~typing.Any`
+            Parameters passed to `pydantic.BaseModel.model_dump_json`.
+
+        Returns
+        -------
+        json_data : `str`
+            JSON string representing the model.
+        """
+        return _ObservationGroupPydanticModel(self._members).model_dump_json(**kwargs)
+
     @classmethod
-    def from_simple(cls, simple: list[dict[str, Any]]) -> ObservationGroup:
+    def model_validate_json(cls, json_data: str | bytes | bytearray, **kwargs: Any) -> ObservationGroup:
+        """Deserialize from JSON using Pydantic-compatible semantics.
+
+        Parameters
+        ----------
+        json_data : `str` | `bytes` | `bytearray`
+            JSON representation of the model.
+        **kwargs : `~typing.Any`
+            Parameters passed to `pydantic.BaseModel.model_validate_json`.
+
+        Returns
+        -------
+        group : `ObservationGroup`
+            Model constructed from the JSON.
+        """
+        model = _ObservationGroupPydanticModel.model_validate_json(json_data, **kwargs)
+        return cls(model.root)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        # Integrate ObservationGroup as a custom type in Pydantic models.
+        list_schema = core_schema.list_schema(handler.generate_schema(ObservationInfo))
+
+        return core_schema.no_info_after_validator_function(
+            cls._validate_pydantic,
+            list_schema,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                cls._serialize_pydantic, return_schema=list_schema
+            ),
+        )
+
+    @classmethod
+    def _validate_pydantic(cls, value: Any) -> ObservationGroup:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, list):
+            return cls(value)
+        raise TypeError(f"Unexpected type for {cls.__name__}: {type(value)}")
+
+    @staticmethod
+    def _serialize_pydantic(value: ObservationGroup) -> list[ObservationInfo]:
+        return value._members
+
+    @classmethod
+    def from_simple(cls, simple: Sequence[MutableMapping[str, Any]]) -> ObservationGroup:
         """Convert simplified form back to `ObservationGroup`.
 
         Parameters

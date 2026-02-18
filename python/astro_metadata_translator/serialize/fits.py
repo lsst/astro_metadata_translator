@@ -36,7 +36,7 @@ def dates_to_fits(date_begin: astropy.time.Time, date_end: astropy.time.Time) ->
 
     Returns
     -------
-    cards : `dict` of `str` to `str` or `float`
+    cards : `dict` [`str`, [`str` | `float` ] ]
         Header card keys and values following the FITS standard.
         If neither date is defined this may be empty.
     """
@@ -101,9 +101,9 @@ def group_to_fits(obs_group: ObservationGroup) -> tuple[dict[str, Any], dict[str
 
     Returns
     -------
-    cards : `dict` of `str` to (`int`, `float`, `str`, `bool`)
+    cards : `dict` [`str`, [`int` | `float` | `str` | `bool` ] ]
         FITS header keys and values in form understood by FITS.
-    comments : `dict` of `str` to `str`
+    comments : `dict` [`str`, `str`]
         Suitable comment string.  There will be at most one entry for each key
         in ``cards``.
     """

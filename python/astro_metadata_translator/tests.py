@@ -183,6 +183,8 @@ class MetadataAssertHelper:
         self.assertIsNotNone(obsinfo.tracking_radec, msg="Checking tracking_radec is defined")
         self.assertIsNotNone(obsinfo.altaz_begin, msg="Checking AltAz is defined")
 
+        assert obsinfo.altaz_begin is not None
+        assert obsinfo.boresight_airmass is not None
         # Is airmass from header close to airmass from AltAz headers?
         # In most cases there is uncertainty over whether the elevation
         # and airmass in the header are for the start, end, or middle
@@ -197,6 +199,8 @@ class MetadataAssertHelper:
 
         # Is AltAz from headers close to AltAz from RA/Dec headers?
         # Can trigger warnings from Astropy if date is in future
+        assert obsinfo.altaz_begin is not None
+        assert obsinfo.tracking_radec is not None
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=astropy.utils.exceptions.AstropyWarning)
             sep = obsinfo.altaz_begin.separation(obsinfo.tracking_radec.altaz)
@@ -349,6 +353,8 @@ class MetadataAssertHelper:
         self.assertLessEqual(datetime_begin, datetime_end)
 
         # Check that exposure time is not outside datetime_end
+        assert obsinfo.exposure_time is not None
+        assert obsinfo.datetime_begin is not None
         self.assertLessEqual(obsinfo.datetime_begin + obsinfo.exposure_time, obsinfo.datetime_end)
 
         # Do we expect an AltAz value or not.

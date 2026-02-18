@@ -26,18 +26,60 @@ __all__ = (
 )
 
 from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol, SupportsFloat
 
 import astropy.coordinates
 import astropy.time
 import astropy.units
+import numpy as np
 
 # Helper functions to convert complex types to simple form suitable
 # for JSON serialization
 # All take the complex type and return simple python form using str, float,
 # int, dict, or list.
 # All assume the supplied parameter is not None.
+
+
+class _ToValueProtocol(Protocol):
+    """Protocol for Quantity-like class that has to_value method."""
+
+    def to_value(self, unit: astropy.units.UnitBase | None = None) -> SupportsFloat | np.ndarray:
+        """Return converted value that might be ndarray or a single number.
+
+        Parameters
+        ----------
+        unit : `astropy.units.UnitBase` or `None`, optional
+            Optional unit to use when converting the values to floats.
+        """
+        ...
+
+
+def _quantity_to_float(q: _ToValueProtocol, unit: astropy.units.UnitBase | None = None) -> float:
+    """Convert a quantity to a float, in a type safe manner, returning
+    a single float.
+
+    Parameters
+    ----------
+    q : `_ToValueProtocol`
+        The Astropy object to extract the float value from. Must support a
+        ``to_value()`` method.
+    unit : `astropy.units.UnitBase` or `None`, optional
+        Optional unit to use when converting the values to floats.
+
+    Returns
+    -------
+    value : `float`
+        Single float corresponding to the quantity-like input.
+    """
+    # Quantity.to_value is typed to return np.ndarray or a scalar-like value
+    # that supports float conversion.
+    # We only went a single float and it is an error to return multiples.
+    values = q.to_value(unit=unit)
+    if isinstance(values, np.ndarray):
+        raise ValueError(
+            f"Converting quantity to a float failed because unexpectedly got more than one float: {values}"
+        )
+    return float(values)
 
 
 def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tuple[float, ...]:
@@ -54,7 +96,7 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tupl
         The geocentric location as three floats in meters.
     """
     geocentric = location.to_geocentric()
-    return tuple(c.to_value(astropy.units.m) for c in geocentric)
+    return tuple(_quantity_to_float(c, astropy.units.m) for c in geocentric)
 
 
 def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
@@ -107,7 +149,7 @@ def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.ti
     t : `astropy.time.Time`
         An astropy time object.
     """
-    return astropy.time.Time(*simple, format="jd", scale="tai")
+    return astropy.time.Time(simple[0], val2=simple[1], format="jd", scale="tai")
 
 
 def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
@@ -123,7 +165,7 @@ def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
     e : `float`
         Exposure time in seconds.
     """
-    return exptime.to_value(astropy.units.s)
+    return _quantity_to_float(exptime, astropy.units.s)
 
 
 def simple_to_exptime(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -157,7 +199,7 @@ def angle_to_simple(angle: astropy.coordinates.Angle) -> float:
     a : `float`
         The angle in degrees.
     """
-    return angle.to_value(astropy.units.deg)
+    return _quantity_to_float(angle, astropy.units.deg)
 
 
 def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
@@ -175,7 +217,12 @@ def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
     a : `astropy.coordinates.Angle`
         The angle as an object.
     """
-    return astropy.coordinates.Angle(simple * astropy.units.deg)
+    # Quantity of 45. deg is not the same as Angle.
+    if isinstance(simple, astropy.units.Quantity):
+        angle = simple
+    else:
+        angle = simple * astropy.units.deg
+    return astropy.coordinates.Angle(angle)
 
 
 def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
@@ -191,7 +238,7 @@ def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
     f : `float`
         The z-focus in meters.
     """
-    return focusz.to_value(astropy.units.m)
+    return _quantity_to_float(focusz, astropy.units.m)
 
 
 def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -225,7 +272,8 @@ def temperature_to_simple(temp: astropy.units.Quantity) -> float:
     t : `float`
         The temperature in kelvin.
     """
-    return temp.to(astropy.units.K, equivalencies=astropy.units.temperature()).to_value()
+    q = temp.to(astropy.units.K, equivalencies=astropy.units.temperature())
+    return _quantity_to_float(q)
 
 
 def simple_to_temperature(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -259,7 +307,7 @@ def pressure_to_simple(press: astropy.units.Quantity) -> float:
     hpa : `float`
         The pressure in units of hPa.
     """
-    return press.to_value(astropy.units.hPa)
+    return _quantity_to_float(press, astropy.units.hPa)
 
 
 def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
@@ -294,7 +342,13 @@ def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, f
         Sky coordinates as a tuple of two floats in units of degrees.
     """
     icrs = skycoord.icrs
-    return (icrs.ra.to_value(astropy.units.deg), icrs.dec.to_value(astropy.units.deg))
+    if not isinstance(icrs, astropy.coordinates.SkyCoord):
+        raise ValueError(f"Could not extract ICRS coordinates from SkyCoord {skycoord}")
+    ra = icrs.ra
+    assert isinstance(ra, astropy.coordinates.Longitude)
+    dec = icrs.dec
+    assert isinstance(dec, astropy.coordinates.Latitude)
+    return (_quantity_to_float(ra, astropy.units.deg), _quantity_to_float(dec, astropy.units.deg))
 
 
 def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.SkyCoord:
@@ -332,7 +386,7 @@ def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
         The Alt/Az as a tuple of two floats representing the position in
         units of degrees.
     """
-    return (altaz.az.to_value(astropy.units.deg), altaz.alt.to_value(astropy.units.deg))
+    return (_quantity_to_float(altaz.az, astropy.units.deg), _quantity_to_float(altaz.alt, astropy.units.deg))
 
 
 def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coordinates.AltAz:
@@ -351,6 +405,16 @@ def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coord
     altaz : `astropy.coordinates.AltAz`
         The altaz in astropy form.
     """
+    # Sometimes we get given a SkyCoord that contains an AltAz frame that needs
+    # to be extracted.
+    if isinstance(simple, astropy.coordinates.SkyCoord):
+        frame = simple.frame
+        if isinstance(frame, astropy.coordinates.AltAz):
+            return frame
+        # If there is no AltAz frame, return what we have so that downstream
+        # validation can fail.
+        return simple
+
     location = kwargs.get("location")
     obstime = kwargs.get("datetime_begin")
 
@@ -374,7 +438,7 @@ def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
     sec : `int`
         Offset in integer seconds.
     """
-    return round(delta.to_value("s"))
+    return round(_quantity_to_float(delta, astropy.units.s))
 
 
 def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
@@ -395,45 +459,109 @@ def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
     return astropy.time.TimeDelta(simple, format="sec", scale="tai")
 
 
-@dataclass
 class PropertyDefinition:
-    """Definition of an instrumental property."""
+    """Definition of an instrumental property.
+
+    Supports both signatures:
+
+    - ``(doc, py_type, to_simple=None, from_simple=None)``
+    - ``(doc, legacy_str_type, py_type, to_simple=None, from_simple=None)``
+
+    Modern preference is to not specify the string type since that can be
+    derived directly from the python type.
+
+    Parameters
+    ----------
+    doc : `str`
+        Documentation string for the property.
+    *args : `typing.Any`
+        Remaining constructor arguments in one of the supported
+        signatures.
+    """
+
+    __slots__ = ("doc", "py_type", "to_simple", "from_simple")
 
     doc: str
-    """Docstring for the property."""
-
-    str_type: str
-    """Python type of property as a string (suitable for docstrings)."""
-
     py_type: type
-    """Actual python type."""
+    to_simple: Callable[[Any], Any] | None
+    from_simple: Callable[[Any], Any] | None
 
-    to_simple: Callable[[Any], Any] | None = None
-    """Function to convert value to simple form (can be ``None``)."""
+    def __init__(self, doc: str, *args: Any) -> None:
+        if not args:
+            raise TypeError("PropertyDefinition requires at least a py_type argument")
 
-    from_simple: Callable[[Any], Any] | None = None
-    """Function to convert from simple form back to required type (can be
-    ``None``)."""
+        if isinstance(args[0], str):
+            if len(args) < 2 or not isinstance(args[1], type):
+                raise TypeError("Legacy PropertyDefinition signature requires (doc, str_type, py_type, ...)")
+            py_type = args[1]
+            rest = args[2:]
+        else:
+            if not isinstance(args[0], type):
+                raise TypeError("PropertyDefinition py_type must be a type")
+            py_type = args[0]
+            rest = args[1:]
+
+        if len(rest) > 2:
+            raise TypeError("PropertyDefinition accepts at most two converter callables")
+
+        to_simple: Callable[[Any], Any] | None = rest[0] if rest else None
+        from_simple: Callable[[Any], Any] | None = rest[1] if len(rest) > 1 else None
+
+        self.doc = doc
+        self.py_type = py_type
+        self.to_simple = to_simple
+        self.from_simple = from_simple
+
+    @property
+    def str_type(self) -> str:
+        """Python type of property as a string suitable for messages/docs."""
+        if self.py_type.__module__ == "builtins":
+            return self.py_type.__name__
+        return f"{self.py_type.__module__}.{self.py_type.__qualname__}"
+
+    def is_value_conformant(self, value: Any) -> bool:
+        """Compare the supplied value against the expected type as defined
+        for this property.
+
+        Parameters
+        ----------
+        value : `object`
+            Value of the property to validate. Can be `None`.
+
+        Returns
+        -------
+        is_ok : `bool`
+            `True` if the value is of an appropriate type.
+
+        Notes
+        -----
+        Currently only the type of the property is validated. There is no
+        attempt to check bounds or determine that a Quantity is compatible
+        with the property.
+        """
+        if value is None:
+            return True
+
+        return isinstance(value, self.py_type)
 
 
-# Dict of properties to tuple where tuple is:
-# - description of property
-# - Python type of property as a string (suitable for docstrings)
-# - Actual python type as a type
-# - Simplification function (can be None)
-# - Function to convert simple form back to required type (can be None)
+# This dict defines all the core properties of an ObservationInfo.
+# The PropertyDefinition is keyed by the property name.
+# The doc string is used to define the Pydantic model.
+# The py_type/doc are used to create the translator methods.
+# The optional callables are used to convert types for serialization and
+# validation.
 PROPERTIES = {
-    "telescope": PropertyDefinition("Full name of the telescope.", "str", str),
-    "instrument": PropertyDefinition("The instrument used to observe the exposure.", "str", str),
+    "telescope": PropertyDefinition("Full name of the telescope.", str),
+    "instrument": PropertyDefinition("The instrument used to observe the exposure.", str),
     "location": PropertyDefinition(
         "Location of the observatory.",
-        "astropy.coordinates.EarthLocation",
         astropy.coordinates.EarthLocation,
         earthlocation_to_simple,
         simple_to_earthlocation,
     ),
     "exposure_id": PropertyDefinition(
-        "Unique (with instrument) integer identifier for this observation.", "int", int
+        "Unique (with instrument) integer identifier for this observation.", int
     ),
     "visit_id": PropertyDefinition(
         """ID of the Visit this Exposure is associated with.
@@ -441,64 +569,53 @@ PROPERTIES = {
 Science observations should essentially always be
 associated with a visit, but calibration observations
 may not be.""",
-        "int",
         int,
     ),
-    "physical_filter": PropertyDefinition("The bandpass filter used for this observation.", "str", str),
+    "physical_filter": PropertyDefinition("The bandpass filter used for this observation.", str),
     "datetime_begin": PropertyDefinition(
         "Time of the start of the observation.",
-        "astropy.time.Time",
         astropy.time.Time,
         datetime_to_simple,
         simple_to_datetime,
     ),
     "datetime_end": PropertyDefinition(
         "Time of the end of the observation.",
-        "astropy.time.Time",
         astropy.time.Time,
         datetime_to_simple,
         simple_to_datetime,
     ),
     "exposure_time": PropertyDefinition(
         "Actual duration of the exposure (seconds).",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         exptime_to_simple,
         simple_to_exptime,
     ),
     "exposure_time_requested": PropertyDefinition(
         "Requested duration of the exposure (seconds).",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         exptime_to_simple,
         simple_to_exptime,
     ),
     "dark_time": PropertyDefinition(
         "Duration of the exposure with shutter closed (seconds).",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         exptime_to_simple,
         simple_to_exptime,
     ),
-    "boresight_airmass": PropertyDefinition("Airmass of the boresight of the telescope.", "float", float),
+    "boresight_airmass": PropertyDefinition("Airmass of the boresight of the telescope.", float),
     "boresight_rotation_angle": PropertyDefinition(
         "Angle of the instrument in boresight_rotation_coord frame.",
-        "astropy.coordinates.Angle",
         astropy.coordinates.Angle,
         angle_to_simple,
         simple_to_angle,
     ),
     "boresight_rotation_coord": PropertyDefinition(
         "Coordinate frame of the instrument rotation angle (options: sky, unknown).",
-        "str",
         str,
     ),
-    "detector_num": PropertyDefinition(
-        "Unique (for instrument) integer identifier for the sensor.", "int", int
-    ),
+    "detector_num": PropertyDefinition("Unique (for instrument) integer identifier for the sensor.", int),
     "detector_name": PropertyDefinition(
         "Name of the detector within the instrument (might not be unique if there are detector groups).",
-        "str",
         str,
     ),
     "detector_unique_name": PropertyDefinition(
@@ -506,94 +623,80 @@ may not be.""",
             "Unique name of the detector within the focal plane, generally combining detector_group with "
             "detector_name."
         ),
-        "str",
         str,
     ),
-    "detector_serial": PropertyDefinition("Serial number/string associated with this detector.", "str", str),
+    "detector_serial": PropertyDefinition("Serial number/string associated with this detector.", str),
     "detector_group": PropertyDefinition(
         "Collection name of which this detector is a part. Can be None if there are no detector groupings.",
-        "str",
         str,
     ),
     "detector_exposure_id": PropertyDefinition(
         "Unique integer identifier for this detector in this exposure.",
-        "int",
         int,
     ),
     "focus_z": PropertyDefinition(
         "Defocal distance.",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         focusz_to_simple,
         simple_to_focusz,
     ),
-    "object": PropertyDefinition("Object of interest or field name.", "str", str),
+    "object": PropertyDefinition("Object of interest or field name.", str),
     "temperature": PropertyDefinition(
         "Temperature outside the dome.",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         temperature_to_simple,
         simple_to_temperature,
     ),
     "pressure": PropertyDefinition(
         "Atmospheric pressure outside the dome.",
-        "astropy.units.Quantity",
         astropy.units.Quantity,
         pressure_to_simple,
         simple_to_pressure,
     ),
-    "relative_humidity": PropertyDefinition("Relative humidity outside the dome.", "float", float),
+    "relative_humidity": PropertyDefinition("Relative humidity outside the dome.", float),
     "tracking_radec": PropertyDefinition(
         "Requested RA/Dec to track.",
-        "astropy.coordinates.SkyCoord",
         astropy.coordinates.SkyCoord,
         skycoord_to_simple,
         simple_to_skycoord,
     ),
     "altaz_begin": PropertyDefinition(
         "Telescope boresight azimuth and elevation at start of observation.",
-        "astropy.coordinates.AltAz",
         astropy.coordinates.AltAz,
         altaz_to_simple,
         simple_to_altaz,
     ),
     "altaz_end": PropertyDefinition(
         "Telescope boresight azimuth and elevation at end of observation.",
-        "astropy.coordinates.AltAz",
         astropy.coordinates.AltAz,
         altaz_to_simple,
         simple_to_altaz,
     ),
-    "science_program": PropertyDefinition("Observing program (survey or proposal) identifier.", "str", str),
+    "science_program": PropertyDefinition("Observing program (survey or proposal) identifier.", str),
     "observation_type": PropertyDefinition(
         "Type of observation (currently: science, dark, flat, bias, focus).",
-        "str",
         str,
     ),
     "observation_id": PropertyDefinition(
         "Label uniquely identifying this observation (can be related to 'exposure_id').",
-        "str",
         str,
     ),
     "observation_reason": PropertyDefinition(
         "Reason this observation was taken, or its purpose ('science' and 'calibration' are common values)",
-        "str",
         str,
     ),
     "exposure_group": PropertyDefinition(
         "Label to use to associate this exposure with others (can be related to 'exposure_id').",
-        "str",
         str,
     ),
     "observing_day": PropertyDefinition(
-        "Integer in YYYYMMDD format corresponding to the day of observation.", "int", int
+        "Integer in YYYYMMDD format corresponding to the day of observation.", int
     ),
     "observing_day_offset": PropertyDefinition(
         (
             "Offset to subtract from an observation date when calculating the observing day. "
             "Conversely, the offset to add to an observing day when calculating the time span of a day."
         ),
-        "astropy.time.TimeDelta",
         astropy.time.TimeDelta,
         timedelta_to_simple,
         simple_to_timedelta,
@@ -603,17 +706,15 @@ may not be.""",
             "Counter of this observation. Can be counter within observing_day or a global counter. "
             "Likely to be observatory specific."
         ),
-        "int",
         int,
     ),
     "has_simulated_content": PropertyDefinition(
-        "Boolean indicating whether any part of this observation was simulated.", "bool", bool, None, None
+        "Boolean indicating whether any part of this observation was simulated.", bool, None, None
     ),
     "group_counter_start": PropertyDefinition(
         "Observation counter for the start of the exposure group."
         "Depending on the instrument the relevant group may be "
         "visit_id or exposure_group.",
-        "int",
         int,
         None,
         None,
@@ -622,7 +723,6 @@ may not be.""",
         "Observation counter for the end of the exposure group. "
         "Depending on the instrument the relevant group may be "
         "visit_id or exposure_group.",
-        "int",
         int,
         None,
         None,
@@ -631,7 +731,6 @@ may not be.""",
         "True if the observation is looking at sky, False if it is definitely"
         " not looking at the sky. None indicates that it is not known whether"
         " sky could be seen.",
-        "bool",
         bool,
     ),
 }

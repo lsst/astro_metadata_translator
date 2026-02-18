@@ -5,6 +5,7 @@ pytest_session.txt
 version.py
 tests/.tests
 doc/_build
+doc/api
 doc/py-api
 python/*.dist-info/
 

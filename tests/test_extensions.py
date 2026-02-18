@@ -11,8 +11,15 @@
 
 import pickle
 import unittest
+from collections.abc import Mapping
+from typing import Any
 
-from astro_metadata_translator import ObservationInfo, PropertyDefinition, StubTranslator, makeObservationInfo
+from astro_metadata_translator import (
+    ObservationInfo,
+    PropertyDefinition,
+    StubTranslator,
+    makeObservationInfo,
+)
 
 """Test that extensions to the core set of properties works"""
 
@@ -31,13 +38,17 @@ class DummyTranslator(StubTranslator):
     )
     _const_map = {
         "ext_foo": FOO,
+        "detector_name": "detA",
+    }
+    _trivial_map = {
+        "instrument": "INSTRUME",
     }
 
     @classmethod
-    def can_translate(cls, header, filename=None):
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
         return "INSTRUME" in header and header["INSTRUME"] == "dummy"
 
-    def to_ext_number(self):
+    def to_ext_number(self) -> int:
         """Return the combination on my luggage."""
         return NUMBER
 
@@ -45,14 +56,14 @@ class DummyTranslator(StubTranslator):
 class ExtensionsTestCase(unittest.TestCase):
     """Test support for extended properties."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.header = dict(INSTRUME="dummy")
         # The test translator is incomplete so it will issue warnings
         # about missing translations. Catch them.
         with self.assertWarns(UserWarning):
             self.obsinfo = ObservationInfo(self.header)
 
-    def assert_observation_info(self, obsinfo):
+    def assert_observation_info(self, obsinfo: ObservationInfo) -> None:
         """Check that the `ObservationInfo` is as expected.
 
         Parameters
@@ -63,13 +74,15 @@ class ExtensionsTestCase(unittest.TestCase):
         self.assertIsInstance(obsinfo, ObservationInfo)
         self.assertEqual(obsinfo.ext_foo, FOO)
         self.assertEqual(obsinfo.ext_number, NUMBER)
+        self.assertEqual(obsinfo.instrument, "dummy")
+        self.assertEqual(obsinfo.detector_name, "detA")
 
-    def test_basic(self):
+    def test_basic(self) -> None:
         """Test construction of extended ObservationInfo."""
         # Behaves like the original
         self.assert_observation_info(self.obsinfo)
 
-        copy = makeObservationInfo(extensions=DummyTranslator.extensions, ext_foo=FOO, ext_number=NUMBER)
+        copy = makeObservationInfo(translator_class=DummyTranslator, ext_foo=FOO, ext_number=NUMBER)
         self.assertEqual(copy, self.obsinfo)
 
         with self.assertRaises(AttributeError):
@@ -84,12 +97,24 @@ class ExtensionsTestCase(unittest.TestCase):
             # Type checking is applied, like in the original
             makeObservationInfo(extensions=DummyTranslator.extensions, ext_foo=98765)
 
-    def test_pickle(self):
+        with self.assertRaises(TypeError):
+            # Type checking is applied, like in the original
+            makeObservationInfo(extensions=DummyTranslator.extensions, ext_number="42")
+
+        with self.assertRaises(KeyError):
+            makeObservationInfo(translator_class=DummyTranslator, ext_foo=FOO, ext_number2=NUMBER)
+
+        # Make sure that explicit None is accepted.
+        new = makeObservationInfo(translator_class=DummyTranslator, ext_foo=FOO, ext_number=None)
+        self.assertEqual(new.ext_foo, FOO)
+        self.assertIsNone(new.ext_number)
+
+    def test_pickle(self) -> None:
         """Test that pickling works on ObservationInfo with extensions."""
         obsinfo = pickle.loads(pickle.dumps(self.obsinfo))
         self.assert_observation_info(obsinfo)
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         """Test that simple representation works."""
         simple = self.obsinfo.to_simple()
         self.assertIn("ext_foo", simple)
@@ -97,13 +122,39 @@ class ExtensionsTestCase(unittest.TestCase):
         obsinfo = ObservationInfo.from_simple(simple)
         self.assert_observation_info(obsinfo)
 
-    def test_json(self):
+    def test_json(self) -> None:
         """Test that JSON representation works."""
         json = self.obsinfo.to_json()
         self.assertIn("ext_foo", json)
         self.assertIn("ext_number", json)
         obsinfo = ObservationInfo.from_json(json)
         self.assert_observation_info(obsinfo)
+
+    def test_pydantic_extensions(self) -> None:
+        """Test that pydantic model APIs work."""
+        jstr = self.obsinfo.model_dump_json()
+        from_j = ObservationInfo.model_validate_json(jstr)
+        self.assert_observation_info(from_j)
+        self.assertEqual(from_j, self.obsinfo)
+
+        # Check serialization of a copy to make sure copying propagates
+        # the extension class.
+        copy = makeObservationInfo(
+            translator_class=DummyTranslator,
+            ext_foo=FOO,
+            ext_number=NUMBER,
+            instrument="dummy",
+            detector_name="detA",
+        )
+        jstr = copy.model_dump_json()
+        from_j = ObservationInfo.model_validate_json(jstr)
+        self.assert_observation_info(from_j)
+        self.assertEqual(from_j, copy)
+
+        with self.assertRaises(ValueError):
+            makeObservationInfo(
+                translator_class=DummyTranslator, ext_foo=FOO, ext_number=NUMBER, extensions={}
+            )
 
 
 if __name__ == "__main__":

@@ -261,7 +261,7 @@ class HscTranslator(SuprimeCamTranslator):
         # Rotation angle formula determined empirically from visual inspection
         # of HSC images.  See DM-9111.
         angle = Angle(270.0 * u.deg) - Angle(self.quantity_from_card("INST-PA", u.deg))
-        angle = angle.wrap_at("360d")
+        angle.wrap_at("360d", inplace=True)
         return angle
 
     @cache_translation

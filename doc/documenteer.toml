@@ -1,0 +1,25 @@
+[project]
+title = "astro-metadata-translator"
+
+[project.python]
+package = "astro_metadata_translator"
+
+[build]
+clean = true
+
+[sphinx]
+extensions = [
+    "sphinx_click"
+]
+nitpick_ignore = [
+    ["py:obj", "lsst.resources.ResourcePathExpression"],  # type alias.
+    ["py:obj", "lsst.daf.base.PropertyList"],
+]
+
+[sphinx.intersphinx.projects]
+astropy = "https://docs.astropy.org/en/stable"
+python = "https://docs.python.org/3"
+lsst = "https://pipelines.lsst.io/v/daily/"
+click = "https://click.palletsprojects.com/en/stable"
+fsspec = "https://filesystem-spec.readthedocs.io/en/latest/"
+pydantic = "https://docs.pydantic.dev/latest/"

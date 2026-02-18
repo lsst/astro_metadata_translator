@@ -9,14 +9,30 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+import math
 import os.path
 import unittest
+from collections.abc import MutableMapping, Sequence
+from typing import Any
 
-from astro_metadata_translator import ObservationGroup
+from pydantic import BaseModel, ConfigDict
+
+from astro_metadata_translator import ObservationGroup, ObservationInfo
 from astro_metadata_translator.serialize import group_to_fits, info_to_fits
 from astro_metadata_translator.tests import read_test_file
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+class ModelWithObsGroup(BaseModel):
+    """Pydantic model that contains an ObservationGroup."""
+
+    model_config = ConfigDict(
+        ser_json_inf_nan="constants",  # Pydantic does not preserve NaN support from child models.
+    )
+
+    obs_group: ObservationGroup
+    number: int
 
 
 class ObservationGroupTestCase(unittest.TestCase):
@@ -24,7 +40,7 @@ class ObservationGroupTestCase(unittest.TestCase):
 
     datadir = os.path.join(TESTDIR, "data")
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.decam_files = (
             "fitsheader-decam.yaml",
             "fitsheader-decam-0160496.yaml",
@@ -32,10 +48,10 @@ class ObservationGroupTestCase(unittest.TestCase):
         )
         self.hsc_files = ("fitsheader-hsc-HSCA04090107.yaml", "fitsheader-hsc.yaml")
 
-    def _files_to_headers(self, files):
+    def _files_to_headers(self, files: Sequence[str]) -> Sequence[MutableMapping[str, Any]]:
         return [read_test_file(os.path.join(self.datadir, f)) for f in files]
 
-    def test_groups(self):
+    def test_groups(self) -> None:
         headers = self._files_to_headers(self.decam_files)
 
         obs_group = ObservationGroup(headers)
@@ -45,6 +61,9 @@ class ObservationGroupTestCase(unittest.TestCase):
             "[(DECam, 2013-09-01T06:02:55.754), (DECam, 2012-12-11T22:06:32.859),"
             " (DECam, 2015-02-20T00:47:21.127)]",
         )
+
+        # Ensure that pedantic conversion is allowed.
+        obs_group = ObservationGroup(headers, pedantic=True)
 
         sorted_group = ObservationGroup(sorted(obs_group))
         self.assertIsInstance(sorted_group, ObservationGroup)
@@ -79,7 +98,43 @@ class ObservationGroupTestCase(unittest.TestCase):
         # Check that simplified form round trips
         self.assertEqual(ObservationGroup.from_simple(obs_group.to_simple()), obs_group)
 
-    def test_fits_group(self):
+        # Delete some entries.
+        first = obs_group.pop()
+        self.assertIsInstance(first, ObservationInfo)
+        self.assertEqual(len(obs_group), 4)
+
+        # Override an entry with type coercion.
+        obs_group[0] = headers[-1]
+        self.assertIsInstance(obs_group[0], ObservationInfo)
+
+        with self.assertRaises(ValueError):
+            # None is not allowed here.
+            ObservationGroup([None, *headers])
+
+        with self.assertRaises(ValueError):
+            # Passing in a bad translator class.
+            ObservationGroup(headers, translator_class=[])
+
+    def test_sort_key(self) -> None:
+        """Sorting with keys."""
+        headers = self._files_to_headers(self.decam_files)
+
+        obs_group = ObservationGroup(headers)
+
+        # Force sorting.
+        obs_group.sort()
+        self.assertIsNotNone(obs_group._sorted)
+
+        def by_airmass(value: ObservationInfo) -> float:
+            am = value.boresight_airmass
+            if am is None:
+                return 0.0
+            return am
+
+        obs_group.sort(key=by_airmass, reverse=True)
+        self.assertEqual(obs_group[0].boresight_airmass, 1.67)
+
+    def test_fits_group(self) -> None:
         headers = self._files_to_headers(self.decam_files)
 
         obs_group = ObservationGroup(headers)
@@ -99,7 +154,7 @@ class ObservationGroupTestCase(unittest.TestCase):
         }
         self.assertEqual(cards, expected)
 
-    def test_fits_info(self):
+    def test_fits_info(self) -> None:
         header = self._files_to_headers(self.decam_files)[0]
         obs_group = ObservationGroup([header])
         cards, comments = info_to_fits(obs_group[0])
@@ -117,6 +172,32 @@ class ObservationGroupTestCase(unittest.TestCase):
             "DATE-END": "2013-09-01T06:08:31.000",
         }
         self.assertEqual(cards, expected)
+
+    def test_pydantic_roundtrip(self) -> None:
+        """Test that ObservationGroup can round trip using Pydantic APIs."""
+        headers = self._files_to_headers(self.decam_files)
+
+        obsinfo = ObservationInfo(detector_name="detA", boresight_airmass=math.nan)
+        headers.append(obsinfo)
+
+        obs_group = ObservationGroup(headers)
+        j_str = obs_group.model_dump_json()
+        new_group = ObservationGroup.model_validate_json(j_str)
+        self.assertEqual(new_group, obs_group)
+        self.assertTrue(math.isnan(new_group[-1].boresight_airmass))
+
+        # Now try a model containing a group.
+        test_model = ModelWithObsGroup(obs_group=new_group, number=42)
+        j_str = test_model.model_dump_json()
+        new_model = ModelWithObsGroup.model_validate_json(j_str)
+        self.assertEqual(new_model, test_model)
+        self.assertTrue(math.isnan(new_model.obs_group[-1].boresight_airmass))
+
+    def test_iteration_semantics(self) -> None:
+        """Test that iterating the group yields ObservationInfo members."""
+        headers = self._files_to_headers(self.decam_files)
+        obs_group = ObservationGroup(headers)
+        self.assertEqual(list(obs_group), obs_group._members)
 
 
 if __name__ == "__main__":

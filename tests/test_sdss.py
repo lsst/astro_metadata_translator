@@ -24,7 +24,7 @@ class SdssTestCase(unittest.TestCase, MetadataAssertHelper):
 
     datadir = os.path.join(TESTDIR, "data")
 
-    def test_sdss_translator(self):
+    def test_sdss_translator(self) -> None:
         test_data = (
             (
                 "fitsheader-sdss-fpC-006377-g4-0399.yaml",
