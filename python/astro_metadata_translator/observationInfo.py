@@ -33,7 +33,6 @@ from pydantic import (
     field_validator,
     model_serializer,
 )
-from pydantic_core import from_json as _pydantic_from_json
 
 from .headers import fix_header
 from .properties import (
@@ -609,48 +608,6 @@ class ObservationInfo(BaseModel):
                 simple[p] = simplifier(value)
 
         return simple
-
-    @classmethod
-    def model_validate(cls, obj: Any, **kwargs: Any) -> ObservationInfo:
-        """Construct a validated `ObservationInfo` model.
-
-        Parameters
-        ----------
-        obj : `typing.Any`
-           The object to validate. Should generally be a
-           `~collections.abc.MutableMapping`.
-        **kwargs : `typing.Any`
-           Additional parameters supported by `pydantic.BaseModel` but ignored
-           by this method.
-
-        Returns
-        -------
-        model : `ObservationInfo`
-            A validated model.
-        """
-        if isinstance(obj, cls):
-            return obj
-        if not isinstance(obj, MutableMapping):
-            raise TypeError("ObservationInfo.model_validate expects a mapping of property values.")
-        return cls(**dict(obj))
-
-    @classmethod
-    def model_validate_json(cls, json_data: str | bytes, **kwargs: Any) -> ObservationInfo:
-        """Construct a validated `ObservationInfo` from a JSON string.
-
-        Parameters
-        ----------
-        json_data : `str` | `bytes`
-            The JSON string from which to construct the `ObservationInfo`.
-        **kwargs : `typing.Any`
-            Additional parameters for API compatibility.
-
-        Returns
-        -------
-        model : `ObservationInfo`
-            A validated model.
-        """
-        return cls.model_validate(_pydantic_from_json(json_data), **kwargs)
 
     @classmethod
     def _validate_property_mapping(

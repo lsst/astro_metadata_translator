@@ -127,7 +127,7 @@ class BasicTestCase(unittest.TestCase):
         new_obsinfo = ObservationInfo.model_validate(from_j)
         self.assertEqual(id(new_obsinfo), id(from_j))
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             ObservationInfo.model_validate([])
 
         with self.assertRaises(KeyError) as cm:
