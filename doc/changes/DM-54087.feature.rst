@@ -1,2 +1,0 @@
-Switched ``ObservationInfo`` implementation so that it is now a Pydantic ``BaseModel``.
-There should be no change from a user perspective.
