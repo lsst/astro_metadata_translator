@@ -134,10 +134,10 @@ Standard output:
             err_lines = [r.getMessage() for r in cm.records]
             # Filter out warnings.
             analyzed = [e for e in err_lines if e.startswith("Analyzing")]
-            self.assertEqual(len(analyzed), 15)  # The number of files analyzed
+            self.assertEqual(len(analyzed), 16)  # The number of files analyzed
             self.assertTrue(err_lines[0].startswith("Analyzing"), f"Line: '{err_lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, out_lines, (12, 3))
+        self.assert_ok_fail(okay, failed, out_lines, (12, 4))
 
     def test_translate_header_traceback(self) -> None:
         """Translate some header files that fail and trigger traceback."""
@@ -155,7 +155,7 @@ Standard output:
             self.assertGreaterEqual(len(lines), 13, "\n".join(lines))
             self.assertTrue(lines[0].startswith("Analyzing"), f"Line: '{lines[0]}'")
 
-        self.assert_ok_fail(okay, failed, out_lines, (12, 3))
+        self.assert_ok_fail(okay, failed, out_lines, (12, 4))
 
     def test_translate_header_dump(self) -> None:
         """Check that a header is dumped."""

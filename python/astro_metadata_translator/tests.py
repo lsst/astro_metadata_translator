@@ -27,7 +27,7 @@ from astropy.io.fits.verify import VerifyWarning
 from astropy.time import Time
 from lsst.resources import ResourcePath
 
-from astro_metadata_translator import ObservationInfo
+from astro_metadata_translator import MetadataTranslator, ObservationInfo
 
 # PropertyList is optional
 try:
@@ -218,6 +218,7 @@ class MetadataAssertHelper:
         check_wcs: bool = True,
         wcs_params: dict[str, Any] | None = None,
         check_altaz: bool = False,
+        translator_class: type[MetadataTranslator] | None = None,
         **kwargs: Any,
     ) -> None:
         """Check contents of an ObservationInfo.
@@ -234,6 +235,8 @@ class MetadataAssertHelper:
             Parameters to pass to `assertCoordinatesConsistent`.
         check_altaz : `bool`, optional
             Check that an alt/az value has been calculated.
+        translator_class : `type` [`MetadataTranslator`] or `None`, optional
+            Explicit specification of a translator class for the test.
         **kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
@@ -267,6 +270,7 @@ class MetadataAssertHelper:
                     check_wcs=check_wcs,
                     wcs_params=wcs_params,
                     check_altaz=check_altaz,
+                    translator_class=translator_class,
                     **kwargs,
                 )
             except AssertionError as e:
@@ -281,6 +285,7 @@ class MetadataAssertHelper:
         check_wcs: bool = True,
         wcs_params: dict[str, Any] | None = None,
         check_altaz: bool = False,
+        translator_class: type[MetadataTranslator] | None = None,
         **kwargs: Any,
     ) -> None:
         """Check contents of an ObservationInfo.
@@ -299,6 +304,8 @@ class MetadataAssertHelper:
             Parameters to pass to `assertCoordinatesConsistent`.
         check_altaz : `bool`, optional
             Check that an alt/az value has been calculated.
+        translator_class : `type` [`MetadataTranslator`] or `None`, optional
+            Explicit specification of a translator class for the test.
         **kwargs : `dict`
             Keys matching `ObservationInfo` properties with values
             to be tested.
@@ -311,7 +318,7 @@ class MetadataAssertHelper:
         """
         # For testing we force pedantic mode since we are in charge
         # of all the translations
-        obsinfo = ObservationInfo(header, pedantic=True, filename=filename)
+        obsinfo = ObservationInfo(header, pedantic=True, filename=filename, translator_class=translator_class)
         translator = obsinfo.translator_class_name
 
         # Check that we can pickle and get back the same properties

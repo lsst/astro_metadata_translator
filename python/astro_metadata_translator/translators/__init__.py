@@ -16,3 +16,4 @@ from .megaprime import *
 from .sdss import *
 from .subaru import *
 from .suprimecam import *
+from .visit_info import *
