@@ -171,16 +171,30 @@ def main(
     " 'auto' uses 'verbose' if one file found and 'table' if more than one is found.",
 )
 @regex_option
+@click.option(
+    "-t",
+    "--translator-name",
+    default=None,
+    help="Force a specific translator by name. It must have previously been imported.",
+)
 @click.pass_context
 def translate(
-    ctx: click.Context, files: Sequence[str], quiet: bool, hdrnum: int, mode: str, regex: str
+    ctx: click.Context,
+    files: Sequence[str],
+    quiet: bool,
+    hdrnum: int,
+    mode: str,
+    regex: str,
+    translator_name: str | None,
 ) -> None:
     """Translate a header."""
     # For quiet mode we want to translate everything but report nothing.
     if quiet:
         mode = "none"
 
-    okay, failed = translate_or_dump_headers(files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode)
+    okay, failed = translate_or_dump_headers(
+        files, regex, hdrnum, ctx.obj["TRACEBACK"], output_mode=mode, translator_name=translator_name
+    )
 
     if failed:
         click.echo("Files with failed translations:", err=True)

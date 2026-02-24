@@ -85,6 +85,7 @@ def read_file(
     outstream: IO | None = None,
     output_mode: str = "verbose",
     write_heading: bool = False,
+    translator_name: str | None = None,
 ) -> bool:
     """Read the specified file and process it.
 
@@ -117,6 +118,8 @@ def read_file(
     write_heading : `bool`, optional
         If `True` and in table mode, write a table heading out before writing
         the content.
+    translator_name : `str` or `None`, optional
+        Name of a specific translator to use. Must have been pre-loaded.
 
     Returns
     -------
@@ -153,7 +156,12 @@ def read_file(
             return True
 
         # Try to work out a translator class.
-        translator_class = MetadataTranslator.determine_translator(md, filename=str(uri))
+        if translator_name:
+            translator_class = MetadataTranslator.get_translator_by_name(translator_name)
+            if not translator_class:
+                raise RuntimeError(f"Translator {translator_name} not known to translation system.")
+        else:
+            translator_class = MetadataTranslator.determine_translator(md, filename=str(uri))
 
         # Work out which headers to translate, assuming the default if
         # we have a YAML test file.
@@ -168,7 +176,9 @@ def read_file(
             raise ValueError("Table mode requires output columns")
 
         for md in headers:
-            obs_info = ObservationInfo(md, pedantic=False, filename=str(uri))
+            obs_info = ObservationInfo(
+                md, pedantic=False, filename=str(uri), translator_class=translator_class
+            )
             if output_mode == "table":
                 for c in TABLE_COLUMNS:
                     output_columns[c["label"]].append(getattr(obs_info, c["attr"]))
@@ -265,6 +275,7 @@ def translate_or_dump_headers(
     print_trace: bool,
     outstream: IO | None = None,
     output_mode: str = "auto",
+    translator_name: str | None = None,
 ) -> tuple[list[str], list[str]]:
     """Read and translate metadata from the specified files.
 
@@ -288,6 +299,8 @@ def translate_or_dump_headers(
     output_mode : `str`, optional
         Output mode to use for the translated information.
         "auto" switches based on how many files are found.
+    translator_name : `str` or `None`, optional
+        Name of a specific translator to use. Must have been pre-loaded.
 
     Returns
     -------
@@ -310,7 +323,16 @@ def translate_or_dump_headers(
     heading = True
     output_columns: defaultdict[str, list] = defaultdict(list)
     for path in sorted(found_files):
-        isok = read_file(path, hdrnum, print_trace, output_columns, outstream, output_mode, heading)
+        isok = read_file(
+            path,
+            hdrnum,
+            print_trace,
+            output_columns,
+            outstream,
+            output_mode,
+            heading,
+            translator_name=translator_name,
+        )
         heading = False
         if isok:
             okay.append(str(path))
