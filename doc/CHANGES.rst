@@ -1,3 +1,19 @@
+v30.0.4 (2026-02-23)
+====================
+
+New Features
+------------
+
+- Switched ``ObservationInfo`` implementation so that it is now a Pydantic ``BaseModel``.
+  There should be no change from a user perspective. (`DM-54087 <https://rubinobs.atlassian.net/browse/DM-54087>`_)
+
+
+Other Changes and Additions
+---------------------------
+
+- Migrated the documentation build to use ``sphinxutils``. (`DM-54087 <https://rubinobs.atlassian.net/browse/DM-54087>`_)
+
+
 v30.0.0 (2026-01-15)
 ====================
 
