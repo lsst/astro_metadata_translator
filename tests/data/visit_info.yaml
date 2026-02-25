@@ -17,7 +17,8 @@ MJD-BEG: 60816.0632543596
 DATE-END: '2025-05-21T01:31:36.119'
 MJD-END: 60816.0636124928
 GROUPID: '2025-05-21T01:28:49.433'
-INSTRUME: lsstCam
+# Force a different instrument to prevent other translators recognizing it.
+INSTRUME: VisitInfo
 TELESCOP: Simonyi Survey Telescope
 OBSGEO-X: 1818938.94
 OBSGEO-Y: -5208470.95
