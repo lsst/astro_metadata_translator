@@ -18,11 +18,11 @@ __all__ = ("ObservationInfo", "makeObservationInfo")
 import copy
 import itertools
 import logging
-import math
 from collections.abc import MutableMapping, Sequence
 from typing import TYPE_CHECKING, Any, cast, overload
 
 import astropy.time
+import numpy as np
 from lsst.resources import ResourcePath
 from pydantic import (
     BaseModel,
@@ -732,13 +732,12 @@ class ObservationInfo(BaseModel):
             self_value = self_simple[k]
             other_value = other_simple[k]
             if self_value != other_value:
-                try:
-                    both_nan = math.isnan(self_value) and math.isnan(other_value)
-                except TypeError:
-                    both_nan = False
-                if both_nan:
-                    # If both are nan this is fine
-                    continue
+                if isinstance(self_value, float) or (
+                    isinstance(self_value, tuple) and isinstance(self_value[0], float)
+                ):
+                    close = np.allclose(self_value, other_value, equal_nan=True)
+                    if close:
+                        continue
                 return False
         return True
 
