@@ -122,26 +122,46 @@ class SuprimeCamTranslator(SubaruTranslator):
     @cache_translation
     def to_datetime_begin(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
-        # We know it is UTC
-        value = self._from_fits_date_string(
-            self._header["DATE-OBS"], time_str=self._header["UT-STR"], scale="utc"
-        )
-        self._used_these_cards("DATE-OBS", "UT-STR")
+        # We know it is UTC. Also HSC date are non-standard with DATE-OBS
+        # only being YYYY-MM-DD.
+        value = None
+        if self.is_key_ok("DATE-OBS"):
+            # This should not happen for raw data but might happen for
+            # visit images.
+            value = self._from_fits_date_string(
+                self._header["DATE-OBS"], time_str=self._header["UT-STR"], scale="utc"
+            )
+            self._used_these_cards("DATE-OBS", "UT-STR")
+        else:
+            # Fallback to standard FITS in case AVG is present.
+            value = super().to_datetime_begin()
+
+        if value is None:
+            raise KeyError("Unable to find any usable date headers to calculate datetime_begin")
+
         return value
 
     @cache_translation
-    def to_datetime_end(self) -> astropy.time.Time:
+    def to_datetime_end(self) -> astropy.time.Time | None:
         # Docstring will be inherited. Property defined in properties.py
-        # We know it is UTC
-        value = self._from_fits_date_string(
-            self._header["DATE-OBS"], time_str=self._header["UT-END"], scale="utc"
-        )
-        self._used_these_cards("DATE-OBS", "UT-END")
+        # We know it is UTC.
+
+        # For validation.
+        exposure_time = self.to_exposure_time()
+        datetime_begin = self.to_datetime_begin()
+
+        # This should be there for raws but maybe not for visits.
+        value = None
+        if self.is_key_ok("DATE-OBS"):
+            value = self._from_fits_date_string(
+                self._header["DATE-OBS"], time_str=self._header["UT-END"], scale="utc"
+            )
+            self._used_these_cards("DATE-OBS", "UT-END")
+        elif datetime_begin is not None and exposure_time is not None:
+            value = datetime_begin + exposure_time
 
         # Sometimes the end time is less than the begin time plus the
         # exposure time so we have to check for that.
-        exposure_time = self.to_exposure_time()
-        datetime_begin = self.to_datetime_begin()
         exposure_end = datetime_begin + exposure_time
         if value < exposure_end:
             value = exposure_end

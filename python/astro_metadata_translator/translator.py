@@ -632,6 +632,25 @@ class MetadataTranslator:
         )
 
     @classmethod
+    def get_translator_by_name(cls, translator_name: str) -> type[MetadataTranslator] | None:
+        """Given the name of a translator, return the corresponding class.
+
+        Parameters
+        ----------
+        translator_name : `str`
+            The registered name of the translator.
+
+        Returns
+        -------
+        translator : `type` [`MetadataTranslator`] or `None`
+            Translation class corresponding to the supplied name. Returns
+            `None` if the translator is not known.
+        """
+        if translator_name in cls.translators:
+            return cls.translators[translator_name]
+        return None
+
+    @classmethod
     def translator_version(cls) -> str:
         """Return the version string for this translator class.
 

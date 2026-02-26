@@ -1,0 +1,5 @@
+* Added new ``VisitInfoTranslator``, designed to be able to extract a minimal consistent set of information from the headers of visit images that were created from an ``lsst.afw.image.VisitInfo``.
+  This translator is not enabled by default since it can result in confusion when an instrument translator can also translate the bulk of the headers.
+* Added new ``--translator-name`` command-line option to ``astrometadata translate`` to force a specific translator to be used (such as ``VisitInfo``).
+  This does require that the translator has been registered (such as with the ``-p`` option).
+* Added ``MetadataTranslator.get_translator_by_name()`` class method to return a translator class from the name of the translator.

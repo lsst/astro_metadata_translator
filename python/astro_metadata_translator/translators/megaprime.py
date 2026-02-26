@@ -82,17 +82,26 @@ class MegaPrimeTranslator(FitsTranslator):
     def to_datetime_begin(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
         # We know it is UTC
-        value = self._from_fits_date_string(
-            self._header["DATE-OBS"], time_str=self._header["UTC-OBS"], scale="utc"
-        )
-        self._used_these_cards("DATE-OBS", "UTC-OBS")
+        value = None
+        if self.is_key_ok("DATE-OBS") and self.is_key_ok("UTC-OBS"):
+            value = self._from_fits_date_string(
+                self._header["DATE-OBS"], time_str=self._header["UTC-OBS"], scale="utc"
+            )
+            self._used_these_cards("DATE-OBS", "UTC-OBS")
+        else:
+            # Fallback on looking for DATE-AVG
+            value = super().to_datetime_begin()
+
+        if value is None:
+            raise KeyError("Unable to find any usable date headers to calculate datetime_begin")
+
         return value
 
     @cache_translation
     def to_datetime_end(self) -> astropy.time.Time:
         # Docstring will be inherited. Property defined in properties.py
         # Older files are missing UTCEND
-        if self.is_key_ok("UTCEND"):
+        if self.is_key_ok("UTCEND") and self.is_key_ok("DATE-OBS"):
             # We know it is UTC
             value = self._from_fits_date_string(
                 self._header["DATE-OBS"], time_str=self._header["UTCEND"], scale="utc"

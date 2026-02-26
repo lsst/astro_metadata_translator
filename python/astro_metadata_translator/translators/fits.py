@@ -173,6 +173,23 @@ class FitsTranslator(MetadataTranslator):
             begin = self._from_fits_date(f"DATE-{suffix}", mjd_key=f"MJD-{suffix}")
             if begin is not None:
                 break
+        if begin is not None:
+            return begin
+
+        # Fallback to AVG if we are missing these, but then also need exposure
+        # time.
+        # If this is a VisitInfo the scale is always TAI and not TIMESYS.
+        # INSTRUMENT was added in 2021.
+        # BORE-xxx have been there since the beginning. We hope that raw
+        # date does not use these headers in any instrument.
+        scale = None
+        if ("INSTRUMENT" in self._header and "BORE-AIRMASS" in self._header) or (
+            "BORE-AIRMASS" in self._header and "BORE-AZ" in self._header and "BORE-RA" in self._header
+        ):
+            scale = "tai"
+        avg = self._from_fits_date("DATE-AVG", mjd_key="MJD-AVG", scale=scale)
+        if avg is not None:
+            begin = avg - (self.to_exposure_time() / 2.0)
         return begin
 
     @cache_translation
