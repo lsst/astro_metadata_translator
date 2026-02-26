@@ -26,6 +26,7 @@ keywords = ["lsst"]
 dynamic = ["version"]
 dependencies = [
     "astropy >=3.0.5",
+    "numpy",
     "pyyaml >=3.13",
     "lsst-resources",
     "lsst-utils",
