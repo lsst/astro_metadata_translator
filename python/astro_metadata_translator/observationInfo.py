@@ -84,6 +84,9 @@ class ObservationInfo(BaseModel):
         interested in a subset of the properties and knows that some of
         the others might be slow to compute (for example the airmass if it
         has to be derived). Only used if a ``header`` is specified.
+    quiet : `bool`, optional
+        If `True`, warning level log messages that would be issued in non
+        pedantic mode are converted to debug messages.
     **kwargs : `typing.Any`
         Property name/value pairs for kwargs-based construction mode. This
         mode creates an `ObservationInfo` directly from supplied properties
@@ -231,6 +234,7 @@ class ObservationInfo(BaseModel):
         search_path: Sequence[str] | None = None,
         required: set[str] | None = None,
         subset: set[str] | None = None,
+        quiet: bool = False,
     ) -> None: ...
 
     @overload
@@ -251,6 +255,7 @@ class ObservationInfo(BaseModel):
         search_path: Sequence[str] | None = None,
         required: set[str] | None = None,
         subset: set[str] | None = None,
+        quiet: bool = False,
         **kwargs: Any,
     ) -> None:
         if filename is not None:
@@ -269,6 +274,7 @@ class ObservationInfo(BaseModel):
                 search_path=search_path,
                 required=required,
                 subset=subset,
+                quiet=quiet,
             )
             return
 
@@ -284,12 +290,14 @@ class ObservationInfo(BaseModel):
         search_path: Sequence[str] | None,
         required: set[str] | None,
         subset: set[str] | None,
+        quiet: bool,
     ) -> None:
         super().__init__(filename=filename)
         self._sealed = False
         # Initialize the empty object
         self._header = {}
         self._translator = None
+        failure_level = logging.DEBUG if quiet else logging.WARNING
 
         # Look for translator class before header fixup. fix_header calls
         # determine_translator immediately on the basis that you need to know
@@ -362,7 +370,7 @@ class ObservationInfo(BaseModel):
                     raise KeyError(err_msg) from e
                 else:
                     log.debug("Calculation of property '%s' failed with header: %s", property, header)
-                    log.warning(f"Ignoring {err_msg}: {e}")
+                    log.log(failure_level, f"Ignoring {err_msg}: {e}")
                     continue
 
             definition = self.all_properties[property]
@@ -384,7 +392,7 @@ class ObservationInfo(BaseModel):
                     log.debug(
                         "Calculation of property '%s' had unexpected type with header: %s", property, header
                     )
-                    log.warning(f"Ignoring {err_msg}")
+                    log.log(failure_level, f"Ignoring {err_msg}")
 
             if value is None and property in required:
                 raise KeyError(f"Calculation of required property {property} resulted in a value of None")
@@ -485,6 +493,7 @@ class ObservationInfo(BaseModel):
         search_path: Sequence[str] | None = None,
         required: set[str] | None = None,
         subset: set[str] | None = None,
+        quiet: bool = False,
     ) -> ObservationInfo:
         """Create an `ObservationInfo` by translating a metadata header.
 
@@ -505,6 +514,9 @@ class ObservationInfo(BaseModel):
             Properties that must be translated and non-`None`.
         subset : `set` [`str`], optional
             Restrict translation to this subset of properties.
+        quiet : `bool`, optional
+            If `True`, warning level log messages that would be issued in non
+            pedantic mode are converted to debug messages.
 
         Returns
         -------
@@ -519,6 +531,7 @@ class ObservationInfo(BaseModel):
             search_path=search_path,
             required=required,
             subset=subset,
+            quiet=quiet,
         )
 
     @staticmethod
