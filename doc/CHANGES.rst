@@ -1,4 +1,4 @@
-v30.0.4 (2026-02-23)
+v30.0.4 (2026-02-28)
 ====================
 
 New Features
@@ -7,6 +7,17 @@ New Features
 - Switched ``ObservationInfo`` implementation so that it is now a Pydantic ``BaseModel``.
   There should be no change from a user perspective. (`DM-54087 <https://rubinobs.atlassian.net/browse/DM-54087>`_)
 
+- * Added new ``VisitInfoTranslator``, designed to be able to extract a minimal consistent set of information from the headers of visit images that were created from an ``lsst.afw.image.VisitInfo``.
+    This translator is not enabled by default since it can result in confusion when an instrument translator can also translate the bulk of the headers.
+  * Added new ``--translator-name`` command-line option to ``astrometadata translate`` to force a specific translator to be used (such as ``VisitInfo``).
+    This does require that the translator has been registered (such as with the ``-p`` option).
+  * Added ``MetadataTranslator.get_translator_by_name()`` class method to return a translator class from the name of the translator. (`DM-54255 <https://rubinobs.atlassian.net/browse/DM-54255>`_)
+
+API Changes
+-----------
+
+- Added a new ``quiet`` parameter to ``ObservationInfo`` constructor and ``ObservationInfo.from_header()`` constructor.
+  This can be used to turn warning log messages on translator failure into debug log messages. (`DM-54279 <https://rubinobs.atlassian.net/browse/DM-54279>`_)
 
 Other Changes and Additions
 ---------------------------
