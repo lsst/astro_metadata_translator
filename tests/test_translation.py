@@ -9,6 +9,7 @@
 # Use of this source code is governed by a 3-clause BSD-style
 # license that can be found in the LICENSE file.
 
+import logging
 import os.path
 import unittest
 
@@ -219,6 +220,17 @@ class TranslatorTestCase(unittest.TestCase):
         with self.assertLogs("astro_metadata_translator"):
             with self.assertWarns(UserWarning):
                 ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False)
+
+        with self.assertLogs("astro_metadata_translator", level=logging.DEBUG) as cm:
+            with self.assertWarns(UserWarning):
+                ObservationInfo(header, translator_class=InstrumentTestTranslator, pedantic=False, quiet=True)
+        # Check that at least one of those DEBUG logs was a translation
+        # warning.
+        self.assertIn("DEBUG:astro_metadata_translator.observationInfo:Calculation of property", cm.output[0])
+        self.assertIn(
+            "DEBUG:astro_metadata_translator.observationInfo:Ignoring Error calculating property",
+            cm.output[1],
+        )
 
         with self.assertRaises(KeyError):
             with self.assertWarns(UserWarning):

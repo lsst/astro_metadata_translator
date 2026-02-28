@@ -4,3 +4,4 @@ click >=8
 lsst-resources
 fsspec
 pydantic >2.0,<3.0
+numpy

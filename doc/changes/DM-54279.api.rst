@@ -1,0 +1,2 @@
+Added a new ``quiet`` parameter to ``ObservationInfo`` constructor and ``ObservationInfo.from_header()`` constructor.
+This can be used to turn warning log messages on translator failure into debug log messages.
