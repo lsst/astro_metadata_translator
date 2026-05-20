@@ -25,13 +25,57 @@ __all__ = (
     "PropertyDefinition",
 )
 
+import inspect
 from collections.abc import Callable
-from typing import Any, Protocol, SupportsFloat, cast
+from typing import Annotated, Any, Protocol, SupportsFloat, cast
 
 import astropy.coordinates
 import astropy.time
 import astropy.units
 import numpy as np
+from pydantic import GetJsonSchemaHandler, PlainSerializer, TypeAdapter
+from pydantic.errors import PydanticInvalidForJsonSchema
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
+
+
+class _SchemaDescription:
+    """Annotated metadata that merges a description into the auto-derived
+    JSON schema of the underlying type.
+
+    If the underlying type cannot be JSON-schema'd (e.g. it is an arbitrary
+    type validated via ``is_instance``), the schema is derived from the
+    ``simplifier``'s return annotation. This keeps ``model_json_schema()``
+    working in both validation and serialization modes without forcing the
+    caller to spell out structural fields (``type``, ``prefixItems``,
+    ``minItems``/``maxItems``) that pydantic could otherwise infer.
+
+    Parameters
+    ----------
+    description : `str`
+        Text inserted into the generated JSON schema as ``description``.
+    simplifier : `~collections.abc.Callable`, optional
+        Function whose return annotation is used to derive the schema
+        structure when the underlying type itself has no JSON schema.
+    """
+
+    def __init__(self, description: str, *, simplifier: Callable[..., Any] | None = None) -> None:
+        self.description = description
+        self.simplifier = simplifier
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        try:
+            schema = handler(core_schema)
+        except PydanticInvalidForJsonSchema:
+            if self.simplifier is None:
+                raise
+            return_type = inspect.signature(self.simplifier).return_annotation
+            schema = TypeAdapter(return_type).json_schema()
+        schema["description"] = self.description
+        return schema
+
 
 # Helper functions to convert complex types to simple form suitable
 # for JSON serialization
@@ -122,6 +166,13 @@ def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy
     return astropy.coordinates.EarthLocation.from_geocentric(*simple, unit=astropy.units.m)
 
 
+EarthLocationAnnotated = Annotated[
+    astropy.coordinates.EarthLocation,
+    PlainSerializer(earthlocation_to_simple, when_used="unless-none"),
+    _SchemaDescription("Geocentric (x, y, z) location in meters.", simplifier=earthlocation_to_simple),
+]
+
+
 def datetime_to_simple(datetime: astropy.time.Time) -> tuple[float, float]:
     """Convert Time to tuple.
 
@@ -157,6 +208,13 @@ def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.ti
     return astropy.time.Time(simple[0], val2=simple[1], format="jd", scale="tai")
 
 
+TimeAnnotated = Annotated[
+    astropy.time.Time,
+    PlainSerializer(datetime_to_simple, when_used="unless-none"),
+    _SchemaDescription("Two-part TAI Julian Date (jd1, jd2).", simplifier=datetime_to_simple),
+]
+
+
 def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
     """Convert exposure time Quantity to seconds.
 
@@ -189,6 +247,13 @@ def simple_to_exptime(simple: float, **kwargs: Any) -> astropy.units.Quantity:
         The exposure time as a quantity.
     """
     return simple * astropy.units.s
+
+
+ExposureTimeAnnotated = Annotated[
+    astropy.units.Quantity,
+    PlainSerializer(exptime_to_simple, when_used="unless-none"),
+    _SchemaDescription("Time in seconds.", simplifier=exptime_to_simple),
+]
 
 
 def angle_to_simple(angle: astropy.coordinates.Angle) -> float:
@@ -230,6 +295,13 @@ def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
     return astropy.coordinates.Angle(angle)
 
 
+AngleAnnotated = Annotated[
+    astropy.coordinates.Angle,
+    PlainSerializer(angle_to_simple, when_used="unless-none"),
+    _SchemaDescription("Angle in degrees.", simplifier=angle_to_simple),
+]
+
+
 def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
     """Convert focusz to meters.
 
@@ -262,6 +334,13 @@ def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
         The z-focus as a quantity.
     """
     return simple * astropy.units.m
+
+
+FocusZAnnotated = Annotated[
+    astropy.units.Quantity,
+    PlainSerializer(focusz_to_simple, when_used="unless-none"),
+    _SchemaDescription("Defocal distance in meters.", simplifier=focusz_to_simple),
+]
 
 
 def temperature_to_simple(temp: astropy.units.Quantity) -> float:
@@ -299,6 +378,13 @@ def simple_to_temperature(simple: float, **kwargs: Any) -> astropy.units.Quantit
     return simple * astropy.units.K
 
 
+TemperatureAnnotated = Annotated[
+    astropy.units.Quantity,
+    PlainSerializer(temperature_to_simple, when_used="unless-none"),
+    _SchemaDescription("Temperature in kelvin.", simplifier=temperature_to_simple),
+]
+
+
 def pressure_to_simple(press: astropy.units.Quantity) -> float:
     """Convert pressure Quantity to hPa.
 
@@ -331,6 +417,13 @@ def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
         The pressure as a quantity.
     """
     return simple * astropy.units.hPa
+
+
+PressureAnnotated = Annotated[
+    astropy.units.Quantity,
+    PlainSerializer(pressure_to_simple, when_used="unless-none"),
+    _SchemaDescription("Pressure in hPa.", simplifier=pressure_to_simple),
+]
 
 
 def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, float]:
@@ -372,6 +465,13 @@ def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.co
         The sky coordinates in astropy form.
     """
     return astropy.coordinates.SkyCoord(*simple, unit=astropy.units.deg)
+
+
+SkyCoordAnnotated = Annotated[
+    astropy.coordinates.SkyCoord,
+    PlainSerializer(skycoord_to_simple, when_used="unless-none"),
+    _SchemaDescription("ICRS (RA, Dec) in degrees.", simplifier=skycoord_to_simple),
+]
 
 
 def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
@@ -428,6 +528,13 @@ def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coord
     )
 
 
+AltAzAnnotated = Annotated[
+    astropy.coordinates.AltAz,
+    PlainSerializer(altaz_to_simple, when_used="unless-none"),
+    _SchemaDescription("(Azimuth, Altitude) in degrees.", simplifier=altaz_to_simple),
+]
+
+
 def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
     """Convert a TimeDelta to integer seconds.
 
@@ -462,6 +569,13 @@ def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
         The delta object.
     """
     return astropy.time.TimeDelta(simple, format="sec", scale="tai")
+
+
+TimeDeltaAnnotated = Annotated[
+    astropy.time.TimeDelta,
+    PlainSerializer(timedelta_to_simple, when_used="unless-none"),
+    _SchemaDescription("Offset in seconds.", simplifier=timedelta_to_simple),
+]
 
 
 class PropertyDefinition:

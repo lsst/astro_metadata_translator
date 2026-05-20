@@ -19,31 +19,42 @@ import copy
 import itertools
 import logging
 from collections.abc import MutableMapping, Sequence
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import Any, cast, overload
 
+import astropy.coordinates
 import astropy.time
+import astropy.units
 import numpy as np
 from lsst.resources import ResourcePath
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    GetJsonSchemaHandler,
     PrivateAttr,
     ValidationInfo,
     field_validator,
     model_serializer,
 )
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
 
 from .headers import fix_header
 from .properties import (
     PROPERTIES,
+    AltAzAnnotated,
+    AngleAnnotated,
+    EarthLocationAnnotated,
+    ExposureTimeAnnotated,
+    FocusZAnnotated,
+    PressureAnnotated,
     PropertyDefinition,
+    SkyCoordAnnotated,
+    TemperatureAnnotated,
+    TimeAnnotated,
+    TimeDeltaAnnotated,
 )
 from .translator import MetadataTranslator
-
-if TYPE_CHECKING:
-    import astropy.coordinates
-    import astropy.units
 
 log = logging.getLogger(__name__)
 _CORE_FROM_SIMPLE_FIELDS = tuple(name for name, definition in PROPERTIES.items() if definition.from_simple)
@@ -145,31 +156,23 @@ class ObservationInfo(BaseModel):
         ser_json_inf_nan="constants",  # Allow for inf and nan to round trip.
     )
 
-    filename: str | None = Field(default=None, exclude=True)
-    translator_class_name: str = Field(default="<None>", exclude=True)
-    extensions: dict[str, PropertyDefinition] = Field(default_factory=dict, exclude=True)
-    all_properties: dict[str, PropertyDefinition] = Field(default_factory=dict, exclude=True)
     telescope: str | None = Field(default=None, description=PROPERTIES["telescope"].doc)
     instrument: str | None = Field(default=None, description=PROPERTIES["instrument"].doc)
-    location: astropy.coordinates.EarthLocation | None = Field(
-        default=None, description=PROPERTIES["location"].doc
-    )
+    location: EarthLocationAnnotated | None = Field(default=None, description=PROPERTIES["location"].doc)
     exposure_id: int | None = Field(default=None, description=PROPERTIES["exposure_id"].doc)
     visit_id: int | None = Field(default=None, description=PROPERTIES["visit_id"].doc)
     physical_filter: str | None = Field(default=None, description=PROPERTIES["physical_filter"].doc)
-    datetime_begin: astropy.time.Time | None = Field(
-        default=None, description=PROPERTIES["datetime_begin"].doc
-    )
-    datetime_end: astropy.time.Time | None = Field(default=None, description=PROPERTIES["datetime_end"].doc)
-    exposure_time: astropy.units.Quantity | None = Field(
+    datetime_begin: TimeAnnotated | None = Field(default=None, description=PROPERTIES["datetime_begin"].doc)
+    datetime_end: TimeAnnotated | None = Field(default=None, description=PROPERTIES["datetime_end"].doc)
+    exposure_time: ExposureTimeAnnotated | None = Field(
         default=None, description=PROPERTIES["exposure_time"].doc
     )
-    exposure_time_requested: astropy.units.Quantity | None = Field(
+    exposure_time_requested: ExposureTimeAnnotated | None = Field(
         default=None, description=PROPERTIES["exposure_time_requested"].doc
     )
-    dark_time: astropy.units.Quantity | None = Field(default=None, description=PROPERTIES["dark_time"].doc)
+    dark_time: ExposureTimeAnnotated | None = Field(default=None, description=PROPERTIES["dark_time"].doc)
     boresight_airmass: float | None = Field(default=None, description=PROPERTIES["boresight_airmass"].doc)
-    boresight_rotation_angle: astropy.coordinates.Angle | None = Field(
+    boresight_rotation_angle: AngleAnnotated | None = Field(
         default=None, description=PROPERTIES["boresight_rotation_angle"].doc
     )
     boresight_rotation_coord: str | None = Field(
@@ -181,27 +184,23 @@ class ObservationInfo(BaseModel):
     detector_serial: str | None = Field(default=None, description=PROPERTIES["detector_serial"].doc)
     detector_group: str | None = Field(default=None, description=PROPERTIES["detector_group"].doc)
     detector_exposure_id: int | None = Field(default=None, description=PROPERTIES["detector_exposure_id"].doc)
-    focus_z: astropy.units.Quantity | None = Field(default=None, description=PROPERTIES["focus_z"].doc)
+    focus_z: FocusZAnnotated | None = Field(default=None, description=PROPERTIES["focus_z"].doc)
     object: str | None = Field(default=None, description=PROPERTIES["object"].doc)
-    temperature: astropy.units.Quantity | None = Field(
-        default=None, description=PROPERTIES["temperature"].doc
-    )
-    pressure: astropy.units.Quantity | None = Field(default=None, description=PROPERTIES["pressure"].doc)
+    temperature: TemperatureAnnotated | None = Field(default=None, description=PROPERTIES["temperature"].doc)
+    pressure: PressureAnnotated | None = Field(default=None, description=PROPERTIES["pressure"].doc)
     relative_humidity: float | None = Field(default=None, description=PROPERTIES["relative_humidity"].doc)
-    tracking_radec: astropy.coordinates.SkyCoord | None = Field(
+    tracking_radec: SkyCoordAnnotated | None = Field(
         default=None, description=PROPERTIES["tracking_radec"].doc
     )
-    altaz_begin: astropy.coordinates.AltAz | None = Field(
-        default=None, description=PROPERTIES["altaz_begin"].doc
-    )
-    altaz_end: astropy.coordinates.AltAz | None = Field(default=None, description=PROPERTIES["altaz_end"].doc)
+    altaz_begin: AltAzAnnotated | None = Field(default=None, description=PROPERTIES["altaz_begin"].doc)
+    altaz_end: AltAzAnnotated | None = Field(default=None, description=PROPERTIES["altaz_end"].doc)
     science_program: str | None = Field(default=None, description=PROPERTIES["science_program"].doc)
     observation_type: str | None = Field(default=None, description=PROPERTIES["observation_type"].doc)
     observation_id: str | None = Field(default=None, description=PROPERTIES["observation_id"].doc)
     observation_reason: str | None = Field(default=None, description=PROPERTIES["observation_reason"].doc)
     exposure_group: str | None = Field(default=None, description=PROPERTIES["exposure_group"].doc)
     observing_day: int | None = Field(default=None, description=PROPERTIES["observing_day"].doc)
-    observing_day_offset: astropy.time.TimeDelta | None = Field(
+    observing_day_offset: TimeDeltaAnnotated | None = Field(
         default=None, description=PROPERTIES["observing_day_offset"].doc
     )
     observation_counter: int | None = Field(default=None, description=PROPERTIES["observation_counter"].doc)
@@ -212,9 +211,39 @@ class ObservationInfo(BaseModel):
     group_counter_end: int | None = Field(default=None, description=PROPERTIES["group_counter_end"].doc)
     can_see_sky: bool | None = Field(default=None, description=PROPERTIES["can_see_sky"].doc)
 
+    # Internal runtime state. These are not part of the wire format and so are
+    # kept as PrivateAttr to keep them out of the generated JSON Schema.
+    _filename: str | None = PrivateAttr(default=None)
+    _translator_class_name: str = PrivateAttr(default="<None>")
+    _extensions: dict[str, PropertyDefinition] = PrivateAttr(default_factory=dict)
+    _all_properties: dict[str, PropertyDefinition] = PrivateAttr(default_factory=dict)
     _header: MutableMapping[str, Any] = PrivateAttr(default_factory=dict)
     _translator: MetadataTranslator | None = PrivateAttr(default=None)
     _sealed: bool = PrivateAttr(default=False)
+
+    @property
+    def filename(self) -> str | None:
+        """Name of the file whose header was translated, if any."""
+        return self._filename
+
+    @filename.setter
+    def filename(self, value: str | None) -> None:
+        self._filename = value
+
+    @property
+    def translator_class_name(self) -> str:
+        """Name of the metadata translator class used for these data."""
+        return self._translator_class_name
+
+    @property
+    def extensions(self) -> dict[str, PropertyDefinition]:
+        """Definitions of the translator-specific extension properties."""
+        return self._extensions
+
+    @property
+    def all_properties(self) -> dict[str, PropertyDefinition]:
+        """Definitions of all known properties (core plus extensions)."""
+        return self._all_properties
 
     @field_validator(*_CORE_FROM_SIMPLE_FIELDS, mode="before")
     @classmethod
@@ -292,7 +321,8 @@ class ObservationInfo(BaseModel):
         subset: set[str] | None,
         quiet: bool,
     ) -> None:
-        super().__init__(filename=filename)
+        super().__init__()
+        self._filename = filename
         self._sealed = False
         # Initialize the empty object
         self._header = {}
@@ -323,7 +353,7 @@ class ObservationInfo(BaseModel):
 
         # Store the translator
         self._translator = translator
-        self.translator_class_name = translator_class.__name__
+        self._translator_class_name = translator_class.__name__
 
         # Form file information string in case we need an error message
         if filename:
@@ -436,7 +466,8 @@ class ObservationInfo(BaseModel):
         processed = {k: v for k, v in kwargs.items() if k in PROPERTIES and v is not None}
         processed = self._apply_constructor_defaults(processed, supplied_keys)
 
-        super().__init__(filename=filename, **processed)
+        super().__init__(**processed)
+        self._filename = filename
         self._sealed = False
 
         # This configures both self.extensions and self.all_properties.
@@ -450,7 +481,7 @@ class ObservationInfo(BaseModel):
 
         if translator_class is not None:
             self._translator = translator_class({})
-            self.translator_class_name = translator_class.__name__
+            self._translator_class_name = translator_class.__name__
 
         self._sealed = True
 
@@ -581,8 +612,8 @@ class ObservationInfo(BaseModel):
                 field_name = "ext_" + name
                 if not hasattr(self, field_name):
                     object.__setattr__(self, field_name, None)
-            self.extensions = extensions
-        self.all_properties = self._get_all_properties(self.extensions)
+            self._extensions = extensions
+        self._all_properties = self._get_all_properties(self._extensions)
 
     def __setattr__(self, name: str, value: Any) -> Any:
         """Set attribute.
@@ -605,23 +636,54 @@ class ObservationInfo(BaseModel):
             raise AttributeError(f"Attribute {name} is read-only")
         return super().__setattr__(name, value)
 
-    @model_serializer(mode="plain")
-    def _serialize(self) -> dict[str, Any]:
-        simple: dict[str, Any] = {}
-        if self._translator and self._translator.name:
-            simple["_translator"] = self._translator.name
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        # The model_serializer is mode="wrap" with a dict[str, Any] return
+        # schema; in serialization mode pydantic would otherwise emit a
+        # trivial "object" schema. Bypass that by handing the inner
+        # model-fields schema directly to the handler so field-level
+        # WithJsonSchema/PlainSerializer annotations are honored.
+        inner = core_schema.get("schema", core_schema)
+        schema = handler(inner)
+        schema = handler.resolve_ref_schema(schema)
+        # The serializer prepends a _translator metadata key when known.
+        properties = schema.setdefault("properties", {})
+        properties.setdefault(
+            "_translator",
+            {
+                "type": "string",
+                "description": ("Name of the registered metadata translator class used for these data."),
+            },
+        )
+        # Allow translator-specific extension properties under the ext_ prefix.
+        schema["patternProperties"] = {
+            "^ext_": {"description": "Extension property value (translator-specific)."},
+        }
+        # Anything other than declared properties and ext_* keys is rejected.
+        schema["additionalProperties"] = False
+        return schema
 
-        for p, definition in self.all_properties.items():
-            value = getattr(self, p)
+    @model_serializer(mode="wrap")
+    def _serialize(self, handler: Any) -> dict[str, Any]:
+        # Default field serialization uses the per-field PlainSerializer
+        # annotations (which simplify astropy types).
+        result: dict[str, Any] = handler(self)
+        # Strip None entries; the wire format omits unset properties.
+        result = {k: v for k, v in result.items() if v is not None}
+        # Add the _translator metadata key when known.
+        if self._translator and self._translator.name:
+            result["_translator"] = self._translator.name
+        # Add values for any extension properties (dynamic ext_* attrs).
+        for ext_name, ext_def in self._extensions.items():
+            field_name = f"ext_{ext_name}"
+            value = getattr(self, field_name, None)
             if value is None:
                 continue
-            simplifier = definition.to_simple
-            if simplifier is None:
-                simple[p] = value
-            else:
-                simple[p] = simplifier(value)
-
-        return simple
+            simplifier = ext_def.to_simple
+            result[field_name] = simplifier(value) if simplifier else value
+        return result
 
     @classmethod
     def _validate_property_mapping(
