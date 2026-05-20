@@ -37,7 +37,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "pytest"
+    "pytest",
+    "jsonschema",
 ]
 
 [project.urls]

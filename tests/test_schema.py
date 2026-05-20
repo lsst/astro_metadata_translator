@@ -18,7 +18,13 @@ from typing import Any
 
 import astropy.time
 import astropy.units as u
-import jsonschema
+
+try:
+    import jsonschema
+
+    HAS_JSONSCHEMA = True
+except ImportError:
+    HAS_JSONSCHEMA = False
 
 from astro_metadata_translator import (
     ObservationInfo,
@@ -131,6 +137,7 @@ class JsonSchemaTestCase(unittest.TestCase):
         offset = properties["observing_day_offset"]
         self._assert_accepts_type(offset, "integer")
 
+    @unittest.skipUnless(HAS_JSONSCHEMA, "jsonschema package is not installed")
     def test_schema_validates_real_obsinfo(self) -> None:
         """Serialized ObservationInfo must validate against the schema."""
         reference = dict(
@@ -149,6 +156,7 @@ class JsonSchemaTestCase(unittest.TestCase):
         # This will raise if invalid.
         jsonschema.validate(instance=data, schema=schema)
 
+    @unittest.skipUnless(HAS_JSONSCHEMA, "jsonschema package is not installed")
     def test_schema_validates_with_extensions(self) -> None:
         """An ObservationInfo with ext_* properties must validate."""
         obsinfo = makeObservationInfo(
