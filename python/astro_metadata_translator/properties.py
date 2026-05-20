@@ -26,7 +26,7 @@ __all__ = (
 )
 
 from collections.abc import Callable
-from typing import Any, Protocol, SupportsFloat
+from typing import Any, Protocol, SupportsFloat, cast
 
 import astropy.coordinates
 import astropy.time
@@ -82,7 +82,9 @@ def _quantity_to_float(q: _ToValueProtocol, unit: astropy.units.UnitBase | None 
     return float(values)
 
 
-def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tuple[float, ...]:
+def earthlocation_to_simple(
+    location: astropy.coordinates.EarthLocation,
+) -> tuple[float, float, float]:
     """Convert EarthLocation to tuple.
 
     Parameters
@@ -96,7 +98,10 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tupl
         The geocentric location as three floats in meters.
     """
     geocentric = location.to_geocentric()
-    return tuple(_quantity_to_float(c, astropy.units.m) for c in geocentric)
+    return cast(
+        "tuple[float, float, float]",
+        tuple(_quantity_to_float(c, astropy.units.m) for c in geocentric),
+    )
 
 
 def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
