@@ -1,0 +1,61 @@
+{
+  "altaz_begin": [
+    110.0,
+    65.0
+  ],
+  "altaz_end": [
+    110.5,
+    64.5
+  ],
+  "boresight_airmass": 1.1037,
+  "boresight_rotation_angle": 45.0,
+  "boresight_rotation_coord": "sky",
+  "can_see_sky": true,
+  "dark_time": 31.0,
+  "datetime_begin": [
+    2460817.0,
+    -0.4418402777777778
+  ],
+  "datetime_end": [
+    2460817.0,
+    -0.44149305555555557
+  ],
+  "detector_exposure_id": 98765432142,
+  "detector_group": "R22",
+  "detector_name": "S00",
+  "detector_num": 42,
+  "detector_serial": "ITL-3800C-145",
+  "detector_unique_name": "R22_S00",
+  "exposure_group": "20250521_000123",
+  "exposure_id": 987654321,
+  "exposure_time": 30.0,
+  "exposure_time_requested": 30.0,
+  "focus_z": 0.001,
+  "group_counter_end": 123,
+  "group_counter_start": 123,
+  "has_simulated_content": false,
+  "instrument": "TestCam",
+  "location": [
+    1818938.9432360171,
+    -5208470.950937998,
+    -3195172.084267574
+  ],
+  "object": "HD12345",
+  "observation_counter": 123,
+  "observation_id": "TC_O_20250521_000123",
+  "observation_reason": "science",
+  "observation_type": "science",
+  "observing_day": 20250520,
+  "observing_day_offset": 43200,
+  "physical_filter": "r",
+  "pressure": 750.0,
+  "relative_humidity": 42.5,
+  "science_program": "2025A-001",
+  "telescope": "Test Telescope",
+  "temperature": 283.15,
+  "tracking_radec": [
+    123.456,
+    -45.678
+  ],
+  "visit_id": 987654000
+}
