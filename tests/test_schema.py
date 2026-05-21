@@ -12,6 +12,7 @@
 """Tests for JSON Schema generation from the ObservationInfo model."""
 
 import json
+import os.path
 import unittest
 from collections.abc import Mapping
 from typing import Any
@@ -32,6 +33,8 @@ from astro_metadata_translator import (
     StubTranslator,
     makeObservationInfo,
 )
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class _SchemaTranslator(StubTranslator):
@@ -172,6 +175,21 @@ class JsonSchemaTestCase(unittest.TestCase):
 
         schema = ObservationInfo.model_json_schema(mode="serialization")
         jsonschema.validate(instance=data, schema=schema)
+
+    @unittest.skipUnless(HAS_JSONSCHEMA, "jsonschema package is not installed")
+    def test_schema_validates_reference_files(self) -> None:
+        """Reference JSON files captured before this ticket must still
+        validate against the generated schema.
+
+        Guards against accidental wire-format regressions.
+        """
+        schema = ObservationInfo.model_json_schema(mode="serialization")
+        for filename in ("obsinfo-full.json", "obsinfo-full-extensions.json"):
+            with self.subTest(filename=filename):
+                path = os.path.join(TESTDIR, "data", filename)
+                with open(path) as fh:
+                    data = json.load(fh)
+                jsonschema.validate(instance=data, schema=schema)
 
     def _assert_accepts_type(self, prop_schema: dict, expected_type: str) -> None:
         """Assert that a property schema accepts the given JSON type.
