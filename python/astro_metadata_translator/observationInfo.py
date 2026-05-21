@@ -57,6 +57,31 @@ from .translator import MetadataTranslator
 log = logging.getLogger(__name__)
 
 
+def _wire_doc(key: str, wire_form: str) -> str:
+    """Append a wire-format note to a property's semantic doc.
+
+    Used only for ``Field(description=...)`` in the JSON schema; the
+    underlying ``PROPERTIES[key].doc`` is intentionally left unit-agnostic
+    because it is also surfaced as the docstring of auto-generated
+    translator stub methods, where forcing a wire-format unit would be
+    misleading.
+
+    Parameters
+    ----------
+    key : `str`
+        Property name in `PROPERTIES`.
+    wire_form : `str`
+        Short noun phrase describing the JSON-serialized form, e.g.
+        ``"a float in meters"``.
+
+    Returns
+    -------
+    description : `str`
+        ``PROPERTIES[key].doc`` followed by ``"Serialized as <wire_form>."``.
+    """
+    return f"{PROPERTIES[key].doc} Serialized as {wire_form}."
+
+
 class ObservationInfo(BaseModel):
     """Standardized representation of an instrument header for a single
     exposure observation.
@@ -161,12 +186,21 @@ class ObservationInfo(BaseModel):
 
     telescope: str | None = Field(default=None, description=PROPERTIES["telescope"].doc)
     instrument: str | None = Field(default=None, description=PROPERTIES["instrument"].doc)
-    location: EarthLocationAnnotated | None = Field(default=None, description=PROPERTIES["location"].doc)
+    location: EarthLocationAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("location", "a geocentric (x, y, z) tuple of floats in meters"),
+    )
     exposure_id: int | None = Field(default=None, description=PROPERTIES["exposure_id"].doc)
     visit_id: int | None = Field(default=None, description=PROPERTIES["visit_id"].doc)
     physical_filter: str | None = Field(default=None, description=PROPERTIES["physical_filter"].doc)
-    datetime_begin: TimeAnnotated | None = Field(default=None, description=PROPERTIES["datetime_begin"].doc)
-    datetime_end: TimeAnnotated | None = Field(default=None, description=PROPERTIES["datetime_end"].doc)
+    datetime_begin: TimeAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("datetime_begin", "a two-element TAI Julian Date [jd1, jd2]"),
+    )
+    datetime_end: TimeAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("datetime_end", "a two-element TAI Julian Date [jd1, jd2]"),
+    )
     exposure_time: ExposureTimeAnnotated | None = Field(
         default=None, description=PROPERTIES["exposure_time"].doc
     )
@@ -176,7 +210,8 @@ class ObservationInfo(BaseModel):
     dark_time: ExposureTimeAnnotated | None = Field(default=None, description=PROPERTIES["dark_time"].doc)
     boresight_airmass: float | None = Field(default=None, description=PROPERTIES["boresight_airmass"].doc)
     boresight_rotation_angle: AngleAnnotated | None = Field(
-        default=None, description=PROPERTIES["boresight_rotation_angle"].doc
+        default=None,
+        description=_wire_doc("boresight_rotation_angle", "a float in degrees"),
     )
     boresight_rotation_coord: str | None = Field(
         default=None, description=PROPERTIES["boresight_rotation_coord"].doc
@@ -187,16 +222,32 @@ class ObservationInfo(BaseModel):
     detector_serial: str | None = Field(default=None, description=PROPERTIES["detector_serial"].doc)
     detector_group: str | None = Field(default=None, description=PROPERTIES["detector_group"].doc)
     detector_exposure_id: int | None = Field(default=None, description=PROPERTIES["detector_exposure_id"].doc)
-    focus_z: FocusZAnnotated | None = Field(default=None, description=PROPERTIES["focus_z"].doc)
+    focus_z: FocusZAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("focus_z", "a float in meters"),
+    )
     object: str | None = Field(default=None, description=PROPERTIES["object"].doc)
-    temperature: TemperatureAnnotated | None = Field(default=None, description=PROPERTIES["temperature"].doc)
-    pressure: PressureAnnotated | None = Field(default=None, description=PROPERTIES["pressure"].doc)
+    temperature: TemperatureAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("temperature", "a float in kelvin"),
+    )
+    pressure: PressureAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("pressure", "a float in hPa"),
+    )
     relative_humidity: float | None = Field(default=None, description=PROPERTIES["relative_humidity"].doc)
     tracking_radec: SkyCoordAnnotated | None = Field(
-        default=None, description=PROPERTIES["tracking_radec"].doc
+        default=None,
+        description=_wire_doc("tracking_radec", "an ICRS (RA, Dec) tuple of floats in degrees"),
     )
-    altaz_begin: AltAzAnnotated | None = Field(default=None, description=PROPERTIES["altaz_begin"].doc)
-    altaz_end: AltAzAnnotated | None = Field(default=None, description=PROPERTIES["altaz_end"].doc)
+    altaz_begin: AltAzAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("altaz_begin", "an (azimuth, altitude) tuple of floats in degrees"),
+    )
+    altaz_end: AltAzAnnotated | None = Field(
+        default=None,
+        description=_wire_doc("altaz_end", "an (azimuth, altitude) tuple of floats in degrees"),
+    )
     science_program: str | None = Field(default=None, description=PROPERTIES["science_program"].doc)
     observation_type: str | None = Field(default=None, description=PROPERTIES["observation_type"].doc)
     observation_id: str | None = Field(default=None, description=PROPERTIES["observation_id"].doc)
@@ -204,7 +255,8 @@ class ObservationInfo(BaseModel):
     exposure_group: str | None = Field(default=None, description=PROPERTIES["exposure_group"].doc)
     observing_day: int | None = Field(default=None, description=PROPERTIES["observing_day"].doc)
     observing_day_offset: TimeDeltaAnnotated | None = Field(
-        default=None, description=PROPERTIES["observing_day_offset"].doc
+        default=None,
+        description=_wire_doc("observing_day_offset", "integer seconds"),
     )
     observation_counter: int | None = Field(default=None, description=PROPERTIES["observation_counter"].doc)
     has_simulated_content: bool | None = Field(
