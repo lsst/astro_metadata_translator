@@ -32,8 +32,6 @@ from pydantic import (
     Field,
     GetJsonSchemaHandler,
     PrivateAttr,
-    ValidationInfo,
-    field_validator,
     model_serializer,
 )
 from pydantic.json_schema import JsonSchemaValue
@@ -57,7 +55,6 @@ from .properties import (
 from .translator import MetadataTranslator
 
 log = logging.getLogger(__name__)
-_CORE_FROM_SIMPLE_FIELDS = tuple(name for name, definition in PROPERTIES.items() if definition.from_simple)
 
 
 class ObservationInfo(BaseModel):
@@ -151,9 +148,15 @@ class ObservationInfo(BaseModel):
 
     model_config = ConfigDict(
         extra="forbid",
-        arbitrary_types_allowed=True,
         validate_assignment=False,
+        populate_by_name=True,
         ser_json_inf_nan="constants",  # Allow for inf and nan to round trip.
+    )
+
+    translator_name: str | None = Field(
+        default=None,
+        alias="_translator",
+        description="Name of the registered metadata translator class used for these data.",
     )
 
     telescope: str | None = Field(default=None, description=PROPERTIES["telescope"].doc)
@@ -244,14 +247,6 @@ class ObservationInfo(BaseModel):
     def all_properties(self) -> dict[str, PropertyDefinition]:
         """Definitions of all known properties (core plus extensions)."""
         return self._all_properties
-
-    @field_validator(*_CORE_FROM_SIMPLE_FIELDS, mode="before")
-    @classmethod
-    def _before_core_from_simple(cls, value: Any, info: ValidationInfo) -> Any:
-        assert info.field_name is not None
-        definition = PROPERTIES[info.field_name]
-        context = info.data if isinstance(info.data, dict) else {}
-        return cls._coerce_from_simple(definition, value, context)
 
     @overload
     def __init__(
@@ -354,6 +349,7 @@ class ObservationInfo(BaseModel):
         # Store the translator
         self._translator = translator
         self._translator_class_name = translator_class.__name__
+        self.translator_name = translator_class.name
 
         # Form file information string in case we need an error message
         if filename:
@@ -439,7 +435,10 @@ class ObservationInfo(BaseModel):
         **kwargs: Any,
     ) -> None:
         supplied_keys = set(kwargs)
-        translator_name = kwargs.pop("_translator", None)
+        # Accept both the wire-format alias ``_translator`` and the field name
+        # ``translator_name``; the latter is what Pydantic's default model_dump
+        # emits (by_alias defaults to False).
+        translator_name = kwargs.pop("_translator", None) or kwargs.pop("translator_name", None)
         supplied_extensions = kwargs.pop("_extensions", None)
         if translator_name is not None:
             if translator_name not in MetadataTranslator.translators:
@@ -482,6 +481,7 @@ class ObservationInfo(BaseModel):
         if translator_class is not None:
             self._translator = translator_class({})
             self._translator_class_name = translator_class.__name__
+            self.translator_name = translator_class.name
 
         self._sealed = True
 
@@ -640,23 +640,14 @@ class ObservationInfo(BaseModel):
     def __get_pydantic_json_schema__(
         cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
-        # The model_serializer is mode="wrap" with a dict[str, Any] return
-        # schema; in serialization mode pydantic would otherwise emit a
-        # trivial "object" schema. Bypass that by handing the inner
-        # model-fields schema directly to the handler so field-level
-        # WithJsonSchema/PlainSerializer annotations are honored.
+        # The model_serializer below is mode="wrap" returning dict[str, Any];
+        # in serialization mode pydantic would otherwise emit a trivial
+        # "object" schema. Hand the inner model-fields schema to the handler
+        # so the field-level WithJsonSchema/PlainSerializer annotations are
+        # honored.
         inner = core_schema.get("schema", core_schema)
         schema = handler(inner)
         schema = handler.resolve_ref_schema(schema)
-        # The serializer prepends a _translator metadata key when known.
-        properties = schema.setdefault("properties", {})
-        properties.setdefault(
-            "_translator",
-            {
-                "type": "string",
-                "description": ("Name of the registered metadata translator class used for these data."),
-            },
-        )
         # Allow translator-specific extension properties under the ext_ prefix.
         schema["patternProperties"] = {
             "^ext_": {"description": "Extension property value (translator-specific)."},
@@ -667,15 +658,14 @@ class ObservationInfo(BaseModel):
 
     @model_serializer(mode="wrap")
     def _serialize(self, handler: Any) -> dict[str, Any]:
-        # Default field serialization uses the per-field PlainSerializer
-        # annotations (which simplify astropy types).
+        # Field serialization uses the per-field PlainSerializer annotations.
+        # by_alias=True is set by the to_simple/to_json call sites so the
+        # ``_translator`` alias is emitted instead of ``translator_name``.
         result: dict[str, Any] = handler(self)
         # Strip None entries; the wire format omits unset properties.
         result = {k: v for k, v in result.items() if v is not None}
-        # Add the _translator metadata key when known.
-        if self._translator and self._translator.name:
-            result["_translator"] = self._translator.name
-        # Add values for any extension properties (dynamic ext_* attrs).
+        # Append values for any extension properties (dynamic ext_* attrs).
+        # Kept flat for backwards compatibility with the existing wire format.
         for ext_name, ext_def in self._extensions.items():
             field_name = f"ext_{ext_name}"
             value = getattr(self, field_name, None)
@@ -898,7 +888,7 @@ class ObservationInfo(BaseModel):
         `MetadataTranslator` (which contains the extension property
         definitions).
         """
-        return self.model_dump(mode="python")
+        return self.model_dump(mode="python", by_alias=True)
 
     def to_json(self) -> str:
         """Serialize the object to JSON string.
@@ -915,7 +905,7 @@ class ObservationInfo(BaseModel):
         `MetadataTranslator` (which contains the extension property
         definitions).
         """
-        return self.model_dump_json()
+        return self.model_dump_json(by_alias=True)
 
     @classmethod
     def from_simple(cls, simple: MutableMapping[str, Any]) -> ObservationInfo:
