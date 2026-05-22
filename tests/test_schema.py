@@ -194,8 +194,8 @@ class JsonSchemaTestCase(unittest.TestCase):
     def _assert_accepts_type(self, prop_schema: dict, expected_type: str) -> None:
         """Assert that a property schema accepts the given JSON type.
 
-        The schema may be a direct ``{"type": ...}`` or a union via
-        ``anyOf``/``oneOf`` (e.g. a nullable property).
+        All ObservationInfo properties are nullable, so Pydantic emits
+        them as ``anyOf: [<actual type>, {"type": "null"}]``.
 
         Parameters
         ----------
@@ -204,20 +204,9 @@ class JsonSchemaTestCase(unittest.TestCase):
         expected_type : `str`
             The JSON Schema type name that the property must accept.
         """
-        if prop_schema.get("type") == expected_type:
-            return
-        for key in ("anyOf", "oneOf"):
-            for branch in prop_schema.get(key, []):
-                if branch.get("type") == expected_type:
-                    return
-            for branch in prop_schema.get(key, []):
-                # Recurse on nested unions.
-                if "anyOf" in branch or "oneOf" in branch:
-                    try:
-                        self._assert_accepts_type(branch, expected_type)
-                        return
-                    except AssertionError:
-                        continue
+        for branch in prop_schema.get("anyOf", []):
+            if branch.get("type") == expected_type:
+                return
         self.fail(
             f"Property schema does not accept type {expected_type!r}: {json.dumps(prop_schema, default=str)}"
         )
