@@ -175,6 +175,7 @@ class ObservationInfo(BaseModel):
         extra="forbid",
         validate_assignment=False,
         populate_by_name=True,
+        serialize_by_alias=True,  # Emit the ``_translator`` alias even when nested.
         ser_json_inf_nan="constants",  # Allow for inf and nan to round trip.
     )
 
@@ -488,8 +489,8 @@ class ObservationInfo(BaseModel):
     ) -> None:
         supplied_keys = set(kwargs)
         # Accept both the wire-format alias ``_translator`` and the field name
-        # ``translator_name``; the latter is what Pydantic's default model_dump
-        # emits (by_alias defaults to False).
+        # ``translator_name`` for robustness against callers that pass the
+        # field name directly.
         translator_name = kwargs.pop("_translator", None) or kwargs.pop("translator_name", None)
         supplied_extensions = kwargs.pop("_extensions", None)
         if translator_name is not None:
@@ -711,8 +712,8 @@ class ObservationInfo(BaseModel):
     @model_serializer(mode="wrap")
     def _serialize(self, handler: Any) -> dict[str, Any]:
         # Field serialization uses the per-field PlainSerializer annotations.
-        # by_alias=True is set by the to_simple/to_json call sites so the
-        # ``_translator`` alias is emitted instead of ``translator_name``.
+        # ``serialize_by_alias=True`` in model_config emits the ``_translator``
+        # alias instead of ``translator_name`` (and applies when nested).
         result: dict[str, Any] = handler(self)
         # Strip None entries; the wire format omits unset properties.
         result = {k: v for k, v in result.items() if v is not None}
@@ -940,7 +941,7 @@ class ObservationInfo(BaseModel):
         `MetadataTranslator` (which contains the extension property
         definitions).
         """
-        return self.model_dump(mode="python", by_alias=True)
+        return self.model_dump(mode="python")
 
     def to_json(self) -> str:
         """Serialize the object to JSON string.
@@ -957,7 +958,7 @@ class ObservationInfo(BaseModel):
         `MetadataTranslator` (which contains the extension property
         definitions).
         """
-        return self.model_dump_json(by_alias=True)
+        return self.model_dump_json()
 
     @classmethod
     def from_simple(cls, simple: MutableMapping[str, Any]) -> ObservationInfo:

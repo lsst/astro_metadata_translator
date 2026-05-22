@@ -23,6 +23,7 @@ from typing import Any
 import astropy.coordinates
 import astropy.time
 import astropy.units as u
+import pydantic
 
 from astro_metadata_translator import (
     ObservationInfo,
@@ -152,6 +153,35 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         self.assertEqual(round_tripped, obsinfo)
         self.assertEqual(round_tripped.ext_foo, "bar")
         self.assertEqual(round_tripped.ext_number, 12345)
+
+    def test_nested_in_pydantic_model(self) -> None:
+        """Nesting in another Pydantic model preserves the wire format.
+
+        Nested serialization goes through Pydantic directly and does not
+        call ``to_simple`` / ``to_json``, so the alias behavior must come
+        from ``serialize_by_alias`` in the model config rather than from
+        the call-site kwargs.
+        """
+
+        class Wrapper(pydantic.BaseModel):
+            obs: ObservationInfo
+
+        path = os.path.join(DATADIR, "obsinfo-full-extensions.json")
+        with open(path) as fh:
+            obsinfo = ObservationInfo.from_json(fh.read())
+
+        wrapper = Wrapper(obs=obsinfo)
+
+        nested = wrapper.model_dump()["obs"]
+        self.assertIn("_translator", nested)
+        self.assertNotIn("translator_name", nested)
+        # Extension keys remain flat under the ext_ prefix.
+        self.assertEqual(nested["ext_foo"], "bar")
+        self.assertEqual(nested["ext_number"], 12345)
+
+        nested_json = wrapper.model_dump_json()
+        round_tripped = Wrapper.model_validate_json(nested_json)
+        self.assertEqual(round_tripped.obs, obsinfo)
 
 
 if __name__ == "__main__":
