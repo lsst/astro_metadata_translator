@@ -26,12 +26,164 @@ __all__ = (
 )
 
 from collections.abc import Callable
-from typing import Any, Protocol, SupportsFloat
+from typing import Annotated, Any, Protocol, SupportsFloat, cast
 
 import astropy.coordinates
 import astropy.time
 import astropy.units
 import numpy as np
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema, core_schema
+
+
+class _AstropyFieldAdapter:
+    """Pydantic adapter that round-trips an astropy-like value through a
+    simple JSON-friendly representation.
+
+    The adapter provides:
+
+    - a validator that accepts either an instance of ``py_type`` (passthrough)
+      or the simple form, which is converted via ``complexifier``;
+    - a serializer that converts an instance of ``py_type`` to its simple
+      form via ``simplifier``;
+    - an explicit JSON Schema for the wire form so the schema generator does
+      not have to introspect ``py_type``.
+
+    All three concerns are collapsed into one Annotated metadata object so
+    each field annotation reads simply as ``py_type``.
+
+    Parameters
+    ----------
+    py_type : `type`
+        Concrete Python type of the field value. Used for the ``isinstance``
+        passthrough check and as the core-schema's ``is_instance`` validator.
+    simplifier : `~collections.abc.Callable`
+        Function converting an instance of ``py_type`` to its JSON-friendly
+        wire form (a number or a tuple of numbers).
+    complexifier : `~collections.abc.Callable`
+        Function converting the wire form back to ``py_type``. Called as
+        ``complexifier(value, **other_fields)``; only `simple_to_altaz`
+        consumes the extra fields (``location``, ``datetime_begin``).
+    json_schema : `dict`
+        Explicit JSON Schema for the wire form.
+    """
+
+    def __init__(
+        self,
+        py_type: type,
+        *,
+        simplifier: Callable[[Any], Any],
+        complexifier: Callable[..., Any],
+        json_schema: JsonSchemaValue,
+    ) -> None:
+        self._py_type = py_type
+        self._simplifier = simplifier
+        self._complexifier = complexifier
+        self._json_schema = json_schema
+
+    def __get_pydantic_core_schema__(self, source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        py_type = self._py_type
+        complexifier = self._complexifier
+
+        def validate(value: Any, info: core_schema.ValidationInfo) -> Any:
+            if value is None or isinstance(value, py_type):
+                return value
+            context = info.data if isinstance(info.data, dict) else {}
+            return complexifier(value, **context)
+
+        return core_schema.with_info_before_validator_function(
+            validate,
+            core_schema.is_instance_schema(py_type),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                self._simplifier,
+                when_used="unless-none",
+            ),
+        )
+
+    def __get_pydantic_json_schema__(
+        self, core_schema_obj: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        return dict(self._json_schema)
+
+
+def _make_annotated(
+    py_type: type,
+    *,
+    simplifier: Callable[[Any], Any],
+    complexifier: Callable[..., Any],
+    json_schema: JsonSchemaValue,
+) -> Any:
+    """Return an `Annotated` typedef driven by `_AstropyFieldAdapter`.
+
+    Parameters
+    ----------
+    py_type : `type`
+        Concrete Python type of the field value.
+    simplifier : `~collections.abc.Callable`
+        Function converting an instance of ``py_type`` to its JSON-friendly
+        wire form.
+    complexifier : `~collections.abc.Callable`
+        Function converting the wire form back to ``py_type``.
+    json_schema : `dict`
+        Explicit JSON Schema for the wire form.
+
+    Returns
+    -------
+    annotated : `typing.Annotated`
+        Annotated alias of ``py_type`` carrying the pydantic adapter.
+    """
+    return Annotated[
+        py_type,
+        _AstropyFieldAdapter(
+            py_type,
+            simplifier=simplifier,
+            complexifier=complexifier,
+            json_schema=json_schema,
+        ),
+    ]
+
+
+def _tuple_of_floats_schema(n: int) -> JsonSchemaValue:
+    """Return a JSON Schema fragment for a fixed-length tuple of floats.
+
+    Parameters
+    ----------
+    n : `int`
+        Number of elements in the tuple.
+
+    Returns
+    -------
+    schema : `dict`
+        JSON Schema describing an array of exactly ``n`` numbers.
+    """
+    return {
+        "type": "array",
+        "prefixItems": [{"type": "number"}] * n,
+        "minItems": n,
+        "maxItems": n,
+    }
+
+
+def _quantity_in_unit_schema(unit: astropy.units.UnitBase) -> JsonSchemaValue:
+    """Return a JSON Schema fragment for a `Quantity` serialized as a float.
+
+    The ``x-unit`` keyword records the assumed serialization unit so consumers
+    can interpret the bare number; ``x-`` is the conventional prefix for JSON
+    Schema vocabulary extensions.
+
+    Parameters
+    ----------
+    unit : `astropy.units.UnitBase`
+        Unit assumed for the serialized float value.
+
+    Returns
+    -------
+    schema : `dict`
+        JSON Schema describing a number with an attached ``x-unit`` keyword.
+    """
+    return {"type": "number", "x-unit": str(unit)}
+
 
 # Helper functions to convert complex types to simple form suitable
 # for JSON serialization
@@ -82,7 +234,9 @@ def _quantity_to_float(q: _ToValueProtocol, unit: astropy.units.UnitBase | None 
     return float(values)
 
 
-def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tuple[float, ...]:
+def earthlocation_to_simple(
+    location: astropy.coordinates.EarthLocation,
+) -> tuple[float, float, float]:
     """Convert EarthLocation to tuple.
 
     Parameters
@@ -96,7 +250,10 @@ def earthlocation_to_simple(location: astropy.coordinates.EarthLocation) -> tupl
         The geocentric location as three floats in meters.
     """
     geocentric = location.to_geocentric()
-    return tuple(_quantity_to_float(c, astropy.units.m) for c in geocentric)
+    return cast(
+        "tuple[float, float, float]",
+        tuple(_quantity_to_float(c, astropy.units.m) for c in geocentric),
+    )
 
 
 def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy.coordinates.EarthLocation:
@@ -115,6 +272,14 @@ def simple_to_earthlocation(simple: tuple[float, ...], **kwargs: Any) -> astropy
         The location on the Earth.
     """
     return astropy.coordinates.EarthLocation.from_geocentric(*simple, unit=astropy.units.m)
+
+
+EarthLocationAnnotated = _make_annotated(
+    astropy.coordinates.EarthLocation,
+    simplifier=earthlocation_to_simple,
+    complexifier=simple_to_earthlocation,
+    json_schema={**_tuple_of_floats_schema(3), "x-unit": "m"},
+)
 
 
 def datetime_to_simple(datetime: astropy.time.Time) -> tuple[float, float]:
@@ -152,6 +317,14 @@ def simple_to_datetime(simple: tuple[float, float], **kwargs: Any) -> astropy.ti
     return astropy.time.Time(simple[0], val2=simple[1], format="jd", scale="tai")
 
 
+TimeAnnotated = _make_annotated(
+    astropy.time.Time,
+    simplifier=datetime_to_simple,
+    complexifier=simple_to_datetime,
+    json_schema={**_tuple_of_floats_schema(2), "x-format": "tai-jd"},
+)
+
+
 def exptime_to_simple(exptime: astropy.units.Quantity) -> float:
     """Convert exposure time Quantity to seconds.
 
@@ -184,6 +357,14 @@ def simple_to_exptime(simple: float, **kwargs: Any) -> astropy.units.Quantity:
         The exposure time as a quantity.
     """
     return simple * astropy.units.s
+
+
+ExposureTimeAnnotated = _make_annotated(
+    astropy.units.Quantity,
+    simplifier=exptime_to_simple,
+    complexifier=simple_to_exptime,
+    json_schema=_quantity_in_unit_schema(astropy.units.s),
+)
 
 
 def angle_to_simple(angle: astropy.coordinates.Angle) -> float:
@@ -225,6 +406,14 @@ def simple_to_angle(simple: float, **kwargs: Any) -> astropy.coordinates.Angle:
     return astropy.coordinates.Angle(angle)
 
 
+AngleAnnotated = _make_annotated(
+    astropy.coordinates.Angle,
+    simplifier=angle_to_simple,
+    complexifier=simple_to_angle,
+    json_schema=_quantity_in_unit_schema(astropy.units.deg),
+)
+
+
 def focusz_to_simple(focusz: astropy.units.Quantity) -> float:
     """Convert focusz to meters.
 
@@ -257,6 +446,14 @@ def simple_to_focusz(simple: float, **kwargs: Any) -> astropy.units.Quantity:
         The z-focus as a quantity.
     """
     return simple * astropy.units.m
+
+
+FocusZAnnotated = _make_annotated(
+    astropy.units.Quantity,
+    simplifier=focusz_to_simple,
+    complexifier=simple_to_focusz,
+    json_schema=_quantity_in_unit_schema(astropy.units.m),
+)
 
 
 def temperature_to_simple(temp: astropy.units.Quantity) -> float:
@@ -294,6 +491,14 @@ def simple_to_temperature(simple: float, **kwargs: Any) -> astropy.units.Quantit
     return simple * astropy.units.K
 
 
+TemperatureAnnotated = _make_annotated(
+    astropy.units.Quantity,
+    simplifier=temperature_to_simple,
+    complexifier=simple_to_temperature,
+    json_schema=_quantity_in_unit_schema(astropy.units.K),
+)
+
+
 def pressure_to_simple(press: astropy.units.Quantity) -> float:
     """Convert pressure Quantity to hPa.
 
@@ -326,6 +531,14 @@ def simple_to_pressure(simple: float, **kwargs: Any) -> astropy.units.Quantity:
         The pressure as a quantity.
     """
     return simple * astropy.units.hPa
+
+
+PressureAnnotated = _make_annotated(
+    astropy.units.Quantity,
+    simplifier=pressure_to_simple,
+    complexifier=simple_to_pressure,
+    json_schema=_quantity_in_unit_schema(astropy.units.hPa),
+)
 
 
 def skycoord_to_simple(skycoord: astropy.coordinates.SkyCoord) -> tuple[float, float]:
@@ -367,6 +580,14 @@ def simple_to_skycoord(simple: tuple[float, float], **kwargs: Any) -> astropy.co
         The sky coordinates in astropy form.
     """
     return astropy.coordinates.SkyCoord(*simple, unit=astropy.units.deg)
+
+
+SkyCoordAnnotated = _make_annotated(
+    astropy.coordinates.SkyCoord,
+    simplifier=skycoord_to_simple,
+    complexifier=simple_to_skycoord,
+    json_schema={**_tuple_of_floats_schema(2), "x-unit": "deg", "x-frame": "icrs"},
+)
 
 
 def altaz_to_simple(altaz: astropy.coordinates.AltAz) -> tuple[float, float]:
@@ -423,6 +644,14 @@ def simple_to_altaz(simple: tuple[float, float], **kwargs: Any) -> astropy.coord
     )
 
 
+AltAzAnnotated = _make_annotated(
+    astropy.coordinates.AltAz,
+    simplifier=altaz_to_simple,
+    complexifier=simple_to_altaz,
+    json_schema={**_tuple_of_floats_schema(2), "x-unit": "deg", "x-format": "az-alt"},
+)
+
+
 def timedelta_to_simple(delta: astropy.time.TimeDelta) -> int:
     """Convert a TimeDelta to integer seconds.
 
@@ -457,6 +686,14 @@ def simple_to_timedelta(simple: int, **kwargs: Any) -> astropy.time.TimeDelta:
         The delta object.
     """
     return astropy.time.TimeDelta(simple, format="sec", scale="tai")
+
+
+TimeDeltaAnnotated = _make_annotated(
+    astropy.time.TimeDelta,
+    simplifier=timedelta_to_simple,
+    complexifier=simple_to_timedelta,
+    json_schema={"type": "integer", "x-unit": "s"},
+)
 
 
 class PropertyDefinition:

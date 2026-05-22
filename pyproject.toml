@@ -32,12 +32,13 @@ dependencies = [
     "lsst-utils",
     "fsspec",  # Do not include S3/http variants by default.
     "click >= 8",
-    "pydantic >2.0,<3.0",
+    "pydantic >=2.11,<3.0",
 ]
 
 [project.optional-dependencies]
 test = [
-    "pytest"
+    "pytest",
+    "jsonschema",
 ]
 
 [project.urls]
