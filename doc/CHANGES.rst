@@ -1,3 +1,12 @@
+v30.0.8 (2026-06-08)
+====================
+
+Other Changes and Additions
+---------------------------
+
+- Added the ability to generate a JSON Schema from the ``ObservationInfo`` Pydantic model. (`DM-54987 <https://rubinobs.atlassian.net/browse/DM-54987>`_)
+
+
 v30.0.4 (2026-02-28)
 ====================
 
