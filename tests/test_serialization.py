@@ -169,6 +169,20 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         self.assertEqual(round_tripped.translator_name, "fixture")
         self.assertIn("_translator", obsinfo.model_dump())
 
+        # If there are extension properties the translator must be registered
+        # so that the extension definitions are available. The error must
+        # identify the missing translator as the cause rather than simply
+        # reporting an unknown property.
+        path = os.path.join(DATADIR, "obsinfo-extensions-unknown-translator.json")
+        with open(path) as fh:
+            json_str = fh.read()
+        with self.assertRaises(KeyError) as cm:
+            ObservationInfo.from_json(json_str)
+        message = str(cm.exception)
+        self.assertIn("fixture_unknown", message)
+        self.assertIn("not registered", message)
+        self.assertIn("ext_foo", message)
+
     def test_read_unregistered(self) -> None:
         """Read a serialization with unregistered translator name."""
         path = os.path.join(DATADIR, "obsinfo-unregistered.json")
