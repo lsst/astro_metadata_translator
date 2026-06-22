@@ -493,9 +493,7 @@ class ObservationInfo(BaseModel):
         # field name directly.
         translator_name = kwargs.pop("_translator", None) or kwargs.pop("translator_name", None)
         supplied_extensions = kwargs.pop("_extensions", None)
-        if translator_name is not None:
-            if translator_name not in MetadataTranslator.translators:
-                raise KeyError(f"Unrecognized translator: {translator_name}")
+        if translator_name is not None and translator_name in MetadataTranslator.translators:
             translator_class = MetadataTranslator.translators[translator_name]
 
         if translator_class is not None and not issubclass(translator_class, MetadataTranslator):
@@ -535,6 +533,13 @@ class ObservationInfo(BaseModel):
             self._translator = translator_class({})
             self._translator_class_name = translator_class.__name__
             self.translator_name = translator_class.name
+        elif translator_name is not None:
+            # The named translator is not registered in this process. The
+            # translator instance is only needed while constructing from a
+            # header, so it is left as None and the name from the serialization
+            # is recorded directly.
+            self._translator_class_name = translator_name
+            self.translator_name = translator_name
 
         self._sealed = True
 
