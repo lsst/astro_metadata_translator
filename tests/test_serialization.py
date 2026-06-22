@@ -169,6 +169,25 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         self.assertEqual(round_tripped.translator_name, "fixture")
         self.assertIn("_translator", obsinfo.model_dump())
 
+    def test_read_unregistered(self) -> None:
+        """Read a serialization with unregistered translator name."""
+        path = os.path.join(DATADIR, "obsinfo-unregistered.json")
+        with open(path) as fh:
+            obsinfo = ObservationInfo.from_json(fh.read())
+
+        self.assertIsInstance(obsinfo, ObservationInfo)
+        self._check_core_properties(obsinfo)
+        # No extensions present in this fixture.
+        self.assertEqual(obsinfo.extensions, {})
+
+        self.assertIsNone(obsinfo._translator, None)
+        self.assertEqual(obsinfo.translator_name, "Unregistered")
+
+        # Round-tripping through JSON should be stable.
+        round_tripped = ObservationInfo.from_json(obsinfo.to_json())
+        self.assertEqual(round_tripped, obsinfo)
+        self.assertEqual(round_tripped.translator_name, "Unregistered")
+
     def test_nested_in_pydantic_model(self) -> None:
         """Nesting in another Pydantic model preserves the wire format.
 
