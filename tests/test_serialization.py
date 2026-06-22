@@ -130,9 +130,16 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         # No extensions present in this fixture.
         self.assertEqual(obsinfo.extensions, {})
 
+        # Translator class is empty.
+        self.assertIsNone(obsinfo._translator)
+        self.assertEqual(obsinfo.translator_class_name, "<None>")
+
         # Round-tripping through JSON should be stable.
         round_tripped = ObservationInfo.from_json(obsinfo.to_json())
         self.assertEqual(round_tripped, obsinfo)
+
+        # Should not include a spurious translator name.
+        self.assertNotIn("_translator", obsinfo.model_dump())
 
     def test_read_full_with_extensions(self) -> None:
         """Read the fixture that also contains extension keys."""
@@ -149,10 +156,18 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         self.assertEqual(obsinfo.ext_foo, "bar")
         self.assertEqual(obsinfo.ext_number, 12345)
 
+        self.assertIsInstance(obsinfo._translator, _FixtureTranslator)
+        self.assertEqual(obsinfo.translator_name, "fixture")
+
         round_tripped = ObservationInfo.from_json(obsinfo.to_json())
         self.assertEqual(round_tripped, obsinfo)
         self.assertEqual(round_tripped.ext_foo, "bar")
         self.assertEqual(round_tripped.ext_number, 12345)
+
+        # Should dump the translator name.
+        self.assertIsInstance(round_tripped._translator, _FixtureTranslator)
+        self.assertEqual(round_tripped.translator_name, "fixture")
+        self.assertIn("_translator", obsinfo.model_dump())
 
     def test_nested_in_pydantic_model(self) -> None:
         """Nesting in another Pydantic model preserves the wire format.
