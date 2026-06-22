@@ -493,9 +493,7 @@ class ObservationInfo(BaseModel):
         # field name directly.
         translator_name = kwargs.pop("_translator", None) or kwargs.pop("translator_name", None)
         supplied_extensions = kwargs.pop("_extensions", None)
-        if translator_name is not None:
-            if translator_name not in MetadataTranslator.translators:
-                raise KeyError(f"Unrecognized translator: {translator_name}")
+        if translator_name is not None and translator_name in MetadataTranslator.translators:
             translator_class = MetadataTranslator.translators[translator_name]
 
         if translator_class is not None and not issubclass(translator_class, MetadataTranslator):
@@ -511,9 +509,29 @@ class ObservationInfo(BaseModel):
             extensions = translator_class.extensions if translator_class is not None else {}
 
         all_properties = self._get_all_properties(extensions)
-        for key in kwargs:
-            if key not in all_properties:
-                raise KeyError(f"Unrecognized property '{key}' provided")
+        unrecognized = [key for key in kwargs if key not in all_properties]
+        if unrecognized:
+            # Extension properties (the ``ext_`` prefixed keys) are defined by
+            # the translator. When the translator could not be resolved its
+            # extension definitions are unavailable, so report that as the
+            # underlying cause rather than an opaque unknown property.
+            extension_keys = sorted(key for key in unrecognized if key.startswith("ext_"))
+            if extension_keys and translator_class is None:
+                reason = (
+                    f"translator '{translator_name}' is not registered"
+                    if translator_name is not None
+                    else "no translator was specified"
+                )
+                raise KeyError(
+                    f"Unrecognized extension properties {extension_keys}: {reason}, so the "
+                    "extension property definitions are unavailable."
+                )
+            text = (
+                f"property ({unrecognized[0]})"
+                if len(unrecognized) == 1
+                else f"properties ({', '.join(unrecognized)})"
+            )
+            raise KeyError(f"Unrecognized {text} provided")
 
         processed = {k: v for k, v in kwargs.items() if k in PROPERTIES and v is not None}
         processed = self._apply_constructor_defaults(processed, supplied_keys)
@@ -535,6 +553,13 @@ class ObservationInfo(BaseModel):
             self._translator = translator_class({})
             self._translator_class_name = translator_class.__name__
             self.translator_name = translator_class.name
+        elif translator_name is not None:
+            # The named translator is not registered in this process. The
+            # translator instance is only needed while constructing from a
+            # header, so it is left as None and the name from the serialization
+            # is recorded directly.
+            self._translator_class_name = translator_name
+            self.translator_name = translator_name
 
         self._sealed = True
 

@@ -134,9 +134,11 @@ class BasicTestCase(unittest.TestCase):
         with self.assertRaises(ValidationError):
             ObservationInfo.model_validate([])
 
-        with self.assertRaises(KeyError) as cm:
-            ObservationInfo.model_validate({"_translator": "Unknown"})
-        self.assertIn("Unrecognized translator", str(cm.exception))
+        # An unregistered translator name is accepted: the name is retained
+        # but no translator instance is created.
+        unknown = ObservationInfo.model_validate({"_translator": "Unknown"})
+        self.assertEqual(unknown.translator_name, "Unknown")
+        self.assertIsNone(unknown._translator)
 
         with self.assertRaises(KeyError) as cm:
             ObservationInfo.model_validate({"random": "Unknown"})

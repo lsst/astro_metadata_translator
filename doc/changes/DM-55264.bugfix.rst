@@ -1,0 +1,2 @@
+Updated the model reader to not require that a translator name be registered.
+The translator class name is purely informational for any ``ObservationInfo`` that does not require extensions.

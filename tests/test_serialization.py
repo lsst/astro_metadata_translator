@@ -130,9 +130,16 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         # No extensions present in this fixture.
         self.assertEqual(obsinfo.extensions, {})
 
+        # Translator class is empty.
+        self.assertIsNone(obsinfo._translator)
+        self.assertEqual(obsinfo.translator_class_name, "<None>")
+
         # Round-tripping through JSON should be stable.
         round_tripped = ObservationInfo.from_json(obsinfo.to_json())
         self.assertEqual(round_tripped, obsinfo)
+
+        # Should not include a spurious translator name.
+        self.assertNotIn("_translator", obsinfo.model_dump())
 
     def test_read_full_with_extensions(self) -> None:
         """Read the fixture that also contains extension keys."""
@@ -149,10 +156,51 @@ class ObservationInfoSerializationTestCase(unittest.TestCase):
         self.assertEqual(obsinfo.ext_foo, "bar")
         self.assertEqual(obsinfo.ext_number, 12345)
 
+        self.assertIsInstance(obsinfo._translator, _FixtureTranslator)
+        self.assertEqual(obsinfo.translator_name, "fixture")
+
         round_tripped = ObservationInfo.from_json(obsinfo.to_json())
         self.assertEqual(round_tripped, obsinfo)
         self.assertEqual(round_tripped.ext_foo, "bar")
         self.assertEqual(round_tripped.ext_number, 12345)
+
+        # Should dump the translator name.
+        self.assertIsInstance(round_tripped._translator, _FixtureTranslator)
+        self.assertEqual(round_tripped.translator_name, "fixture")
+        self.assertIn("_translator", obsinfo.model_dump())
+
+        # If there are extension properties the translator must be registered
+        # so that the extension definitions are available. The error must
+        # identify the missing translator as the cause rather than simply
+        # reporting an unknown property.
+        path = os.path.join(DATADIR, "obsinfo-extensions-unknown-translator.json")
+        with open(path) as fh:
+            json_str = fh.read()
+        with self.assertRaises(KeyError) as cm:
+            ObservationInfo.from_json(json_str)
+        message = str(cm.exception)
+        self.assertIn("fixture_unknown", message)
+        self.assertIn("not registered", message)
+        self.assertIn("ext_foo", message)
+
+    def test_read_unregistered(self) -> None:
+        """Read a serialization with unregistered translator name."""
+        path = os.path.join(DATADIR, "obsinfo-unregistered.json")
+        with open(path) as fh:
+            obsinfo = ObservationInfo.from_json(fh.read())
+
+        self.assertIsInstance(obsinfo, ObservationInfo)
+        self._check_core_properties(obsinfo)
+        # No extensions present in this fixture.
+        self.assertEqual(obsinfo.extensions, {})
+
+        self.assertIsNone(obsinfo._translator, None)
+        self.assertEqual(obsinfo.translator_name, "Unregistered")
+
+        # Round-tripping through JSON should be stable.
+        round_tripped = ObservationInfo.from_json(obsinfo.to_json())
+        self.assertEqual(round_tripped, obsinfo)
+        self.assertEqual(round_tripped.translator_name, "Unregistered")
 
     def test_nested_in_pydantic_model(self) -> None:
         """Nesting in another Pydantic model preserves the wire format.
