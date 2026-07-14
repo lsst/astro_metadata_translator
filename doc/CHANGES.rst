@@ -1,3 +1,13 @@
+v30.0.9 (2026-07-14)
+====================
+
+Bug Fixes
+---------
+
+- Updated the model reader to not require that a translator name be registered.
+  The translator class name is purely informational for any ``ObservationInfo`` that does not require extensions. (`DM-55264 <https://rubinobs.atlassian.net/browse/DM-55264>`_)
+
+
 v30.0.8 (2026-06-08)
 ====================
 
