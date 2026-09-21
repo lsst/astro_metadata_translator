@@ -17,6 +17,7 @@ import astropy.units as u
 
 from astro_metadata_translator import merge_headers
 from astro_metadata_translator.tests import MetadataAssertHelper, read_test_file
+from astro_metadata_translator.translators import HscTranslator
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -170,6 +171,21 @@ class HscTestCase(unittest.TestCase, MetadataAssertHelper):
         merged = merge_headers(headers, mode="drop", sort=True, first=["MJD-STR", "UT-STR"])
         self.assertAlmostEqual(merged["MJD-STR"], 56598.26106374757)
         self.assertEqual(merged["UT-STR"], "06:15:55.908")
+
+    def test_hsc_datetime_begin_failure_repeats(self) -> None:
+        """Test that successive failures in to_datetime_begin() don't get
+        hidden because caching is used on both a base translator and a derived
+        one.
+        """
+        # A header with no usable date must raise on every call to a
+        # translator that falls back on the decorated parent method,
+        # not just the first one.
+        header = read_test_file("fitsheader-hsc.yaml", dir=self.datadir)
+        del header["DATE-OBS"]
+        translator = HscTranslator(header)
+        for _ in range(3):
+            with self.assertRaises(KeyError):
+                translator.to_datetime_begin()
 
 
 if __name__ == "__main__":

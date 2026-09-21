@@ -64,9 +64,7 @@ def cache_translation(
     func : `~collections.abc.Callable`
         Translation method to cache.
     method : `str`, optional
-        Name of the translation method to cache.  Not needed if the decorator
-        is used around a normal method, but necessary when the decorator is
-        being used in a metaclass.
+        Ignored; accepted for backwards compatibility only.
 
     Returns
     -------
@@ -85,13 +83,12 @@ def cache_translation(
         def to_detector_num(self):
             ....
     """
-    name = func.__name__ if method is None else method
 
     @functools.wraps(func)
     def func_wrapper(self: SelfT, *args: P.args, **kwargs: P.kwargs) -> R:
-        if name not in self._translation_cache:
-            self._translation_cache[name] = func(self, *args, **kwargs)
-        return cast(R, self._translation_cache[name])
+        if func not in self._translation_cache:
+            self._translation_cache[func] = func(self, *args, **kwargs)
+        return cast(R, self._translation_cache[func])
 
     return func_wrapper
 
@@ -501,7 +498,7 @@ class MetadataTranslator:
                 header_key = header_key[0]
             method = f"to_{property_key}"
             translator = cls._make_trivial_mapping(property_key, header_key, **kwargs)
-            translator = cache_translation(translator, method=method)
+            translator = cache_translation(translator)
             _set_method_metadata(translator, cls, method)
             setattr(cls, method, translator)
             if property_key not in properties:
@@ -528,7 +525,7 @@ class MetadataTranslator:
         self._log_prefix_cache: str | None = None
 
         # Cache assumes header is read-only once stored in object
-        self._translation_cache: dict[str, Any] = {}
+        self._translation_cache: dict[object, Any] = {}
 
     @classmethod
     @abstractmethod
