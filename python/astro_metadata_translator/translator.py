@@ -1206,14 +1206,14 @@ class MetadataTranslator:
         return self.observing_date_to_offset(datetime_begin)
 
     @cache_translation
-    def to_observing_day(self) -> int:
+    def to_observing_day(self) -> int | None:
         """Return the YYYYMMDD integer corresponding to the observing day.
 
         Returns
         -------
-        day : `int`
+        day : `int` or `None`
             The observing day as an integer of form YYYYMMDD. If the header
-            is broken and is unable to obtain a date of observation, ``0``
+            is broken and is unable to obtain a date of observation, `None`
             is returned and the assumption is made that the problem will
             be caught elsewhere.
 
@@ -1232,7 +1232,7 @@ class MetadataTranslator:
         """
         datetime_begin = self.to_datetime_begin()
         if datetime_begin is None:
-            return 0
+            return None
         offset = self.to_observing_day_offset()
         return self.observing_date_to_observing_day(datetime_begin.tai, offset)
 
