@@ -288,6 +288,16 @@ class TranslatorTestCase(unittest.TestCase):
         day_obs = StubTranslator.observing_date_to_observing_day(date2, 1.0)
         self.assertEqual(day_obs, 20230707)
 
+    def test_observing_day_no_date(self) -> None:
+        """Observing day must be unknown when no date can be found."""
+        header = {"TELESCOP": "JCMT", "INSTRUME": "SCUBA_test"}
+        translator = InstrumentTestTranslator(header)
+        self.assertIsNone(translator.to_datetime_begin())
+        self.assertIsNone(translator.to_observing_day())
+
+        obsinfo = ObservationInfo(header, translator_class=InstrumentTestTranslator)
+        self.assertIsNone(obsinfo.observing_day)
+
 
 if __name__ == "__main__":
     unittest.main()
