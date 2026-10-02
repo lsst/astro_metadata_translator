@@ -18,7 +18,8 @@ __all__ = ("ObservationInfo", "makeObservationInfo")
 import copy
 import itertools
 import logging
-from collections.abc import MutableMapping, Sequence
+from collections.abc import Generator, MutableMapping, Sequence
+from contextlib import contextmanager
 from typing import Any, cast, overload
 
 import astropy.coordinates
@@ -1070,6 +1071,16 @@ class ObservationInfo(BaseModel):
             of the property.
         """
         return cls(filename=None, translator_class=translator_class, _extensions=extensions, **kwargs)
+
+    @contextmanager
+    def edit_copy(self) -> Generator[ObservationInfo]:  # numpydoc ignore=YD01
+        """Edit a copy of this struct, via a context manager that marks it
+        as read-only when it exits.
+        """
+        copy = self.model_copy()
+        copy._sealed = False
+        yield copy
+        copy._sealed = True
 
 
 def makeObservationInfo(  # noqa: N802
