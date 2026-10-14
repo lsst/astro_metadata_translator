@@ -340,6 +340,7 @@ def unflatten(
     flat_keys: Mapping[str, str],
     *,
     extension_names: Collection[str] = (),
+    expected_lengths: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     """Rebuild the simple form from flat keys.
 
@@ -355,6 +356,10 @@ def unflatten(
         by the relevant translator. A trailing ``_N`` on an ``ext_`` key
         is treated as an index only when the stem is one of these, and
         the original spelling is restored in the result.
+    expected_lengths : `~collections.abc.Mapping` [`str`, `int`], optional
+        Required tuple length for each indexed name. A name listed here
+        must have exactly that many elements. Names not listed only need
+        a contiguous run of indexes starting at 0.
 
     Returns
     -------
@@ -367,7 +372,7 @@ def unflatten(
     ------
     ValueError
         Raised if the indexes for a name do not form a contiguous run
-        starting at 0.
+        starting at 0, or do not match the expected length.
     """
     ext_by_lower = {f"{_EXT_PREFIX}{name.lower()}": f"{_EXT_PREFIX}{name}" for name in extension_names}
 
@@ -382,10 +387,11 @@ def unflatten(
             scalars[flat_name] = value
 
     for stem, parts in indexed.items():
-        expected = list(range(len(parts)))
+        n_expected = len(parts) if expected_lengths is None else expected_lengths.get(stem, len(parts))
+        expected = list(range(n_expected))
         if sorted(parts) != expected:
             raise ValueError(
-                f"Indexed values for {stem!r} are not contiguous from 0. Got indexes {sorted(parts)}."
+                f"Indexed values for {stem!r} must have indexes {expected}. Got indexes {sorted(parts)}."
             )
         scalars[stem] = tuple(parts[i] for i in expected)
 

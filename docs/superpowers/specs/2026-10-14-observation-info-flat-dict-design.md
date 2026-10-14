@@ -143,6 +143,7 @@ A remainder is kept when it is a core name, `translator`, or starts with `ext_`,
 Every other key in the mapping is ignored, so other header cards are untouched.
 
 Indexed entries are gathered per stem, sorted by index, checked to be a contiguous run from 0, and turned into a tuple.
+For core properties the run must also have the length the `ObservationInfo` JSON schema declares for that property, so a truncated set such as `datetime_begin_0` without `datetime_begin_1` is rejected rather than passed on.
 For `ext_` keys the known names come from the extension definitions of the translator named by the `translator` value, looked up in `MetadataTranslator.translators`.
 Extension names are matched case-insensitively against those definitions and the original spelling from the definition is used in the result.
 If the translator is absent or unregistered, `ext_` keys are passed through as plain lower-case names and `from_simple` reports them as it does today.

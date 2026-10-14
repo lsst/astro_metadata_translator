@@ -11,12 +11,23 @@
 
 """Tests for the flat dict serialization of ObservationInfo."""
 
+import os
 import unittest
+from collections.abc import Mapping
 from typing import Any
 
-from astro_metadata_translator.serialize.flat_dict import (
+import astropy.time
+import astropy.units as u
+
+from astro_metadata_translator import (
     FITS_FLAT_DICT_PREFIX,
     FITS_FLAT_DICT_SEP,
+    ObservationInfo,
+    PropertyDefinition,
+    StubTranslator,
+    makeObservationInfo,
+)
+from astro_metadata_translator.serialize.flat_dict import (
     detect_prefix_and_sep,
     find_flat_keys,
     find_translator_name,
@@ -25,6 +36,40 @@ from astro_metadata_translator.serialize.flat_dict import (
     unflatten,
     validate_sep,
 )
+from astro_metadata_translator.tests import read_test_file
+
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
+DATADIR = os.path.join(TESTDIR, "data")
+
+HEADER_FILES = (
+    "fitsheader-decam.yaml",
+    "fitsheader-hsc.yaml",
+    "fitsheader-megaprime.yaml",
+    "fitsheader-sdss-fpC-006377-g4-0399.yaml",
+    "fitsheader-suprimecam-CORR40535770.yaml",
+)
+
+PREFIX_FORMS = (("", "."), ("obs_info", "."), (FITS_FLAT_DICT_PREFIX, FITS_FLAT_DICT_SEP))
+
+
+# Registers itself through StubTranslator.__init_subclass__ so that
+# ``_translator: "flatdict"`` resolves and its extensions are available.
+class _FlatDictTranslator(StubTranslator):
+    name = "flatdict"
+    supported_instrument = "flatdict"
+    extensions = dict(
+        number=PropertyDefinition("A number", int),
+        foo=PropertyDefinition("A string", str),
+        pair=PropertyDefinition("A pair of floats", tuple),
+    )
+
+    @classmethod
+    def can_translate(cls, header: Mapping[str, Any], filename: str | None = None) -> bool:
+        return False
+
+
+def _read_obsinfo(filename: str) -> ObservationInfo:
+    return ObservationInfo(read_test_file(filename, dir=DATADIR))
 
 
 class FlattenTestCase(unittest.TestCase):
@@ -281,6 +326,21 @@ class UnflattenTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             unflatten(flat, find_flat_keys(flat))
 
+    def test_unflatten_expected_lengths(self) -> None:
+        flat = {"datetime_begin_0": 1.0, "datetime_begin_1": 2.0, "location_0": 1.0, "location_1": 2.0}
+        flat_keys = find_flat_keys(flat)
+        lengths = {"datetime_begin": 2, "location": 3}
+        # A truncated tuple is incomplete even though its indexes are
+        # contiguous from 0.
+        with self.assertRaises(ValueError):
+            unflatten(flat, flat_keys, expected_lengths=lengths)
+        # Without a declared length only contiguity is checked.
+        self.assertEqual(unflatten(flat, flat_keys), {"datetime_begin": (1.0, 2.0), "location": (1.0, 2.0)})
+        del flat["location_0"], flat["location_1"]
+        self.assertEqual(
+            unflatten(flat, find_flat_keys(flat), expected_lengths=lengths), {"datetime_begin": (1.0, 2.0)}
+        )
+
     def test_unflatten_extensions(self) -> None:
         flat = {
             "obs_info.datetime_begin_0": 1.0,
@@ -314,6 +374,130 @@ class UnflattenTestCase(unittest.TestCase):
                 "ext_other_1": 3,
             },
         )
+
+
+class ObservationInfoFlatDictTestCase(unittest.TestCase):
+    """Test the flat dict methods on ObservationInfo."""
+
+    def assert_round_trip(self, original: ObservationInfo, restored: ObservationInfo) -> None:
+        # Compare the full simple forms rather than relying on ``==``,
+        # which only compares the properties present on both sides.
+        self.assertEqual(original.to_simple(), restored.to_simple())
+
+    def test_round_trip_headers(self) -> None:
+        for filename in HEADER_FILES:
+            obsinfo = _read_obsinfo(filename)
+            for prefix, sep in PREFIX_FORMS:
+                with self.subTest(filename=filename, prefix=prefix):
+                    flat = obsinfo.to_flat_dict(prefix=prefix, sep=sep)
+                    for value in flat.values():
+                        self.assertIsInstance(value, str | int | float | bool)
+                    self.assertTrue(ObservationInfo.has_flat_dict(flat))
+                    self.assert_round_trip(obsinfo, ObservationInfo.from_flat_dict(flat))
+                    restored = ObservationInfo.from_flat_dict(flat, prefix=prefix, sep=sep)
+                    self.assert_round_trip(obsinfo, restored)
+
+    def test_fits_form_keys(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-decam.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertIn("OBS_INFO DATETIME_BEGIN_0", flat)
+        self.assertIn("OBS_INFO DATETIME_BEGIN_1", flat)
+        self.assertIn("OBS_INFO TRACKING_RADEC_0", flat)
+        self.assertIn("OBS_INFO LOCATION_2", flat)
+        self.assertEqual(flat["OBS_INFO TRANSLATOR"], "DECam")
+        self.assertNotIn("OBS_INFO _TRANSLATOR", flat)
+        for key in flat:
+            self.assertEqual(key, key.upper())
+
+    def test_round_trip_hand_built(self) -> None:
+        begin = astropy.time.Time("2025-01-01T00:00:00", scale="tai")
+        obsinfo = makeObservationInfo(observation_id="A", exposure_time=30.0 * u.s, datetime_begin=begin)
+        flat = obsinfo.to_flat_dict()
+        self.assertNotIn("translator", flat)
+        self.assert_round_trip(obsinfo, ObservationInfo.from_flat_dict(flat))
+
+        # Without any tuple-valued property there is no indexed anchor so
+        # auto-detection finds nothing and an explicit prefix is needed.
+        obsinfo = makeObservationInfo(observation_id="A", exposure_time=30.0 * u.s)
+        flat = obsinfo.to_flat_dict()
+        self.assertFalse(ObservationInfo.has_flat_dict(flat))
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict(flat)
+        self.assertTrue(ObservationInfo.has_flat_dict(flat, prefix=""))
+        self.assert_round_trip(obsinfo, ObservationInfo.from_flat_dict(flat, prefix=""))
+
+    def test_round_trip_extensions(self) -> None:
+        begin = astropy.time.Time("2025-01-01T00:00:00", scale="tai")
+        obsinfo = makeObservationInfo(
+            translator_class=_FlatDictTranslator,
+            instrument="flatdict",
+            datetime_begin=begin,
+            ext_number=42,
+            ext_foo="bar",
+            ext_pair=(1.5, 2.5),
+        )
+        for prefix, sep in PREFIX_FORMS:
+            with self.subTest(prefix=prefix):
+                flat = obsinfo.to_flat_dict(prefix=prefix, sep=sep)
+                restored = ObservationInfo.from_flat_dict(flat)
+                self.assertEqual(restored.translator_name, "flatdict")
+                self.assertEqual(restored.ext_number, 42)
+                self.assertEqual(restored.ext_foo, "bar")
+                self.assertEqual(restored.ext_pair, (1.5, 2.5))
+                self.assert_round_trip(obsinfo, restored)
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertEqual(flat["OBS_INFO EXT_PAIR_0"], 1.5)
+        self.assertEqual(flat["OBS_INFO EXT_PAIR_1"], 2.5)
+
+    def test_has_and_strip(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-hsc.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        n_flat = len(flat)
+        header = {"SIMPLE": True, "OBJECT": "decoy", "TEMPERATURE": 3.0, **flat}
+        self.assertTrue(ObservationInfo.has_flat_dict(header))
+        self.assertTrue(
+            ObservationInfo.has_flat_dict(header, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        )
+        ObservationInfo.strip_from_flat_dict(header)
+        self.assertEqual(header, {"SIMPLE": True, "OBJECT": "decoy", "TEMPERATURE": 3.0})
+        self.assertEqual(len(flat), n_flat)
+        self.assertFalse(ObservationInfo.has_flat_dict(header))
+        # Stripping again is a no-op.
+        ObservationInfo.strip_from_flat_dict(header)
+        self.assertEqual(len(header), 3)
+
+    def test_from_flat_dict_errors(self) -> None:
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict({})
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict({"OBJECT": "M31"})
+
+        obsinfo = _read_obsinfo("fitsheader-decam.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+
+        gap = dict(flat)
+        del gap["OBS_INFO DATETIME_BEGIN_1"]
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict(gap)
+
+        corrupt = dict(flat)
+        corrupt["OBS_INFO EXPOSURE_ID"] = "not an integer"
+        # Validation errors propagate rather than being mistaken for absence.
+        with self.assertRaises((TypeError, ValueError)):
+            ObservationInfo.from_flat_dict(corrupt)
+        self.assertTrue(ObservationInfo.has_flat_dict(corrupt))
+
+    def test_explicit_prefix_wrong_sep(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-decam.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertFalse(ObservationInfo.has_flat_dict(flat, prefix=FITS_FLAT_DICT_PREFIX, sep="."))
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict(flat, prefix=FITS_FLAT_DICT_PREFIX, sep=".")
+
+    def test_to_flat_dict_bad_sep(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-decam.yaml")
+        with self.assertRaises(ValueError):
+            obsinfo.to_flat_dict(prefix="p", sep="_")
 
 
 if __name__ == "__main__":
