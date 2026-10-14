@@ -118,13 +118,6 @@ def make_flat_key(flat_name: str, *, prefix: str, sep: str, use_upper: bool) -> 
     return name
 
 
-def _resolve_use_upper(prefix: str, use_upper: bool | None) -> bool:
-    """Decide the flat name case, following the prefix when unspecified."""
-    if use_upper is not None:
-        return use_upper
-    return prefix[0].isupper() if prefix else False
-
-
 def flatten_simple(
     simple: Mapping[str, Any],
     *,
@@ -164,7 +157,9 @@ def flatten_simple(
         one-level list or tuple of those.
     """
     validate_sep(sep)
-    upper = _resolve_use_upper(prefix, use_upper)
+    if use_upper is None:
+        # Follow the case of the prefix when the caller has no preference.
+        use_upper = prefix[0].isupper() if prefix else False
     flat: dict[str, FlatValue] = {}
 
     def _add(flat_name: str, value: Any, property_name: str) -> None:
@@ -173,7 +168,7 @@ def flatten_simple(
                 f"Value for property {property_name!r} must be str, int, float, or bool "
                 f"(or a flat sequence of those). Got {type(value).__name__}."
             )
-        flat[make_flat_key(flat_name, prefix=prefix, sep=sep, use_upper=upper)] = value
+        flat[make_flat_key(flat_name, prefix=prefix, sep=sep, use_upper=use_upper)] = value
 
     for name, value in simple.items():
         flat_name = _TRANSLATOR_FLAT if name == _TRANSLATOR_SIMPLE else name
@@ -186,7 +181,20 @@ def flatten_simple(
 
 
 def _split_index(flat_name: str) -> tuple[str, int | None]:
-    """Split a trailing ``_N`` index from a flat name, if present."""
+    """Split a trailing ``_N`` index from a flat name, if present.
+
+    Parameters
+    ----------
+    flat_name : `str`
+        Lower-case flat name such as ``datetime_begin_0``.
+
+    Returns
+    -------
+    stem : `str`
+        The name without the index, or the whole name if there is none.
+    index : `int` or `None`
+        The index, or `None` if the name has no ``_N`` suffix.
+    """
     match = _INDEX_RE.match(flat_name)
     if match is None:
         return flat_name, None
@@ -194,7 +202,19 @@ def _split_index(flat_name: str) -> tuple[str, int | None]:
 
 
 def _is_flat_name(flat_name: str) -> bool:
-    """Report whether a lower-case name could have come from flattening."""
+    """Report whether a lower-case name could have come from flattening.
+
+    Parameters
+    ----------
+    flat_name : `str`
+        Lower-case candidate with any prefix already removed.
+
+    Returns
+    -------
+    is_flat : `bool`
+        `True` for a core property name, ``translator``, an indexed core
+        property name, or any name starting with ``ext_``.
+    """
     if flat_name.startswith(_EXT_PREFIX):
         return len(flat_name) > len(_EXT_PREFIX)
     if flat_name in _CORE_NAMES:
@@ -203,7 +223,9 @@ def _is_flat_name(flat_name: str) -> bool:
     return idx is not None and stem in PROPERTIES
 
 
-def detect_prefix_and_sep(flat: Mapping[str, Any]) -> tuple[str, str] | None:
+def detect_prefix_and_sep(
+    flat: Mapping[str, Any], *, anchor_names: Collection[str] | None = None
+) -> tuple[str, str] | None:
     """Work out the prefix and separator used for flat keys in a mapping.
 
     Parameters
@@ -211,6 +233,12 @@ def detect_prefix_and_sep(flat: Mapping[str, Any]) -> tuple[str, str] | None:
     flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
         Mapping that may contain keys written by `flatten_simple`
         alongside unrelated keys, for example a FITS header.
+    anchor_names : `~collections.abc.Collection` [`str`] or `None`, optional
+        Property names whose indexed form, such as ``datetime_begin_0``,
+        may anchor detection. `None` allows any core property name.
+        Callers that know which properties are tuple-valued should pass
+        them so that an unrelated key such as ``OBJECT_1`` can not
+        anchor.
 
     Returns
     -------
@@ -234,6 +262,7 @@ def detect_prefix_and_sep(flat: Mapping[str, Any]) -> tuple[str, str] | None:
     """
     votes: dict[tuple[str, str], set[str]] = {}
     anchored: set[tuple[str, str]] = set()
+    anchors = None if anchor_names is None else {name.lower() for name in anchor_names}
     for key in flat:
         # Non-string keys can never match a flat name.
         match = _DETECT_RE.match(str(key).lower())
@@ -241,7 +270,7 @@ def detect_prefix_and_sep(flat: Mapping[str, Any]) -> tuple[str, str] | None:
             continue
         group = (match.group("prefix") or "", match.group("sep") or "")
         votes.setdefault(group, set()).add(match.group("name"))
-        if match.group("idx") is not None:
+        if match.group("idx") is not None and (anchors is None or match.group("name") in anchors):
             anchored.add(group)
 
     candidates = {group: names for group, names in votes.items() if group in anchored}
@@ -256,7 +285,14 @@ def detect_prefix_and_sep(flat: Mapping[str, Any]) -> tuple[str, str] | None:
     return ranked[0][0]
 
 
-def find_flat_keys(flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> dict[str, str]:
+def find_flat_keys(
+    flat: Mapping[str, Any],
+    *,
+    prefix: str | None = None,
+    sep: str = ".",
+    anchor_names: Collection[str] | None = None,
+    unique: bool = True,
+) -> dict[str, str]:
     """Find the keys in a mapping that were written by `flatten_simple`.
 
     Parameters
@@ -271,6 +307,12 @@ def find_flat_keys(flat: Mapping[str, Any], *, prefix: str | None = None, sep: s
     sep : `str`, optional
         Separator used when the keys were written. Only used with an
         explicit non-empty ``prefix``.
+    anchor_names : `~collections.abc.Collection` [`str`] or `None`, optional
+        Passed to `detect_prefix_and_sep` when detecting the prefix.
+    unique : `bool`, optional
+        If `True` two keys that collapse to the same flat name, for
+        example differing only in case, raise `ValueError`. If `False`
+        both are returned, which suits callers that remove keys.
 
     Returns
     -------
@@ -282,11 +324,11 @@ def find_flat_keys(flat: Mapping[str, Any], *, prefix: str | None = None, sep: s
     Raises
     ------
     ValueError
-        Raised if ``sep`` is invalid, if detection finds a tie, or if two
-        keys collapse to the same flat name.
+        Raised if ``sep`` is invalid, if detection finds a tie, or if
+        ``unique`` is `True` and two keys collapse to the same flat name.
     """
     if prefix is None:
-        detected = detect_prefix_and_sep(flat)
+        detected = detect_prefix_and_sep(flat, anchor_names=anchor_names)
         if detected is None:
             return {}
         prefix, sep = detected
@@ -307,7 +349,7 @@ def find_flat_keys(flat: Mapping[str, Any], *, prefix: str | None = None, sep: s
             flat_name = lower
         if not _is_flat_name(flat_name):
             continue
-        if flat_name in seen:
+        if unique and flat_name in seen:
             raise ValueError(f"Keys {seen[flat_name]!r} and {key!r} both map to flat name {flat_name!r}.")
         seen[flat_name] = key
         found[key] = flat_name
@@ -372,7 +414,8 @@ def unflatten(
     ------
     ValueError
         Raised if the indexes for a name do not form a contiguous run
-        starting at 0, or do not match the expected length.
+        starting at 0, or do not match the expected length. Also raised
+        if a name appears both as a single value and as indexed values.
     """
     ext_by_lower = {f"{_EXT_PREFIX}{name.lower()}": f"{_EXT_PREFIX}{name}" for name in extension_names}
 
@@ -385,6 +428,9 @@ def unflatten(
             indexed.setdefault(stem, {})[idx] = value
         else:
             scalars[flat_name] = value
+
+    if conflicts := sorted(scalars.keys() & indexed.keys()):
+        raise ValueError(f"Properties {conflicts} appear both as a single value and as indexed values.")
 
     for stem, parts in indexed.items():
         n_expected = len(parts) if expected_lengths is None else expected_lengths.get(stem, len(parts))

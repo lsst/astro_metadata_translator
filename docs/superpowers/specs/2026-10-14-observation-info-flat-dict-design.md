@@ -125,7 +125,7 @@ The greedy `prefix` group and the end anchor mean a prefix that contains the sep
 An empty prefix group means no prefix and no separator.
 
 Matches are grouped by `(prefix, sep)` and each group counts the distinct names it matched.
-Only groups that contain at least one indexed match, such as `datetime_begin_0`, are candidates.
+Only groups that contain an indexed match for a tuple-valued core property, such as `datetime_begin_0`, are candidates; the indexed form of a scalar property such as `object_1` does not count.
 Every real `ObservationInfo` has `datetime_begin`, and ordinary FITS headers never carry `name_<digits>` cards for these names, so this anchor stops a header with only an `OBJECT` card from being mistaken for ObservationInfo content and stops `strip_from_flat_dict` from deleting it.
 A hand-built `ObservationInfo` with no tuple-valued property can still be read by passing `prefix` explicitly.
 Among the candidates, the group with the highest count wins.

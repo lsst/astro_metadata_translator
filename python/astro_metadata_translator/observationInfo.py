@@ -1048,12 +1048,12 @@ class ObservationInfo(BaseModel):
         ----------
         prefix : `str`, optional
             Prefix placed before every key. Emitted exactly as
-            given. Use `FITS_FLAT_DICT_PREFIX` for FITS headers.
+            given. Use ``FITS_FLAT_DICT_PREFIX`` for FITS headers.
         sep : `str`, optional
             Separator between the prefix and the property name. Must be
             one character that is not a letter, digit, or underscore.
-            Unused when ``prefix`` is empty. Use `FITS_FLAT_DICT_SEP` for
-            FITS headers.
+            Unused when ``prefix`` is empty. Use ``FITS_FLAT_DICT_SEP``
+            for FITS headers.
         use_upper : `bool` or `None`, optional
             If `None` the property names are upper-cased when the first
             character of ``prefix`` is upper case and left lower case
@@ -1085,7 +1085,8 @@ class ObservationInfo(BaseModel):
 
         Values are passed through unchanged. FITS can not represent
         ``NaN`` so a writer must remove such values before storing the
-        result in a header.
+        result in a header, and FITS does not preserve trailing spaces
+        in string values.
 
         The result can be converted back with `from_flat_dict`.
         Round-tripping of extension properties requires that the
@@ -1126,9 +1127,15 @@ class ObservationInfo(BaseModel):
         -----
         Use this before `from_flat_dict` to tell the absence of content
         from content that fails validation. Automatic detection requires
-        an indexed property such as ``datetime_begin_0`` to be present.
+        an indexed tuple-valued property such as ``datetime_begin_0`` to
+        be present. Keys that differ only in case count as present even
+        though `from_flat_dict` will reject them.
         """
-        return bool(find_flat_keys(flat, prefix=prefix, sep=sep))
+        return bool(
+            find_flat_keys(
+                flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_tuple_lengths(), unique=False
+            )
+        )
 
     @classmethod
     def strip_from_flat_dict(
@@ -1148,12 +1155,21 @@ class ObservationInfo(BaseModel):
         sep : `str`, optional
             Separator given to `to_flat_dict`.
 
+        Raises
+        ------
+        ValueError
+            Raised if ``sep`` is invalid or detection is ambiguous.
+
         Notes
         -----
         Nothing is removed if no keys are found. Other keys in the
-        mapping are left untouched.
+        mapping are left untouched. Keys that differ only in case are
+        all removed.
         """
-        for key in find_flat_keys(flat, prefix=prefix, sep=sep):
+        found = find_flat_keys(
+            flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_tuple_lengths(), unique=False
+        )
+        for key in found:
             del flat[key]
 
     @classmethod
@@ -1184,9 +1200,13 @@ class ObservationInfo(BaseModel):
         ------
         ValueError
             Raised if no keys are found, if automatic detection is
-            ambiguous, or if the indexed values of a property are
-            incomplete. Also raised, as `pydantic.ValidationError`, if a
-            value fails validation.
+            ambiguous, if two keys differ only in case, or if the indexed
+            values of a property are incomplete. Also raised, as
+            `pydantic.ValidationError`, if a value fails validation.
+        KeyError
+            Raised if extension properties are present but the named
+            translator is not registered, so their definitions are
+            unknown.
 
         Notes
         -----
@@ -1194,7 +1214,7 @@ class ObservationInfo(BaseModel):
         translator named in the mapping is registered, because its
         extension definitions are needed to interpret ``ext_`` keys.
         """
-        flat_keys = find_flat_keys(flat, prefix=prefix, sep=sep)
+        flat_keys = find_flat_keys(flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_tuple_lengths())
         if not flat_keys:
             raise ValueError("No ObservationInfo content found in the given mapping.")
         extension_names: tuple[str, ...] = ()

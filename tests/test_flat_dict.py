@@ -41,6 +41,11 @@ from astro_metadata_translator.serialize.flat_dict import (
 )
 from astro_metadata_translator.tests import read_test_file
 
+try:
+    from lsst.daf.base import PropertyList
+except ImportError:
+    PropertyList = None
+
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 DATADIR = os.path.join(TESTDIR, "data")
 
@@ -211,6 +216,17 @@ class DetectTestCase(unittest.TestCase):
         self.assertIsNone(detect_prefix_and_sep({"OBJECT": "M31", "TEMPERATURE": 3.0}))
         self.assertIsNone(detect_prefix_and_sep({"instrument": "X", "object": "Y"}))
 
+    def test_detect_anchor_names(self) -> None:
+        # By default any indexed core name anchors detection.
+        flat = {"OBJECT": "M31", "OBJECT_1": "x", "TEMPERATURE": 3.0}
+        self.assertEqual(detect_prefix_and_sep(flat), ("", ""))
+        # With explicit anchor names a stray indexed scalar does not.
+        self.assertIsNone(detect_prefix_and_sep(flat, anchor_names=("datetime_begin", "location")))
+        self.assertEqual(find_flat_keys(flat, anchor_names=("datetime_begin",)), {})
+        flat["datetime_begin_0"] = 1.0
+        flat["datetime_begin_1"] = 2.0
+        self.assertEqual(detect_prefix_and_sep(flat, anchor_names=("datetime_begin",)), ("", ""))
+
     def test_detect_plain(self) -> None:
         flat = {"datetime_begin_0": 1.0, "datetime_begin_1": 2.0, "instrument": "X"}
         self.assertEqual(detect_prefix_and_sep(flat), ("", ""))
@@ -284,6 +300,12 @@ class DetectTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             find_flat_keys(flat, prefix="OBS_INFO", sep=" ")
 
+    def test_find_keys_duplicates_allowed(self) -> None:
+        flat = {"OBS_INFO INSTRUMENT": "a", "obs_info instrument": "b", "OBS_INFO DATETIME_BEGIN_0": 1.0}
+        found = find_flat_keys(flat, prefix="OBS_INFO", sep=" ", unique=False)
+        self.assertEqual(set(found), set(flat))
+        self.assertEqual(found["obs_info instrument"], "instrument")
+
     def test_find_keys_bad_sep(self) -> None:
         with self.assertRaises(ValueError):
             find_flat_keys({"p_instrument": "x"}, prefix="p", sep="_")
@@ -343,6 +365,11 @@ class UnflattenTestCase(unittest.TestCase):
         self.assertEqual(
             unflatten(flat, find_flat_keys(flat), expected_lengths=lengths), {"datetime_begin": (1.0, 2.0)}
         )
+
+    def test_unflatten_scalar_and_indexed_conflict(self) -> None:
+        flat = {"datetime_begin": 1.0, "datetime_begin_0": 1.0, "datetime_begin_1": 2.0}
+        with self.assertRaises(ValueError):
+            unflatten(flat, find_flat_keys(flat))
 
     def test_unflatten_extensions(self) -> None:
         flat = {
@@ -469,6 +496,34 @@ class ObservationInfoFlatDictTestCase(unittest.TestCase):
         ObservationInfo.strip_from_flat_dict(header)
         self.assertEqual(len(header), 3)
 
+    def test_scalar_index_is_not_an_anchor(self) -> None:
+        header = {"OBJECT": "M31", "OBJECT_1": "x", "TEMPERATURE": 3.0}
+        self.assertFalse(ObservationInfo.has_flat_dict(header))
+        ObservationInfo.strip_from_flat_dict(header)
+        self.assertEqual(len(header), 3)
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict(header)
+
+    def test_case_duplicates(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-hsc.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        header = {"OBJECT": "decoy", "obs_info object": "stale", **flat}
+        for kwargs in ({}, {"prefix": FITS_FLAT_DICT_PREFIX, "sep": FITS_FLAT_DICT_SEP}):
+            with self.subTest(kwargs=kwargs):
+                self.assertTrue(ObservationInfo.has_flat_dict(header, **kwargs))
+                with self.assertRaises(ValueError):
+                    ObservationInfo.from_flat_dict(header, **kwargs)
+        ObservationInfo.strip_from_flat_dict(header, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertEqual(header, {"OBJECT": "decoy"})
+
+    def test_strip_explicit_prefix_without_content(self) -> None:
+        header = {"OBJECT": "M31", "EXPTIME": 30.0}
+        self.assertFalse(
+            ObservationInfo.has_flat_dict(header, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        )
+        ObservationInfo.strip_from_flat_dict(header, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertEqual(header, {"OBJECT": "M31", "EXPTIME": 30.0})
+
     def test_from_flat_dict_errors(self) -> None:
         with self.assertRaises(ValueError):
             ObservationInfo.from_flat_dict({})
@@ -486,7 +541,7 @@ class ObservationInfoFlatDictTestCase(unittest.TestCase):
         corrupt = dict(flat)
         corrupt["OBS_INFO EXPOSURE_ID"] = "not an integer"
         # Validation errors propagate rather than being mistaken for absence.
-        with self.assertRaises((TypeError, ValueError)):
+        with self.assertRaises(ValueError):
             ObservationInfo.from_flat_dict(corrupt)
         self.assertTrue(ObservationInfo.has_flat_dict(corrupt))
 
@@ -580,6 +635,27 @@ class FitsHeaderTestCase(unittest.TestCase):
         restored = ObservationInfo.from_flat_dict(flat, prefix="")
         self.assertIsNotNone(restored.relative_humidity)
         self.assertTrue(math.isnan(restored.relative_humidity))
+
+
+@unittest.skipUnless(PropertyList is not None, "lsst.daf.base is not available")
+class PropertyListTestCase(unittest.TestCase):
+    """Test the flat dict with the daf_base PropertyList used downstream."""
+
+    def test_property_list_round_trip(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-decam.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        pl = PropertyList()
+        pl["OBJECT"] = "decoy"
+        for key, value in flat.items():
+            pl[key] = value
+
+        self.assertTrue(ObservationInfo.has_flat_dict(pl))
+        restored = ObservationInfo.from_flat_dict(pl, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertEqual(obsinfo.to_simple(), restored.to_simple())
+        self.assertEqual(obsinfo.to_simple(), ObservationInfo.from_flat_dict(pl).to_simple())
+
+        ObservationInfo.strip_from_flat_dict(pl, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertEqual(list(pl), ["OBJECT"])
 
 
 if __name__ == "__main__":
