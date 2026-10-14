@@ -41,8 +41,9 @@ Calls `to_simple()` and flattens the result.
 - `sep` joins the prefix to the flat name.
   It must be exactly one character and must not be a word character or underscore, the same rule as provenance.
   It is unused when `prefix` is empty.
-- `use_upper=None` follows the case of the first character of `prefix`, so an upper-case prefix yields upper-case keys and an empty prefix yields lower-case keys.
+- `use_upper=None` follows the case of the first character of `prefix`, so an upper-case prefix yields upper-case flat names and an empty prefix yields lower-case flat names.
   `True` and `False` force the case.
+  The prefix itself is always emitted exactly as given, as provenance does.
 - Properties whose value is `None` are omitted, exactly as `to_simple` omits them.
 
 ### `from_flat_dict(cls, flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> ObservationInfo`
@@ -90,7 +91,7 @@ It is restored to `_translator` on read.
 
 With a prefix the key is `f"{prefix}{sep}{flat_name}"`.
 Without a prefix the key is the flat name alone.
-The whole key is upper-cased when `use_upper` resolves to true.
+The flat name is upper-cased when `use_upper` resolves to true; the prefix is never changed.
 
 Examples for `datetime_begin`:
 
@@ -124,7 +125,10 @@ The greedy `prefix` group and the end anchor mean a prefix that contains the sep
 An empty prefix group means no prefix and no separator.
 
 Matches are grouped by `(prefix, sep)` and each group counts the distinct names it matched.
-The group with the highest count wins.
+Only groups that contain at least one indexed match, such as `datetime_begin_0`, are candidates.
+Every real `ObservationInfo` has `datetime_begin`, and ordinary FITS headers never carry `name_<digits>` cards for these names, so this anchor stops a header with only an `OBJECT` card from being mistaken for ObservationInfo content and stops `strip_from_flat_dict` from deleting it.
+A hand-built `ObservationInfo` with no tuple-valued property can still be read by passing `prefix` explicitly.
+Among the candidates, the group with the highest count wins.
 This is a heuristic chosen because core property names collide with ordinary FITS cards such as `OBJECT`, `TEMPERATURE`, and `PRESSURE`.
 A real header always contains `datetime_begin_0` and a couple of dozen other names under one prefix, so a stray `OBJECT` card loses the vote.
 A tie between the top two groups raises `ValueError`.
@@ -214,7 +218,7 @@ Helper module unit tests:
 
 - Key building for empty, lower-case, and upper-case prefixes and for `use_upper` overrides.
 - Separator validation.
-- Detection with `OBJECT` and `TEMPERATURE` decoy cards, a prefix containing the separator, an empty prefix, and a tie.
+- Detection with `OBJECT` and `TEMPERATURE` decoy cards, a prefix containing the separator, an empty prefix, a tie, and a header with decoys but no indexed anchor.
 - Regrouping of contiguous indexes, a gap, and an `ext_` stem that is and is not a known extension.
 
 Round trips on `ObservationInfo`:
