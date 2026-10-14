@@ -1,0 +1,2 @@
+Added ``ObservationInfo.to_flat_dict``, ``from_flat_dict``, ``has_flat_dict``, and ``strip_from_flat_dict`` for storing an ``ObservationInfo`` as scalar key/value pairs, for example in a FITS header, and rebuilding it losslessly.
+Tuple-valued properties are written as indexed keys such as ``datetime_begin_0`` and keys can carry an optional prefix; the recommended FITS form uses the new ``FITS_FLAT_DICT_PREFIX`` and ``FITS_FLAT_DICT_SEP`` constants.

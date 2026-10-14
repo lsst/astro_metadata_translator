@@ -11,13 +11,16 @@
 
 """Tests for the flat dict serialization of ObservationInfo."""
 
+import math
 import os
+import tempfile
 import unittest
 from collections.abc import Mapping
 from typing import Any
 
 import astropy.time
 import astropy.units as u
+from astropy.io import fits
 
 from astro_metadata_translator import (
     FITS_FLAT_DICT_PREFIX,
@@ -498,6 +501,85 @@ class ObservationInfoFlatDictTestCase(unittest.TestCase):
         obsinfo = _read_obsinfo("fitsheader-decam.yaml")
         with self.assertRaises(ValueError):
             obsinfo.to_flat_dict(prefix="p", sep="_")
+
+
+class FitsHeaderTestCase(unittest.TestCase):
+    """Test the flat dict through a real FITS header file."""
+
+    def assert_fits_round_trip(self, original: ObservationInfo, restored: ObservationInfo) -> None:
+        # FITS writers keep at least 15 significant digits of a float
+        # rather than its shortest exact representation, so floats are
+        # compared to that precision and everything else exactly.
+        before = original.to_simple()
+        after = restored.to_simple()
+        self.assertEqual(set(before), set(after))
+        for key, value in before.items():
+            if isinstance(value, float):
+                self.assertTrue(math.isclose(after[key], value, rel_tol=1e-14), key)
+            elif isinstance(value, tuple) and isinstance(value[0], float):
+                for element_after, element_before in zip(after[key], value, strict=True):
+                    self.assertTrue(math.isclose(element_after, element_before, rel_tol=1e-14), key)
+            else:
+                self.assertEqual(after[key], value, key)
+
+    def _write_and_read(self, header: fits.Header) -> fits.Header:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "test.fits")
+            fits.PrimaryHDU(header=header).writeto(path)
+            return fits.getheader(path)
+
+    def test_fits_header_round_trip(self) -> None:
+        obsinfo = _read_obsinfo("fitsheader-decam.yaml")
+        flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+
+        header = fits.Header()
+        header["OBJECT"] = "decoy"
+        header["HIERARCH TEMPERATURE"] = 3.0
+        for key, value in flat.items():
+            header[f"HIERARCH {key}"] = value
+        read = self._write_and_read(header)
+
+        self.assertTrue(ObservationInfo.has_flat_dict(read))
+        self.assertTrue(
+            ObservationInfo.has_flat_dict(read, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        )
+
+        restored = ObservationInfo.from_flat_dict(read)
+        self.assert_fits_round_trip(obsinfo, restored)
+        self.assertEqual(restored.object, obsinfo.object)
+        self.assertNotEqual(restored.object, "decoy")
+        self.assertIsInstance(restored.can_see_sky, bool)
+        self.assertIsInstance(restored.has_simulated_content, bool)
+
+        restored = ObservationInfo.from_flat_dict(read, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assert_fits_round_trip(obsinfo, restored)
+
+        ObservationInfo.strip_from_flat_dict(read)
+        self.assertFalse(ObservationInfo.has_flat_dict(read))
+        self.assertFalse(any(key.startswith("OBS_INFO") for key in read))
+        self.assertEqual(read["OBJECT"], "decoy")
+        self.assertEqual(read["TEMPERATURE"], 3.0)
+
+    def test_fits_header_without_content(self) -> None:
+        header = fits.Header()
+        header["OBJECT"] = "M31"
+        header["HIERARCH TEMPERATURE"] = 3.0
+        header["HIERARCH PRESSURE"] = 700.0
+        read = self._write_and_read(header)
+        n_cards = len(read)
+        self.assertFalse(ObservationInfo.has_flat_dict(read))
+        ObservationInfo.strip_from_flat_dict(read)
+        self.assertEqual(len(read), n_cards)
+        with self.assertRaises(ValueError):
+            ObservationInfo.from_flat_dict(read)
+
+    def test_nan_passes_through_plain_dict(self) -> None:
+        obsinfo = makeObservationInfo(observation_id="A", relative_humidity=math.nan)
+        flat = obsinfo.to_flat_dict()
+        self.assertTrue(math.isnan(flat["relative_humidity"]))
+        restored = ObservationInfo.from_flat_dict(flat, prefix="")
+        self.assertIsNotNone(restored.relative_humidity)
+        self.assertTrue(math.isnan(restored.relative_humidity))
 
 
 if __name__ == "__main__":

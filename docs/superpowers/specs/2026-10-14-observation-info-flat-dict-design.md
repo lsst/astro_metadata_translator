@@ -188,8 +188,10 @@ Floats are at most 20 characters from astropy and 23 from cfitsio, so no float o
 Long strings are written with `CONTINUE` cards by cfitsio through afw's `fits_write_key_longstr` path and by astropy from version 7.1.
 obs_base already elides provenance strings on older astropy and can apply the same `allow_long_headers` treatment here.
 
-Floats round-trip exactly through astropy.
-cfitsio writes doubles with 16 significant digits, so the lsst.images round-trip test should compare times and angles with a tolerance rather than assuming bit equality.
+Floats do not always round-trip bit for bit.
+Astropy writes a float exactly when its shortest representation fits in 20 characters and otherwise truncates the formatted value to that 20-character field, which can leave 15 significant digits; cfitsio always writes 16 significant digits.
+A value such as a declination of `-0.0015811524500870524` therefore comes back from astropy as `-0.00158115245008705`.
+Round-trip tests through a real FITS file, here and in lsst.images, compare floats to 15 significant digits and everything else exactly.
 
 ## Intended downstream use
 
