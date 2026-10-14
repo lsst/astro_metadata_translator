@@ -25,6 +25,8 @@ __all__ = (
     "FITS_FLAT_DICT_PREFIX",
     "FITS_FLAT_DICT_SEP",
     "FlatValue",
+    "detect_prefix_and_sep",
+    "find_flat_keys",
     "flatten_simple",
     "make_flat_key",
     "validate_sep",
@@ -53,6 +55,18 @@ _TRANSLATOR_FLAT = "translator"
 _TRANSLATOR_SIMPLE = "_translator"
 _EXT_PREFIX = "ext_"
 _CORE_NAMES = frozenset(PROPERTIES) | {_TRANSLATOR_FLAT}
+
+# Longest names first so the regex alternation prefers the full name.
+_NAME_ALTERNATION = "|".join(re.escape(n) for n in sorted(_CORE_NAMES, key=len, reverse=True))
+
+# A lower-cased key is an optional prefix and one-character non-word
+# separator, then a core name, then an optional ``_N`` index. The greedy
+# prefix group and the end anchor let a prefix contain the separator.
+_DETECT_RE = re.compile(
+    rf"^(?:(?P<prefix>.+)(?P<sep>[^\w]))?(?P<name>{_NAME_ALTERNATION})(?:_(?P<idx>[0-9]+))?$"
+)
+
+_INDEX_RE = re.compile(r"^(?P<stem>.+)_(?P<idx>[0-9]+)$")
 
 
 def validate_sep(sep: str) -> None:
@@ -167,3 +181,132 @@ def flatten_simple(
         else:
             _add(flat_name, value, name)
     return flat
+
+
+def _split_index(flat_name: str) -> tuple[str, int | None]:
+    """Split a trailing ``_N`` index from a flat name, if present."""
+    match = _INDEX_RE.match(flat_name)
+    if match is None:
+        return flat_name, None
+    return match.group("stem"), int(match.group("idx"))
+
+
+def _is_flat_name(flat_name: str) -> bool:
+    """Report whether a lower-case name could have come from flattening."""
+    if flat_name.startswith(_EXT_PREFIX):
+        return len(flat_name) > len(_EXT_PREFIX)
+    if flat_name in _CORE_NAMES:
+        return True
+    stem, idx = _split_index(flat_name)
+    return idx is not None and stem in PROPERTIES
+
+
+def detect_prefix_and_sep(flat: Mapping[str, Any]) -> tuple[str, str] | None:
+    """Work out the prefix and separator used for flat keys in a mapping.
+
+    Parameters
+    ----------
+    flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
+        Mapping that may contain keys written by `flatten_simple`
+        alongside unrelated keys, for example a FITS header.
+
+    Returns
+    -------
+    detected : `tuple` [`str`, `str`] or `None`
+        Lower-cased ``(prefix, sep)``. Both are empty strings when the
+        keys have no prefix. `None` if no flat keys were found.
+
+    Raises
+    ------
+    ValueError
+        Raised if two prefixes match equally well.
+
+    Notes
+    -----
+    This is a heuristic. Core property names such as ``object`` and
+    ``temperature`` also occur as ordinary FITS cards, so every key that
+    looks like a core name votes for its ``(prefix, sep)`` and the group
+    with the most distinct names wins. Only groups that include an
+    indexed name such as ``datetime_begin_0`` are considered, because
+    every flattened observation has one and ordinary headers do not.
+    """
+    votes: dict[tuple[str, str], set[str]] = {}
+    anchored: set[tuple[str, str]] = set()
+    for key in flat:
+        # Non-string keys can never match a flat name.
+        match = _DETECT_RE.match(str(key).lower())
+        if match is None:
+            continue
+        group = (match.group("prefix") or "", match.group("sep") or "")
+        votes.setdefault(group, set()).add(match.group("name"))
+        if match.group("idx") is not None:
+            anchored.add(group)
+
+    candidates = {group: names for group, names in votes.items() if group in anchored}
+    if not candidates:
+        return None
+    ranked = sorted(candidates.items(), key=lambda item: len(item[1]), reverse=True)
+    if len(ranked) > 1 and len(ranked[0][1]) == len(ranked[1][1]):
+        raise ValueError(
+            "Can not determine the ObservationInfo key prefix: "
+            f"{ranked[0][0]!r} and {ranked[1][0]!r} match equally well."
+        )
+    return ranked[0][0]
+
+
+def find_flat_keys(flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> dict[str, str]:
+    """Find the keys in a mapping that were written by `flatten_simple`.
+
+    Parameters
+    ----------
+    flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
+        Mapping to scan. Keys are matched case-insensitively.
+    prefix : `str` or `None`, optional
+        Prefix used when the keys were written. `None` detects the
+        prefix and separator with `detect_prefix_and_sep`, in which case
+        ``sep`` is ignored. Any other value, including the empty string,
+        is used as given.
+    sep : `str`, optional
+        Separator used when the keys were written. Only used with an
+        explicit non-empty ``prefix``.
+
+    Returns
+    -------
+    found : `dict` [`str`, `str`]
+        Each matching key exactly as it appears in ``flat``, mapped to
+        its lower-case flat name with the prefix removed. Empty if
+        nothing was found.
+
+    Raises
+    ------
+    ValueError
+        Raised if ``sep`` is invalid, if detection finds a tie, or if two
+        keys collapse to the same flat name.
+    """
+    if prefix is None:
+        detected = detect_prefix_and_sep(flat)
+        if detected is None:
+            return {}
+        prefix, sep = detected
+    elif prefix:
+        validate_sep(sep)
+
+    lead = f"{prefix}{sep}".lower() if prefix else ""
+    found: dict[str, str] = {}
+    seen: dict[str, str] = {}
+    for key in flat:
+        # Non-string keys can never match a flat name.
+        lower = str(key).lower()
+        if lead:
+            if not lower.startswith(lead):
+                continue
+            flat_name = lower[len(lead) :]
+        else:
+            flat_name = lower
+        if not _is_flat_name(flat_name):
+            continue
+        if flat_name in seen:
+            raise ValueError(f"Keys {seen[flat_name]!r} and {key!r} both map to flat name {flat_name!r}.")
+        seen[flat_name] = key
+        found[key] = flat_name
+    return found

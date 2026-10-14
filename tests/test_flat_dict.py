@@ -12,10 +12,13 @@
 """Tests for the flat dict serialization of ObservationInfo."""
 
 import unittest
+from typing import Any
 
 from astro_metadata_translator.serialize.flat_dict import (
     FITS_FLAT_DICT_PREFIX,
     FITS_FLAT_DICT_SEP,
+    detect_prefix_and_sep,
+    find_flat_keys,
     flatten_simple,
     make_flat_key,
     validate_sep,
@@ -131,6 +134,109 @@ class FlattenTestCase(unittest.TestCase):
             flatten_simple({"instrument": "X"}, prefix="p", sep="_")
         with self.assertRaises(ValueError):
             flatten_simple({"instrument": "X"}, sep="ab")
+
+
+class DetectTestCase(unittest.TestCase):
+    """Test prefix detection and key collection."""
+
+    PREFIXED = {
+        "OBS_INFO DATETIME_BEGIN_0": 2460000.5,
+        "OBS_INFO DATETIME_BEGIN_1": 0.25,
+        "OBS_INFO INSTRUMENT": "HSC",
+        "OBS_INFO OBJECT": "real",
+        "OBS_INFO TRANSLATOR": "HSC",
+        "OBS_INFO EXT_FOO": "bar",
+        "OBS_INFO EXT_PAIR_0": 1,
+        "OBJECT": "decoy",
+        "TEMPERATURE": 3.0,
+        "EXPTIME": 30.0,
+    }
+
+    def test_detect_nothing(self) -> None:
+        self.assertIsNone(detect_prefix_and_sep({}))
+        self.assertIsNone(detect_prefix_and_sep({"EXPTIME": 30.0, "FILTER": "g"}))
+
+    def test_detect_decoys_without_anchor(self) -> None:
+        # Core names appear but nothing indexed, so this is not content.
+        self.assertIsNone(detect_prefix_and_sep({"OBJECT": "M31", "TEMPERATURE": 3.0}))
+        self.assertIsNone(detect_prefix_and_sep({"instrument": "X", "object": "Y"}))
+
+    def test_detect_plain(self) -> None:
+        flat = {"datetime_begin_0": 1.0, "datetime_begin_1": 2.0, "instrument": "X"}
+        self.assertEqual(detect_prefix_and_sep(flat), ("", ""))
+
+    def test_detect_prefixed_with_decoys(self) -> None:
+        self.assertEqual(detect_prefix_and_sep(self.PREFIXED), ("obs_info", " "))
+
+    def test_detect_prefix_containing_sep(self) -> None:
+        flat = {"LSST OBS_INFO DATETIME_BEGIN_0": 1.0, "LSST OBS_INFO EXPOSURE_ID": 5}
+        self.assertEqual(detect_prefix_and_sep(flat), ("lsst obs_info", " "))
+
+    def test_detect_dotted(self) -> None:
+        flat = {"lsst.obs_info.datetime_begin_0": 1.0, "lsst.obs_info.exposure_id": 5}
+        self.assertEqual(detect_prefix_and_sep(flat), ("lsst.obs_info", "."))
+
+    def test_detect_majority(self) -> None:
+        flat = {"a.datetime_begin_0": 1.0, "a.instrument": "x", "b.datetime_begin_0": 1.0}
+        self.assertEqual(detect_prefix_and_sep(flat), ("a", "."))
+
+    def test_detect_tie(self) -> None:
+        flat = {"a.datetime_begin_0": 1.0, "b.datetime_begin_0": 1.0}
+        with self.assertRaises(ValueError):
+            detect_prefix_and_sep(flat)
+
+    def test_find_keys_auto(self) -> None:
+        found = find_flat_keys(self.PREFIXED)
+        self.assertEqual(
+            found,
+            {
+                "OBS_INFO DATETIME_BEGIN_0": "datetime_begin_0",
+                "OBS_INFO DATETIME_BEGIN_1": "datetime_begin_1",
+                "OBS_INFO INSTRUMENT": "instrument",
+                "OBS_INFO OBJECT": "object",
+                "OBS_INFO TRANSLATOR": "translator",
+                "OBS_INFO EXT_FOO": "ext_foo",
+                "OBS_INFO EXT_PAIR_0": "ext_pair_0",
+            },
+        )
+
+    def test_find_keys_auto_nothing(self) -> None:
+        self.assertEqual(find_flat_keys({"OBJECT": "M31"}), {})
+
+    def test_find_keys_explicit(self) -> None:
+        found = find_flat_keys(self.PREFIXED, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
+        self.assertEqual(len(found), 7)
+        self.assertNotIn("OBJECT", found)
+        # Explicit empty prefix needs no indexed anchor.
+        self.assertEqual(
+            find_flat_keys({"instrument": "X", "EXPTIME": 1}, prefix=""), {"instrument": "instrument"}
+        )
+        # Explicit prefix with the wrong separator finds nothing.
+        self.assertEqual(find_flat_keys(self.PREFIXED, prefix="OBS_INFO", sep="."), {})
+        # Explicit prefix is matched case-insensitively.
+        found = find_flat_keys(self.PREFIXED, prefix="obs_info", sep=" ")
+        self.assertEqual(len(found), 7)
+
+    def test_find_keys_ignores_non_string_keys(self) -> None:
+        flat: dict[Any, Any] = {1: "x", "datetime_begin_0": 1.0, "datetime_begin_1": 2.0}
+        expected = {"datetime_begin_0": "datetime_begin_0", "datetime_begin_1": "datetime_begin_1"}
+        self.assertEqual(find_flat_keys(flat), expected)
+        self.assertEqual(find_flat_keys(flat, prefix=""), expected)
+
+    def test_find_keys_ignores_unknown_names(self) -> None:
+        flat = {"obs_info.datetime_begin_0": 1.0, "obs_info.not_a_property": 2, "obs_info.ext_": 3}
+        self.assertEqual(
+            find_flat_keys(flat, prefix="obs_info"), {"obs_info.datetime_begin_0": "datetime_begin_0"}
+        )
+
+    def test_find_keys_duplicate(self) -> None:
+        flat = {"OBS_INFO INSTRUMENT": "a", "obs_info instrument": "b", "OBS_INFO DATETIME_BEGIN_0": 1.0}
+        with self.assertRaises(ValueError):
+            find_flat_keys(flat, prefix="OBS_INFO", sep=" ")
+
+    def test_find_keys_bad_sep(self) -> None:
+        with self.assertRaises(ValueError):
+            find_flat_keys({"p_instrument": "x"}, prefix="p", sep="_")
 
 
 if __name__ == "__main__":
