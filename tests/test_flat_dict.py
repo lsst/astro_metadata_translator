@@ -19,8 +19,10 @@ from astro_metadata_translator.serialize.flat_dict import (
     FITS_FLAT_DICT_SEP,
     detect_prefix_and_sep,
     find_flat_keys,
+    find_translator_name,
     flatten_simple,
     make_flat_key,
+    unflatten,
     validate_sep,
 )
 
@@ -237,6 +239,81 @@ class DetectTestCase(unittest.TestCase):
     def test_find_keys_bad_sep(self) -> None:
         with self.assertRaises(ValueError):
             find_flat_keys({"p_instrument": "x"}, prefix="p", sep="_")
+
+
+class UnflattenTestCase(unittest.TestCase):
+    """Test rebuilding the simple form from flat keys."""
+
+    def test_unflatten_core(self) -> None:
+        flat = {
+            "OBS_INFO DATETIME_BEGIN_1": 0.25,
+            "OBS_INFO DATETIME_BEGIN_0": 2460000.5,
+            "OBS_INFO LOCATION_0": 1.0,
+            "OBS_INFO LOCATION_1": 2.0,
+            "OBS_INFO LOCATION_2": 3.0,
+            "OBS_INFO INSTRUMENT": "HSC",
+            "OBS_INFO TRANSLATOR": "HSC",
+            "OBJECT": "decoy",
+        }
+        flat_keys = find_flat_keys(flat)
+        self.assertEqual(find_translator_name(flat, flat_keys), "HSC")
+        self.assertEqual(
+            unflatten(flat, flat_keys),
+            {
+                "datetime_begin": (2460000.5, 0.25),
+                "location": (1.0, 2.0, 3.0),
+                "instrument": "HSC",
+                "_translator": "HSC",
+            },
+        )
+
+    def test_unflatten_no_translator(self) -> None:
+        flat = {"datetime_begin_0": 1.0, "datetime_begin_1": 2.0}
+        flat_keys = find_flat_keys(flat)
+        self.assertIsNone(find_translator_name(flat, flat_keys))
+        self.assertEqual(unflatten(flat, flat_keys), {"datetime_begin": (1.0, 2.0)})
+
+    def test_unflatten_gap(self) -> None:
+        flat = {"datetime_begin_0": 1.0, "datetime_begin_2": 2.0}
+        with self.assertRaises(ValueError):
+            unflatten(flat, find_flat_keys(flat))
+        flat = {"datetime_begin_1": 2.0}
+        with self.assertRaises(ValueError):
+            unflatten(flat, find_flat_keys(flat))
+
+    def test_unflatten_extensions(self) -> None:
+        flat = {
+            "obs_info.datetime_begin_0": 1.0,
+            "obs_info.datetime_begin_1": 2.0,
+            "obs_info.ext_foo": "bar",
+            "obs_info.ext_pair_0": 1,
+            "obs_info.ext_pair_1": 2,
+            "obs_info.ext_other_1": 3,
+        }
+        flat_keys = find_flat_keys(flat, prefix="obs_info")
+        # Known extension names restore their spelling and regroup.
+        simple = unflatten(flat, flat_keys, extension_names=("Foo", "pair"))
+        self.assertEqual(
+            simple,
+            {
+                "datetime_begin": (1.0, 2.0),
+                "ext_Foo": "bar",
+                "ext_pair": (1, 2),
+                "ext_other_1": 3,
+            },
+        )
+        # Unknown extension names pass through as plain lower-case names.
+        simple = unflatten(flat, flat_keys)
+        self.assertEqual(
+            simple,
+            {
+                "datetime_begin": (1.0, 2.0),
+                "ext_foo": "bar",
+                "ext_pair_0": 1,
+                "ext_pair_1": 2,
+                "ext_other_1": 3,
+            },
+        )
 
 
 if __name__ == "__main__":

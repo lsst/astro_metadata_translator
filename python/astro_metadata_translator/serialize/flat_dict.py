@@ -27,13 +27,15 @@ __all__ = (
     "FlatValue",
     "detect_prefix_and_sep",
     "find_flat_keys",
+    "find_translator_name",
     "flatten_simple",
     "make_flat_key",
+    "unflatten",
     "validate_sep",
 )
 
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Any
 
 from ..properties import PROPERTIES
@@ -310,3 +312,87 @@ def find_flat_keys(flat: Mapping[str, Any], *, prefix: str | None = None, sep: s
         seen[flat_name] = key
         found[key] = flat_name
     return found
+
+
+def find_translator_name(flat: Mapping[str, Any], flat_keys: Mapping[str, str]) -> str | None:
+    """Return the translator name recorded in flat keys, if any.
+
+    Parameters
+    ----------
+    flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
+        The mapping holding the values.
+    flat_keys : `~collections.abc.Mapping` [`str`, `str`]
+        Keys found by `find_flat_keys`.
+
+    Returns
+    -------
+    name : `str` or `None`
+        The translator name, or `None` if the key is absent.
+    """
+    for key, flat_name in flat_keys.items():
+        if flat_name == _TRANSLATOR_FLAT:
+            return str(flat[key])
+    return None
+
+
+def unflatten(
+    flat: Mapping[str, Any],
+    flat_keys: Mapping[str, str],
+    *,
+    extension_names: Collection[str] = (),
+) -> dict[str, Any]:
+    """Rebuild the simple form from flat keys.
+
+    Parameters
+    ----------
+    flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
+        The mapping holding the values.
+    flat_keys : `~collections.abc.Mapping` [`str`, `str`]
+        Keys found by `find_flat_keys`, mapping each original key to
+        its lower-case flat name.
+    extension_names : `~collections.abc.Collection` [`str`], optional
+        Extension property names (without the ``ext_`` prefix) defined
+        by the relevant translator. A trailing ``_N`` on an ``ext_`` key
+        is treated as an index only when the stem is one of these, and
+        the original spelling is restored in the result.
+
+    Returns
+    -------
+    simple : `dict` [`str`, `~typing.Any`]
+        Simple form suitable for `ObservationInfo.from_simple`. Indexed
+        entries are gathered into tuples and ``translator`` is renamed
+        back to ``_translator``.
+
+    Raises
+    ------
+    ValueError
+        Raised if the indexes for a name do not form a contiguous run
+        starting at 0.
+    """
+    ext_by_lower = {f"{_EXT_PREFIX}{name.lower()}": f"{_EXT_PREFIX}{name}" for name in extension_names}
+
+    scalars: dict[str, Any] = {}
+    indexed: dict[str, dict[int, Any]] = {}
+    for key, flat_name in flat_keys.items():
+        value = flat[key]
+        stem, idx = _split_index(flat_name)
+        if idx is not None and (stem in PROPERTIES or stem in ext_by_lower):
+            indexed.setdefault(stem, {})[idx] = value
+        else:
+            scalars[flat_name] = value
+
+    for stem, parts in indexed.items():
+        expected = list(range(len(parts)))
+        if sorted(parts) != expected:
+            raise ValueError(
+                f"Indexed values for {stem!r} are not contiguous from 0. Got indexes {sorted(parts)}."
+            )
+        scalars[stem] = tuple(parts[i] for i in expected)
+
+    simple: dict[str, Any] = {}
+    for flat_name, value in scalars.items():
+        if flat_name == _TRANSLATOR_FLAT:
+            simple[_TRANSLATOR_SIMPLE] = value
+        else:
+            simple[ext_by_lower.get(flat_name, flat_name)] = value
+    return simple
