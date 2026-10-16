@@ -32,7 +32,7 @@ Out of scope, to be done on follow-up tickets:
 
 All four methods live on `ObservationInfo` in `python/astro_metadata_translator/observationInfo.py` and delegate to the helper module.
 
-### `to_flat_dict(self, *, prefix: str = "", sep: str = ".", use_upper: bool | None = None) -> dict[str, str | int | float | bool]`
+### `to_flat_dict(self, *, prefix: str = "", sep: str = ".", use_upper: bool | None = None, encode_non_finite: bool = False) -> dict[str, str | int | float | bool]`
 
 Calls `to_simple()` and flattens the result.
 
@@ -45,6 +45,8 @@ Calls `to_simple()` and flattens the result.
   `True` and `False` force the case.
   The prefix itself is always emitted exactly as given, as provenance does.
 - Properties whose value is `None` are omitted, exactly as `to_simple` omits them.
+- `encode_non_finite=True` writes `NaN` and infinite floats as the strings `NAN`, `+INFINITY`, and `-INFINITY`, the spellings cfitsio and afw use for such values in FITS headers.
+  The default leaves them as floats so a caller building a plain dict is not surprised by strings, and FITS writers opt in.
 
 ### `from_flat_dict(cls, flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> ObservationInfo`
 
@@ -54,6 +56,8 @@ Classmethod.
   The `sep` argument is ignored in that mode.
 - Any other `prefix`, including `""`, skips detection and is used together with `sep`.
 - Keys are matched case-insensitively so an `astropy.io.fits.Header` or an `lsst.daf.base.PropertyList` can be passed directly.
+- A string found for a float-typed property is converted with `float`, which accepts the FITS spellings above and the `NaN` and `Infinity` spellings pydantic writes in JSON.
+  Decoding is always on because afw encodes non-finite floats itself when it writes a header, so an astropy reader can meet those strings whether or not the writer asked for them.
 - Raises `ValueError` when no keys are found.
 
 ### `has_flat_dict(cls, flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> bool`
@@ -148,8 +152,12 @@ For `ext_` keys the known names come from the extension definitions of the trans
 Extension names are matched case-insensitively against those definitions and the original spelling from the definition is used in the result.
 If the translator is absent or unregistered, `ext_` keys are passed through as plain lower-case names and `from_simple` reports them as it does today.
 
+Float-typed core properties are those the JSON schema declares as `number`, or as a fixed-size array of `number`; extension properties count when their definition's `py_type` is `float`.
+A string value for one of these is converted with `float` and a string that does not parse raises `ValueError`.
+Strings for other properties are left alone, so an `object` named `NAN` survives.
+
 `translator` is renamed back to `_translator` and the regrouped dict is passed to `from_simple`.
-All type coercion and validation stays there.
+All other type coercion and validation stays there.
 
 ## Error handling
 
@@ -193,13 +201,18 @@ Astropy writes a float exactly when its shortest representation fits in 20 chara
 A value such as a declination of `-0.0015811524500870524` therefore comes back from astropy as `-0.00158115245008705`.
 Round-trip tests through a real FITS file, here and in lsst.images, compare floats to 15 significant digits and everything else exactly.
 
+FITS has no float form for `NaN` or infinity.
+astropy refuses to write such a card at all, while cfitsio through afw writes the strings `NAN`, `+INFINITY`, and `-INFINITY` and afw converts them back to floats on read.
+`encode_non_finite=True` makes `to_flat_dict` write those same strings so an astropy writer succeeds and the file looks the same whichever library wrote it, and `from_flat_dict` always converts them back so an astropy reader of an afw-written file gets floats too.
+Translators pass header `NaN` values through on purpose and `ObservationInfo` round-trips them in JSON, so dropping them was rejected as lossy.
+
 ## Intended downstream use
 
 obs_base, when building raw exposure metadata:
 
 ```python
 ObservationInfo.strip_from_flat_dict(md, prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
-md.update(obs_info.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP))
+md.update(obs_info.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP, encode_non_finite=True))
 ```
 
 lsst.images, in `VisitImage.from_legacy`, before the current `obs_info_from_legacy` fallback:

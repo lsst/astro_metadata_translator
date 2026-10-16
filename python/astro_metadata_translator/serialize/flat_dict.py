@@ -34,6 +34,7 @@ __all__ = (
     "validate_sep",
 )
 
+import math
 import re
 from collections.abc import Collection, Mapping
 from typing import Any
@@ -124,6 +125,7 @@ def flatten_simple(
     prefix: str = "",
     sep: str = ".",
     use_upper: bool | None = None,
+    encode_non_finite: bool = False,
 ) -> dict[str, FlatValue]:
     """Flatten a simple-form mapping into scalar key/value pairs.
 
@@ -140,6 +142,11 @@ def flatten_simple(
         If `None` the flat names are upper-cased when the first
         character of ``prefix`` is upper case, otherwise left lower
         case. `True` or `False` force the case.
+    encode_non_finite : `bool`, optional
+        If `True`, ``NaN`` and infinite floats are written as the strings
+        ``NAN``, ``+INFINITY``, and ``-INFINITY``, the spellings cfitsio
+        and afw use for such values in FITS headers. By default they are
+        passed through as floats.
 
     Returns
     -------
@@ -168,6 +175,8 @@ def flatten_simple(
                 f"Value for property {property_name!r} must be str, int, float, or bool "
                 f"(or a flat sequence of those). Got {type(value).__name__}."
             )
+        if encode_non_finite and isinstance(value, float) and not math.isfinite(value):
+            value = _encode_non_finite(value)
         flat[make_flat_key(flat_name, prefix=prefix, sep=sep, use_upper=use_upper)] = value
 
     for name, value in simple.items():
@@ -377,12 +386,60 @@ def find_translator_name(flat: Mapping[str, Any], flat_keys: Mapping[str, str]) 
     return None
 
 
+def _encode_non_finite(value: float) -> str:
+    """Return the FITS string form of a non-finite float.
+
+    Parameters
+    ----------
+    value : `float`
+        A ``NaN`` or infinite value.
+
+    Returns
+    -------
+    encoded : `str`
+        ``NAN``, ``+INFINITY``, or ``-INFINITY``, as written by cfitsio.
+    """
+    if math.isnan(value):
+        return "NAN"
+    return "+INFINITY" if value > 0 else "-INFINITY"
+
+
+def _decode_float(value: Any, name: str) -> Any:
+    """Convert a string holding a float back to a float.
+
+    Parameters
+    ----------
+    value : `~typing.Any`
+        Value read for a float property. Anything other than a `str` is
+        returned unchanged.
+    name : `str`
+        Property name, used in the error message.
+
+    Returns
+    -------
+    decoded : `~typing.Any`
+        The float parsed from the string, or the original value.
+
+    Raises
+    ------
+    ValueError
+        Raised if the string does not parse as a float.
+    """
+    if not isinstance(value, str):
+        return value
+    try:
+        return float(value)
+    except ValueError:
+        raise ValueError(f"Value {value!r} for float property {name!r} is not a number.") from None
+
+
 def unflatten(
     flat: Mapping[str, Any],
     flat_keys: Mapping[str, str],
     *,
     extension_names: Collection[str] = (),
     expected_lengths: Mapping[str, int] | None = None,
+    float_names: Collection[str] = (),
 ) -> dict[str, Any]:
     """Rebuild the simple form from flat keys.
 
@@ -402,6 +459,13 @@ def unflatten(
         Required tuple length for each indexed name. A name listed here
         must have exactly that many elements. Names not listed only need
         a contiguous run of indexes starting at 0.
+    float_names : `~collections.abc.Collection` [`str`], optional
+        Simple-form names of properties whose values, or tuple elements,
+        are floats. A `str` found for one of these is converted with
+        `float`, which accepts the ``NAN``, ``+INFINITY``, and
+        ``-INFINITY`` strings written by `flatten_simple`, cfitsio, and
+        afw, as well as the ``NaN`` and ``Infinity`` spellings used in
+        JSON.
 
     Returns
     -------
@@ -415,7 +479,8 @@ def unflatten(
     ValueError
         Raised if the indexes for a name do not form a contiguous run
         starting at 0, or do not match the expected length. Also raised
-        if a name appears both as a single value and as indexed values.
+        if a name appears both as a single value and as indexed values,
+        or if a string for a name in ``float_names`` is not a number.
     """
     ext_by_lower = {f"{_EXT_PREFIX}{name.lower()}": f"{_EXT_PREFIX}{name}" for name in extension_names}
 
@@ -447,4 +512,13 @@ def unflatten(
             simple[_TRANSLATOR_SIMPLE] = value
         else:
             simple[ext_by_lower.get(flat_name, flat_name)] = value
+
+    for name in float_names:
+        if name not in simple:
+            continue
+        value = simple[name]
+        if isinstance(value, tuple):
+            simple[name] = tuple(_decode_float(element, name) for element in value)
+        else:
+            simple[name] = _decode_float(value, name)
     return simple

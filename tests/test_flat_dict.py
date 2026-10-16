@@ -20,6 +20,7 @@ from typing import Any
 
 import astropy.time
 import astropy.units as u
+from astropy.coordinates import EarthLocation
 from astropy.io import fits
 
 from astro_metadata_translator import (
@@ -45,6 +46,12 @@ try:
     from lsst.daf.base import PropertyList
 except ImportError:
     PropertyList = None
+
+try:
+    import lsst.afw.fits as afw_fits
+    import lsst.afw.image as afw_image
+except ImportError:
+    afw_fits = afw_image = None
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 DATADIR = os.path.join(TESTDIR, "data")
@@ -144,6 +151,31 @@ class FlattenTestCase(unittest.TestCase):
                 "ext_pair_1": 2,
             },
         )
+
+    def test_flatten_non_finite(self) -> None:
+        simple = {
+            "temperature": math.inf,
+            "pressure": -math.inf,
+            "relative_humidity": math.nan,
+            "location": (math.nan, 1.0, math.inf),
+            "detector_num": 1,
+            "object": "NAN",
+        }
+        # By default non-finite floats pass through untouched.
+        flat = flatten_simple(simple)
+        self.assertTrue(math.isnan(flat["relative_humidity"]))
+        self.assertEqual(flat["temperature"], math.inf)
+        self.assertTrue(math.isnan(flat["location_0"]))
+
+        flat = flatten_simple(simple, encode_non_finite=True)
+        self.assertEqual(flat["temperature"], "+INFINITY")
+        self.assertEqual(flat["pressure"], "-INFINITY")
+        self.assertEqual(flat["relative_humidity"], "NAN")
+        self.assertEqual(flat["location_0"], "NAN")
+        self.assertEqual(flat["location_1"], 1.0)
+        self.assertEqual(flat["location_2"], "+INFINITY")
+        self.assertEqual(flat["detector_num"], 1)
+        self.assertEqual(flat["object"], "NAN")
 
     def test_flatten_prefix_and_case(self) -> None:
         simple = {"datetime_begin": (1.0, 2.0), "instrument": "X"}
@@ -405,6 +437,45 @@ class UnflattenTestCase(unittest.TestCase):
             },
         )
 
+    def test_unflatten_float_names(self) -> None:
+        flat = {
+            "temperature": "+INFINITY",
+            "pressure": "-Infinity",
+            "relative_humidity": "NAN",
+            "boresight_airmass": "nan",
+            "location_0": "NAN",
+            "location_1": 1.0,
+            "location_2": "+INFINITY",
+            "object": "NAN",
+            "ext_foo": "NAN",
+        }
+        flat_keys = find_flat_keys(flat, prefix="")
+        float_names = {
+            "temperature",
+            "pressure",
+            "relative_humidity",
+            "boresight_airmass",
+            "location",
+            "ext_Foo",
+        }
+        simple = unflatten(flat, flat_keys, extension_names=("Foo",), float_names=float_names)
+        self.assertEqual(simple["temperature"], math.inf)
+        self.assertEqual(simple["pressure"], -math.inf)
+        self.assertTrue(math.isnan(simple["relative_humidity"]))
+        self.assertTrue(math.isnan(simple["boresight_airmass"]))
+        self.assertTrue(math.isnan(simple["location"][0]))
+        self.assertEqual(simple["location"][1:], (1.0, math.inf))
+        self.assertEqual(simple["object"], "NAN")
+        self.assertTrue(math.isnan(simple["ext_Foo"]))
+
+        # Without float names the strings are left alone.
+        simple = unflatten(flat, flat_keys)
+        self.assertEqual(simple["temperature"], "+INFINITY")
+
+        # A string that is not a number is an error for a float property.
+        with self.assertRaises(ValueError):
+            unflatten({"temperature": "warm"}, {"temperature": "temperature"}, float_names={"temperature"})
+
 
 class ObservationInfoFlatDictTestCase(unittest.TestCase):
     """Test the flat dict methods on ObservationInfo."""
@@ -478,6 +549,47 @@ class ObservationInfoFlatDictTestCase(unittest.TestCase):
         flat = obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP)
         self.assertEqual(flat["OBS_INFO EXT_PAIR_0"], 1.5)
         self.assertEqual(flat["OBS_INFO EXT_PAIR_1"], 2.5)
+
+    def test_non_finite_round_trip(self) -> None:
+        obsinfo = makeObservationInfo(
+            observation_id="A",
+            object="NAN",
+            relative_humidity=math.nan,
+            temperature=math.inf * u.K,
+            pressure=-math.inf * u.hPa,
+            location=EarthLocation(math.nan, 1.0, math.inf, unit=u.m),
+        )
+        for prefix, sep in PREFIX_FORMS:
+            with self.subTest(prefix=prefix):
+                flat = obsinfo.to_flat_dict(prefix=prefix, sep=sep, encode_non_finite=True)
+                self.assertTrue(all(math.isfinite(v) for v in flat.values() if isinstance(v, float)))
+                strings = {v for v in flat.values() if isinstance(v, str)}
+                self.assertTrue({"NAN", "+INFINITY", "-INFINITY"} <= strings)
+
+                restored = ObservationInfo.from_flat_dict(flat, prefix=prefix, sep=sep)
+                self.assertEqual(restored.object, "NAN")
+                self.assertTrue(math.isnan(restored.relative_humidity))
+                self.assertEqual(restored.temperature.value, math.inf)
+                self.assertEqual(restored.pressure.value, -math.inf)
+                self.assertTrue(math.isnan(restored.location.x.value))
+                self.assertEqual(restored.location.y.value, 1.0)
+                self.assertEqual(restored.location.z.value, math.inf)
+                self.assertEqual(restored, obsinfo)
+
+    def test_from_flat_dict_decodes_json_spellings(self) -> None:
+        # The spellings pydantic uses when writing JSON are accepted too.
+        flat = {
+            "observation_id": "A",
+            "datetime_begin_0": 2460000.5,
+            "datetime_begin_1": 0.25,
+            "temperature": "Infinity",
+            "pressure": "-Infinity",
+            "relative_humidity": "NaN",
+        }
+        restored = ObservationInfo.from_flat_dict(flat, prefix="")
+        self.assertEqual(restored.temperature.value, math.inf)
+        self.assertEqual(restored.pressure.value, -math.inf)
+        self.assertTrue(math.isnan(restored.relative_humidity))
 
     def test_has_and_strip(self) -> None:
         obsinfo = _read_obsinfo("fitsheader-hsc.yaml")
@@ -628,6 +740,27 @@ class FitsHeaderTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             ObservationInfo.from_flat_dict(read)
 
+    def test_fits_header_non_finite(self) -> None:
+        obsinfo = makeObservationInfo(
+            observation_id="A",
+            datetime_begin=astropy.time.Time("2020-01-01T00:00:00", scale="tai"),
+            relative_humidity=math.nan,
+            temperature=math.inf * u.K,
+        )
+        flat = obsinfo.to_flat_dict(
+            prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP, encode_non_finite=True
+        )
+        header = fits.Header()
+        for key, value in flat.items():
+            header[f"HIERARCH {key}"] = value
+        read = self._write_and_read(header)
+        self.assertEqual(read["OBS_INFO RELATIVE_HUMIDITY"], "NAN")
+        self.assertEqual(read["OBS_INFO TEMPERATURE"], "+INFINITY")
+
+        restored = ObservationInfo.from_flat_dict(read)
+        self.assertTrue(math.isnan(restored.relative_humidity))
+        self.assertEqual(restored.temperature.value, math.inf)
+
     def test_nan_passes_through_plain_dict(self) -> None:
         obsinfo = makeObservationInfo(observation_id="A", relative_humidity=math.nan)
         flat = obsinfo.to_flat_dict()
@@ -660,3 +793,33 @@ class PropertyListTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(afw_image is not None, "lsst.afw is not available")
+class AfwFitsTestCase(unittest.TestCase):
+    """Test a FITS file written by afw, which encodes non-finite floats
+    itself, read back by both afw and astropy.
+    """
+
+    def test_afw_written_non_finite(self) -> None:
+        obsinfo = makeObservationInfo(
+            observation_id="A",
+            datetime_begin=astropy.time.Time("2020-01-01T00:00:00", scale="tai"),
+            relative_humidity=math.nan,
+            temperature=math.inf * u.K,
+        )
+        pl = PropertyList()
+        for key, value in obsinfo.to_flat_dict(prefix=FITS_FLAT_DICT_PREFIX, sep=FITS_FLAT_DICT_SEP).items():
+            pl[key] = value
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "test.fits")
+            afw_image.ImageF(2, 2).writeFits(path, pl)
+            afw_header = afw_fits.readMetadata(path)
+            astropy_header = fits.getheader(path)
+
+        self.assertEqual(astropy_header["OBS_INFO RELATIVE_HUMIDITY"], "NAN")
+        for header in (afw_header, astropy_header):
+            restored = ObservationInfo.from_flat_dict(header)
+            self.assertTrue(math.isnan(restored.relative_humidity))
+            self.assertEqual(restored.temperature.value, math.inf)

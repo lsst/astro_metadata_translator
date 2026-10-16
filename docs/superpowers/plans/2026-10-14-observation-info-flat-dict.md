@@ -38,6 +38,7 @@ The code as merged differs from the task text below in these ways; the spec refl
 - The real-FITS test compares floats to 15 significant digits because astropy truncates long floats to a 20-character field.
 - Two private helpers in `flat_dict.py` carry full numpydoc Parameters and Returns sections to satisfy the pre-commit hook.
 - `flatten_simple` resolves `use_upper` inline instead of through a `_resolve_use_upper` helper.
+- `to_flat_dict` and `flatten_simple` take `encode_non_finite`, writing `NaN` and infinities as the cfitsio strings, and `unflatten` takes `float_names` so `from_flat_dict` converts such strings back for float-typed properties; review found that astropy refuses non-finite float cards.
 
 ## Review Focus
 

@@ -21,7 +21,7 @@ import itertools
 import logging
 from collections.abc import Generator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
-from typing import Any, cast, overload
+from typing import Any, NamedTuple, cast, overload
 
 import astropy.coordinates
 import astropy.time
@@ -1041,6 +1041,7 @@ class ObservationInfo(BaseModel):
         prefix: str = "",
         sep: str = ".",
         use_upper: bool | None = None,
+        encode_non_finite: bool = False,
     ) -> dict[str, FlatValue]:
         """Convert the contents of this object to a flat dict of scalars.
 
@@ -1058,6 +1059,11 @@ class ObservationInfo(BaseModel):
             If `None` the property names are upper-cased when the first
             character of ``prefix`` is upper case and left lower case
             otherwise. `True` or `False` force the case.
+        encode_non_finite : `bool`, optional
+            If `True`, ``NaN`` and infinite floats are written as the
+            strings ``NAN``, ``+INFINITY``, and ``-INFINITY``. FITS can
+            not hold such floats, so set this when the result is going
+            into a FITS header. By default they are left as floats.
 
         Returns
         -------
@@ -1083,10 +1089,11 @@ class ObservationInfo(BaseModel):
         keys are suitable for FITS ``HIERARCH`` cards, for example
         ``OBS_INFO DATETIME_BEGIN_0``.
 
-        Values are passed through unchanged. FITS can not represent
-        ``NaN`` so a writer must remove such values before storing the
-        result in a header, and FITS does not preserve trailing spaces
-        in string values.
+        Values are passed through unchanged unless ``encode_non_finite``
+        is set. The strings it writes are the ones cfitsio and afw use
+        for non-finite floats, and `from_flat_dict` converts them back
+        to floats. FITS does not preserve trailing spaces in string
+        values.
 
         The result can be converted back with `from_flat_dict`.
         Round-tripping of extension properties requires that the
@@ -1094,7 +1101,13 @@ class ObservationInfo(BaseModel):
         an underscore followed by digits if a tuple-valued extension
         with the shorter name also exists.
         """
-        return flatten_simple(self.to_simple(), prefix=prefix, sep=sep, use_upper=use_upper)
+        return flatten_simple(
+            self.to_simple(),
+            prefix=prefix,
+            sep=sep,
+            use_upper=use_upper,
+            encode_non_finite=encode_non_finite,
+        )
 
     @classmethod
     def has_flat_dict(cls, flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> bool:
@@ -1133,7 +1146,7 @@ class ObservationInfo(BaseModel):
         """
         return bool(
             find_flat_keys(
-                flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_tuple_lengths(), unique=False
+                flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_schema().tuple_lengths, unique=False
             )
         )
 
@@ -1167,7 +1180,7 @@ class ObservationInfo(BaseModel):
         all removed.
         """
         found = find_flat_keys(
-            flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_tuple_lengths(), unique=False
+            flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_schema().tuple_lengths, unique=False
         )
         for key in found:
             del flat[key]
@@ -1200,8 +1213,9 @@ class ObservationInfo(BaseModel):
         ------
         ValueError
             Raised if no keys are found, if automatic detection is
-            ambiguous, if two keys differ only in case, or if the indexed
-            values of a property are incomplete. Also raised, as
+            ambiguous, if two keys differ only in case, if the indexed
+            values of a property are incomplete, or if a float property
+            holds a string that is not a number. Also raised, as
             `pydantic.ValidationError`, if a value fails validation.
         KeyError
             Raised if extension properties are present but the named
@@ -1210,21 +1224,38 @@ class ObservationInfo(BaseModel):
 
         Notes
         -----
+        A string found for a float property is converted with `float`.
+        This restores the ``NAN``, ``+INFINITY``, and ``-INFINITY``
+        strings written by `to_flat_dict` with ``encode_non_finite``, and
+        by cfitsio and afw for non-finite floats, as well as the ``NaN``
+        and ``Infinity`` spellings used in JSON.
+
         Round-tripping of extension properties requires that the
         translator named in the mapping is registered, because its
         extension definitions are needed to interpret ``ext_`` keys.
         """
-        flat_keys = find_flat_keys(flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_tuple_lengths())
+        schema = _flat_dict_schema()
+        flat_keys = find_flat_keys(flat, prefix=prefix, sep=sep, anchor_names=schema.tuple_lengths)
         if not flat_keys:
             raise ValueError("No ObservationInfo content found in the given mapping.")
         extension_names: tuple[str, ...] = ()
+        float_names = set(schema.float_names)
         translator_name = find_translator_name(flat, flat_keys)
         if translator_name is not None:
             translator_class = MetadataTranslator.translators.get(translator_name)
             if translator_class is not None:
                 extension_names = tuple(translator_class.extensions)
+                float_names.update(
+                    f"ext_{name}"
+                    for name, definition in translator_class.extensions.items()
+                    if definition.py_type is float
+                )
         simple = unflatten(
-            flat, flat_keys, extension_names=extension_names, expected_lengths=_flat_dict_tuple_lengths()
+            flat,
+            flat_keys,
+            extension_names=extension_names,
+            expected_lengths=schema.tuple_lengths,
+            float_names=float_names,
         )
         return cls.from_simple(simple)
 
@@ -1278,19 +1309,38 @@ class ObservationInfo(BaseModel):
         copy._sealed = True
 
 
-@functools.cache
-def _flat_dict_tuple_lengths() -> dict[str, int]:
-    """Return the fixed tuple length of each tuple-valued core property.
+class _FlatDictSchema(NamedTuple):
+    """Facts about the simple form of `ObservationInfo` needed to rebuild
+    it from a flat dict.
+    """
 
-    The lengths come from the JSON schema of `ObservationInfo`, where the
-    simple form of such a property is declared as a fixed-size array.
+    tuple_lengths: dict[str, int]
+    """Fixed tuple length of each tuple-valued core property."""
+
+    float_names: frozenset[str]
+    """Core properties whose simple form is a float or a tuple of floats."""
+
+
+@functools.cache
+def _flat_dict_schema() -> _FlatDictSchema:
+    """Derive the flat dict facts from the JSON schema of `ObservationInfo`.
+
+    The simple form of a tuple-valued property is declared there as a
+    fixed-size array, and float values as ``number``.
     """
     lengths: dict[str, int] = {}
+    floats: set[str] = set()
     for name, prop in ObservationInfo.model_json_schema()["properties"].items():
         for option in prop.get("anyOf", [prop]):
-            if option.get("type") == "array" and option.get("minItems") == option.get("maxItems") is not None:
+            if option.get("type") == "number":
+                floats.add(name)
+            elif (
+                option.get("type") == "array" and option.get("minItems") == option.get("maxItems") is not None
+            ):
                 lengths[name] = option["maxItems"]
-    return lengths
+                if all(item.get("type") == "number" for item in option.get("prefixItems", [])):
+                    floats.add(name)
+    return _FlatDictSchema(lengths, frozenset(floats))
 
 
 def makeObservationInfo(  # noqa: N802
