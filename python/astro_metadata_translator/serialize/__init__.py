@@ -10,3 +10,4 @@
 # license that can be found in the LICENSE file.
 
 from .fits import *
+from .flat_dict import FITS_FLAT_DICT_PREFIX, FITS_FLAT_DICT_SEP

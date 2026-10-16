@@ -13,6 +13,7 @@ from .headers import *
 from .observationGroup import *
 from .observationInfo import *
 from .properties import *
+from .serialize.flat_dict import FITS_FLAT_DICT_PREFIX, FITS_FLAT_DICT_SEP
 from .translator import *
 from .translators import *
 from .version import *

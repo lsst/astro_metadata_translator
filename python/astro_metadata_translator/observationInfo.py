@@ -16,11 +16,12 @@ from __future__ import annotations
 __all__ = ("ObservationInfo", "makeObservationInfo")
 
 import copy
+import functools
 import itertools
 import logging
-from collections.abc import Generator, MutableMapping, Sequence
+from collections.abc import Generator, Mapping, MutableMapping, Sequence
 from contextlib import contextmanager
-from typing import Any, cast, overload
+from typing import Any, NamedTuple, cast, overload
 
 import astropy.coordinates
 import astropy.time
@@ -53,6 +54,7 @@ from .properties import (
     TimeAnnotated,
     TimeDeltaAnnotated,
 )
+from .serialize.flat_dict import FlatValue, find_flat_keys, find_translator_name, flatten_simple, unflatten
 from .translator import MetadataTranslator
 
 log = logging.getLogger(__name__)
@@ -1033,6 +1035,230 @@ class ObservationInfo(BaseModel):
         """
         return cls.model_validate_json(json_str)
 
+    def to_flat_dict(
+        self,
+        *,
+        prefix: str = "",
+        sep: str = ".",
+        use_upper: bool | None = None,
+        encode_non_finite: bool = False,
+    ) -> dict[str, FlatValue]:
+        """Convert the contents of this object to a flat dict of scalars.
+
+        Parameters
+        ----------
+        prefix : `str`, optional
+            Prefix placed before every key. Emitted exactly as
+            given. Use ``FITS_FLAT_DICT_PREFIX`` for FITS headers.
+        sep : `str`, optional
+            Separator between the prefix and the property name. Must be
+            one character that is not a letter, digit, or underscore.
+            Unused when ``prefix`` is empty. Use ``FITS_FLAT_DICT_SEP``
+            for FITS headers.
+        use_upper : `bool` or `None`, optional
+            If `None` the property names are upper-cased when the first
+            character of ``prefix`` is upper case and left lower case
+            otherwise. `True` or `False` force the case.
+        encode_non_finite : `bool`, optional
+            If `True`, ``NaN`` and infinite floats are written as the
+            strings ``NAN``, ``+INFINITY``, and ``-INFINITY``. FITS can
+            not hold such floats, so set this when the result is going
+            into a FITS header. By default they are left as floats.
+
+        Returns
+        -------
+        flat : `dict` [`str`, `str` | `int` | `float` | `bool`]
+            Flat mapping of all properties that are not `None`.
+
+        Raises
+        ------
+        ValueError
+            Raised if ``sep`` is not valid.
+        TypeError
+            Raised if a property value can not be represented as a
+            scalar or a flat sequence of scalars.
+
+        Notes
+        -----
+        Each key is the property name as used by `to_simple`, optionally
+        preceded by the prefix and separator. A property whose simple
+        form is a tuple, such as ``datetime_begin``, is written as one
+        key per element with an index suffix: ``datetime_begin_0`` and
+        ``datetime_begin_1``. The ``_translator`` entry is written as
+        ``translator``. With ``prefix="OBS_INFO"`` and ``sep=" "`` the
+        keys are suitable for FITS ``HIERARCH`` cards, for example
+        ``OBS_INFO DATETIME_BEGIN_0``.
+
+        Values are passed through unchanged unless ``encode_non_finite``
+        is set. The strings it writes are the ones cfitsio and afw use
+        for non-finite floats, and `from_flat_dict` converts them back
+        to floats. FITS does not preserve trailing spaces in string
+        values.
+
+        The result can be converted back with `from_flat_dict`.
+        Round-tripping of extension properties requires that the
+        translator is registered, and an extension name must not end in
+        an underscore followed by digits if a tuple-valued extension
+        with the shorter name also exists.
+        """
+        return flatten_simple(
+            self.to_simple(),
+            prefix=prefix,
+            sep=sep,
+            use_upper=use_upper,
+            encode_non_finite=encode_non_finite,
+        )
+
+    @classmethod
+    def has_flat_dict(cls, flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = ".") -> bool:
+        """Report whether a mapping contains keys written by `to_flat_dict`.
+
+        Parameters
+        ----------
+        flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
+            Mapping to inspect, for example a FITS header. Keys are
+            matched case-insensitively.
+        prefix : `str` or `None`, optional
+            Prefix given to `to_flat_dict`. `None` detects the prefix
+            and separator automatically, in which case ``sep`` is
+            ignored.
+        sep : `str`, optional
+            Separator given to `to_flat_dict`.
+
+        Returns
+        -------
+        present : `bool`
+            `True` if at least one key was found.
+
+        Raises
+        ------
+        ValueError
+            Raised if automatic detection finds two prefixes that match
+            equally well.
+
+        Notes
+        -----
+        Use this before `from_flat_dict` to tell the absence of content
+        from content that fails validation. Automatic detection requires
+        an indexed tuple-valued property such as ``datetime_begin_0`` to
+        be present. Keys that differ only in case count as present even
+        though `from_flat_dict` will reject them.
+        """
+        return bool(
+            find_flat_keys(
+                flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_schema().tuple_lengths, unique=False
+            )
+        )
+
+    @classmethod
+    def strip_from_flat_dict(
+        cls, flat: MutableMapping[str, Any], *, prefix: str | None = None, sep: str = "."
+    ) -> None:
+        """Remove keys written by `to_flat_dict` from a mapping in place.
+
+        Parameters
+        ----------
+        flat : `~collections.abc.MutableMapping` [`str`, `~typing.Any`]
+            Mapping to modify, for example a FITS header. Keys are
+            matched case-insensitively.
+        prefix : `str` or `None`, optional
+            Prefix given to `to_flat_dict`. `None` detects the prefix
+            and separator automatically, in which case ``sep`` is
+            ignored.
+        sep : `str`, optional
+            Separator given to `to_flat_dict`.
+
+        Raises
+        ------
+        ValueError
+            Raised if ``sep`` is invalid or detection is ambiguous.
+
+        Notes
+        -----
+        Nothing is removed if no keys are found. Other keys in the
+        mapping are left untouched. Keys that differ only in case are
+        all removed.
+        """
+        found = find_flat_keys(
+            flat, prefix=prefix, sep=sep, anchor_names=_flat_dict_schema().tuple_lengths, unique=False
+        )
+        for key in found:
+            del flat[key]
+
+    @classmethod
+    def from_flat_dict(
+        cls, flat: Mapping[str, Any], *, prefix: str | None = None, sep: str = "."
+    ) -> ObservationInfo:
+        """Create an `ObservationInfo` from the output of `to_flat_dict`.
+
+        Parameters
+        ----------
+        flat : `~collections.abc.Mapping` [`str`, `~typing.Any`]
+            Mapping containing the flat keys, for example a FITS header.
+            Keys are matched case-insensitively and unrelated keys are
+            ignored.
+        prefix : `str` or `None`, optional
+            Prefix given to `to_flat_dict`. `None` detects the prefix
+            and separator automatically, in which case ``sep`` is
+            ignored.
+        sep : `str`, optional
+            Separator given to `to_flat_dict`.
+
+        Returns
+        -------
+        obsinfo : `ObservationInfo`
+            New object constructed from the mapping.
+
+        Raises
+        ------
+        ValueError
+            Raised if no keys are found, if automatic detection is
+            ambiguous, if two keys differ only in case, if the indexed
+            values of a property are incomplete, or if a float property
+            holds a string that is not a number. Also raised, as
+            `pydantic.ValidationError`, if a value fails validation.
+        KeyError
+            Raised if extension properties are present but the named
+            translator is not registered, so their definitions are
+            unknown.
+
+        Notes
+        -----
+        A string found for a float property is converted with `float`.
+        This restores the ``NAN``, ``+INFINITY``, and ``-INFINITY``
+        strings written by `to_flat_dict` with ``encode_non_finite``, and
+        by cfitsio and afw for non-finite floats, as well as the ``NaN``
+        and ``Infinity`` spellings used in JSON.
+
+        Round-tripping of extension properties requires that the
+        translator named in the mapping is registered, because its
+        extension definitions are needed to interpret ``ext_`` keys.
+        """
+        schema = _flat_dict_schema()
+        flat_keys = find_flat_keys(flat, prefix=prefix, sep=sep, anchor_names=schema.tuple_lengths)
+        if not flat_keys:
+            raise ValueError("No ObservationInfo content found in the given mapping.")
+        extension_names: tuple[str, ...] = ()
+        float_names = set(schema.float_names)
+        translator_name = find_translator_name(flat, flat_keys)
+        if translator_name is not None:
+            translator_class = MetadataTranslator.translators.get(translator_name)
+            if translator_class is not None:
+                extension_names = tuple(translator_class.extensions)
+                float_names.update(
+                    f"ext_{name}"
+                    for name, definition in translator_class.extensions.items()
+                    if definition.py_type is float
+                )
+        simple = unflatten(
+            flat,
+            flat_keys,
+            extension_names=extension_names,
+            expected_lengths=schema.tuple_lengths,
+            float_names=float_names,
+        )
+        return cls.from_simple(simple)
+
     @classmethod
     def makeObservationInfo(  # noqa: N802
         cls,
@@ -1081,6 +1307,40 @@ class ObservationInfo(BaseModel):
         copy._sealed = False
         yield copy
         copy._sealed = True
+
+
+class _FlatDictSchema(NamedTuple):
+    """Facts about the simple form of `ObservationInfo` needed to rebuild
+    it from a flat dict.
+    """
+
+    tuple_lengths: dict[str, int]
+    """Fixed tuple length of each tuple-valued core property."""
+
+    float_names: frozenset[str]
+    """Core properties whose simple form is a float or a tuple of floats."""
+
+
+@functools.cache
+def _flat_dict_schema() -> _FlatDictSchema:
+    """Derive the flat dict facts from the JSON schema of `ObservationInfo`.
+
+    The simple form of a tuple-valued property is declared there as a
+    fixed-size array, and float values as ``number``.
+    """
+    lengths: dict[str, int] = {}
+    floats: set[str] = set()
+    for name, prop in ObservationInfo.model_json_schema()["properties"].items():
+        for option in prop.get("anyOf", [prop]):
+            if option.get("type") == "number":
+                floats.add(name)
+            elif (
+                option.get("type") == "array" and option.get("minItems") == option.get("maxItems") is not None
+            ):
+                lengths[name] = option["maxItems"]
+                if all(item.get("type") == "number" for item in option.get("prefixItems", [])):
+                    floats.add(name)
+    return _FlatDictSchema(lengths, frozenset(floats))
 
 
 def makeObservationInfo(  # noqa: N802
