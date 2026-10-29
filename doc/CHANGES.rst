@@ -1,3 +1,14 @@
+v30.0.12 (2026-10-27)
+=====================
+
+New Features
+------------
+
+- Added ``ObservationInfo.to_flat_dict``, ``from_flat_dict``, ``has_flat_dict``, and ``strip_from_flat_dict`` for storing an ``ObservationInfo`` as scalar key/value pairs, for example in a FITS header, and rebuilding it losslessly.
+  Tuple-valued properties are written as indexed keys such as ``datetime_begin_0`` and keys can carry an optional prefix; the recommended FITS form uses the new ``FITS_FLAT_DICT_PREFIX`` and ``FITS_FLAT_DICT_SEP`` constants.
+  ``to_flat_dict(encode_non_finite=True)`` writes ``NaN`` and infinite floats as the strings cfitsio uses, since FITS can not hold them as floats, and ``from_flat_dict`` always converts such strings back to floats. (`DM-56697 <https://rubinobs.atlassian.net/browse/DM-56697>`_)
+- Added ``ObservationInfo.edit_copy`` context manager to allow localized changes to an ``ObservationInfo``.  (`DM-56143 <https://rubinobs.atlassian.net/browse/DM-56143>`_)
+
 v30.0.9 (2026-07-14)
 ====================
 
